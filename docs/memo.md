@@ -26,8 +26,8 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
   - Pause
   - Finish
   - ホーム・アウェイのスコア増減
-- 試合データをlocalStorageへ保存。
-- 別タブ・別画面でlocalStorageの更新を検知し、試合状態を同期。
+- 試合データをlocalStorageへ保存。（→ 後述のとおり `TempServerData/matches.json` への移行で置き換え済み。現在は非該当）
+- 別タブ・別画面でlocalStorageの更新を検知し、試合状態を同期。（→ 同上。現在はSSEで同期しており非該当）
 - グループ試合をCourt 1〜3へ分散。
 - React RouterのFuture Flag warningを抑制。
 - 試合データの保存先をlocalStorageから `TempServerData/matches.json` へ移行。
@@ -43,7 +43,7 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
 
 - `npm run build` 成功。
 - ブラウザーで試合一覧を確認。
-- 全80試合の表示を確認。
+- 全95試合の表示を確認。
 - Group / Courtフィルターの表示を確認。
 - Live画面でCourtごとのNext Matchesを確認。
 - ブラウザーで管理者ログインと管理画面を確認。
@@ -74,6 +74,7 @@ npm run dev -- --host 0.0.0.0 --port 4173
 
 ## 次の候補
 
+- 永続化されたデータベースへの移行（現在はJSONファイル保存）。
 - 管理者権限のサーバー側認証。
 - 操作履歴・監査ログ。
 - 試合結果に応じたノックアウトチームの自動反映。
