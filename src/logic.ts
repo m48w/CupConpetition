@@ -1,3 +1,4 @@
+import { GROUP_IDS, R16_SEEDS, TBD } from "./schedule";
 import type { Match, Team } from "./types";
 
 export interface Standing {
@@ -41,62 +42,23 @@ export const stageLabel: Record<Match["stage"], string> = {
   GROUP: "Group stage", R16: "Best 16", QF: "Best 8", SF: "Best 4", FINAL: "Final",
 };
 
-export function generateKnockoutMatches(teams: Team[], matches: Match[]): Match[] {
-  const ranked = new Map(
-    ["A", "B", "C", "D", "E", "F", "G", "H"].map((group) => [
-      group,
-      calculateStandings(group, teams, matches).map((row) => row.team.id),
+/**
+ * グループ順位から Round of 16 の対戦相手を埋める。
+ * 既存の試合の時刻・コート・ID は変更しない。QF 以降は TBD のまま。
+ */
+export function seedKnockoutTeams(teams: Team[], matches: Match[]): Match[] {
+  const ranked = new Map<string, string[]>(
+    GROUP_IDS.map((groupId): [string, string[]] => [
+      groupId,
+      calculateStandings(groupId, teams, matches).map((row) => row.team.id),
     ]),
   );
-  const cards: [string, string][] = [
-    ["A1", "H2"], ["H1", "A2"], ["B1", "G2"], ["G1", "B2"],
-    ["C1", "F2"], ["F1", "C2"], ["D1", "E2"], ["E1", "D2"],
-  ];
-  const fixedCards = cards.slice(0, 8).map(([home, away]) => [
-    ranked.get(home[0])?.[Number(home[1]) - 1] ?? "TBD",
-    ranked.get(away[0])?.[Number(away[1]) - 1] ?? "TBD",
-  ]);
-  const start = new Date("2026-09-26T13:00:00+09:00");
-  const r16: Match[] = fixedCards.map(([homeTeamId, awayTeamId], index) => {
-    const scheduledStart = new Date(start.getTime() + index * 18 * 60_000);
-    return {
-      id: `R16-${index + 1}`,
-      stage: "R16",
-      court: (index % 3) + 1,
-      scheduledStart: scheduledStart.toISOString(),
-      status: "SCHEDULED",
-      homeTeamId,
-      awayTeamId,
-      homeScore: 0,
-      awayScore: 0,
-    };
+  const resolve = (seed: string) => ranked.get(seed[0])?.[Number(seed[1]) - 1] ?? TBD;
+
+  return matches.map((match) => {
+    if (match.stage !== "R16") return match;
+    const seed = R16_SEEDS[Number(match.id.split("-")[1]) - 1];
+    if (!seed) return match;
+    return { ...match, homeTeamId: resolve(seed[0]), awayTeamId: resolve(seed[1]) };
   });
-  const makeNextRound = (
-    stage: Match["stage"],
-    prefix: string,
-    count: number,
-    offset: number,
-    sourceSize: number,
-  ): Match[] => Array.from({ length: count }, (_, index) => {
-    const sourceStart = index * sourceSize;
-    const sourceMatchIds = Array.from({ length: sourceSize }, (_, sourceIndex) => `${prefix}-${sourceStart + sourceIndex + 1}`);
-    return {
-      id: `${stage}-${index + 1}`,
-      stage,
-      court: (index % 3) + 1,
-      scheduledStart: new Date(start.getTime() + (offset + index) * 18 * 60_000).toISOString(),
-      status: "SCHEDULED",
-      homeTeamId: "TBD",
-      awayTeamId: "TBD",
-      homeScore: 0,
-      awayScore: 0,
-      sourceMatchIds,
-    };
-  });
-  return [
-    ...r16,
-    ...makeNextRound("QF", "R16", 4, 8, 2),
-    ...makeNextRound("SF", "QF", 2, 12, 2),
-    ...makeNextRound("FINAL", "SF", 1, 14, 2),
-  ];
 }
