@@ -2,21 +2,44 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { teams } from "../src/data";
 import { buildTournamentSchedule } from "../src/schedule";
-import type { Match, TournamentState } from "../src/types";
+import type { Match, MatchStatus, TournamentState } from "../src/types";
 
 const FILE_NAME = "matches.json";
 
-/** PATCH で変更を許可するフィールド。スケジュール項目は含めない。 */
-export const PATCHABLE_FIELDS = [
-  "status",
-  "homeScore",
-  "awayScore",
-  "timerServerStartedAt",
-  "timerElapsedSecondsAtPause",
-  "penaltyHomeScore",
-  "penaltyAwayScore",
-  "isPenaltyShootout",
-] as const;
+const MATCH_STATUSES: readonly MatchStatus[] = ["SCHEDULED", "LIVE", "PAUSED", "FINISHED"];
+
+function isMatchStatus(value: unknown): boolean {
+  return typeof value === "string" && (MATCH_STATUSES as readonly string[]).includes(value);
+}
+
+function isNonNegativeInteger(value: unknown): boolean {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+function isOptionalNonNegativeNumber(value: unknown): boolean {
+  return value === undefined || (typeof value === "number" && Number.isFinite(value) && value >= 0);
+}
+
+function isOptionalDateString(value: unknown): boolean {
+  return value === undefined || (typeof value === "string" && !Number.isNaN(Date.parse(value)));
+}
+
+function isBoolean(value: unknown): boolean {
+  return typeof value === "boolean";
+}
+
+/** PATCH で変更を許可するフィールドと、その値の型を検証する述語。
+ *  スケジュール項目は含めない。 */
+export const PATCH_FIELD_VALIDATORS: Record<string, (value: unknown) => boolean> = {
+  status: isMatchStatus,
+  homeScore: isNonNegativeInteger,
+  awayScore: isNonNegativeInteger,
+  timerServerStartedAt: isOptionalDateString,
+  timerElapsedSecondsAtPause: isOptionalNonNegativeNumber,
+  penaltyHomeScore: isNonNegativeInteger,
+  penaltyAwayScore: isNonNegativeInteger,
+  isPenaltyShootout: isBoolean,
+};
 
 export interface Store {
   read(): Promise<TournamentState>;
@@ -26,7 +49,7 @@ export interface Store {
   subscribe(listener: (state: TournamentState) => void): () => void;
 }
 
-export type StoreErrorCode = "UNKNOWN_MATCH" | "FIELD_NOT_PATCHABLE";
+export type StoreErrorCode = "UNKNOWN_MATCH" | "FIELD_NOT_PATCHABLE" | "INVALID_FIELD_VALUE";
 
 export class StoreError extends Error {
   constructor(message: string, readonly code: StoreErrorCode) {
@@ -109,11 +132,16 @@ export function createStore(dataDir: string): Store {
 
     patchMatch: (id, patch) =>
       enqueue(async () => {
-        const unknownField = Object.keys(patch).find(
-          (field) => !PATCHABLE_FIELDS.includes(field as (typeof PATCHABLE_FIELDS)[number]),
-        );
+        const unknownField = Object.keys(patch).find((field) => !(field in PATCH_FIELD_VALIDATORS));
         if (unknownField) {
           throw new StoreError(`field is not patchable: ${unknownField}`, "FIELD_NOT_PATCHABLE");
+        }
+
+        const invalidField = Object.entries(patch).find(
+          ([field, value]) => !PATCH_FIELD_VALIDATORS[field](value),
+        );
+        if (invalidField) {
+          throw new StoreError(`invalid value for field: ${invalidField[0]}`, "INVALID_FIELD_VALUE");
         }
 
         const current = await load();

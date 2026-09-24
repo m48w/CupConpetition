@@ -63,6 +63,28 @@ describe("createStore", () => {
     ).rejects.toMatchObject({ message: expect.stringMatching(/court/), code: "FIELD_NOT_PATCHABLE" });
   });
 
+  test("型が不正な値の更新を拒否し、ディスクにも書き込まない", async () => {
+    const store = createStore(dataDir);
+    const state = await store.read();
+    const targetId = state.matches[0].id;
+
+    await expect(
+      store.patchMatch(targetId, { homeScore: "banana" } as never),
+    ).rejects.toMatchObject({ message: expect.stringMatching(/homeScore/), code: "INVALID_FIELD_VALUE" });
+
+    await expect(
+      store.patchMatch(targetId, { status: "BOGUS" } as never),
+    ).rejects.toMatchObject({ message: expect.stringMatching(/status/), code: "INVALID_FIELD_VALUE" });
+
+    await expect(
+      store.patchMatch(targetId, { homeScore: null } as never),
+    ).rejects.toMatchObject({ message: expect.stringMatching(/homeScore/), code: "INVALID_FIELD_VALUE" });
+
+    const after = await store.read();
+    expect(after.matches.find((match) => match.id === targetId)).toEqual(state.matches[0]);
+    expect(after.version).toBe(state.version);
+  });
+
   test("存在しない試合IDを拒否する", async () => {
     const store = createStore(dataDir);
     await store.read();

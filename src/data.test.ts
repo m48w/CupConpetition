@@ -15,8 +15,9 @@ test("表示時刻は閲覧端末のタイムゾーンに依存しない", () =>
 });
 
 test("seedKnockoutTeams は R16 の対戦相手を埋め、時刻とコートは変えない", () => {
+  const snapshot = structuredClone(initialMatches);
   const seeded = seedKnockoutTeams(teams, initialMatches);
-  const before = initialMatches.filter((match) => match.stage === "R16");
+  const before = snapshot.filter((match) => match.stage === "R16");
   const after = seeded.filter((match) => match.stage === "R16");
 
   expect(after).toHaveLength(8);
@@ -31,11 +32,12 @@ test("seedKnockoutTeams は R16 の対戦相手を埋め、時刻とコートは
 });
 
 test("seedKnockoutTeams はグループ戦と QF 以降を変更しない", () => {
+  const snapshot = structuredClone(initialMatches);
   const seeded = seedKnockoutTeams(teams, initialMatches);
   expect(seeded.filter((match) => match.stage === "GROUP")).toEqual(
-    initialMatches.filter((match) => match.stage === "GROUP"),
+    snapshot.filter((match) => match.stage === "GROUP"),
   );
   expect(seeded.filter((match) => ["QF", "SF", "FINAL"].includes(match.stage))).toEqual(
-    initialMatches.filter((match) => ["QF", "SF", "FINAL"].includes(match.stage)),
+    snapshot.filter((match) => ["QF", "SF", "FINAL"].includes(match.stage)),
   );
 });

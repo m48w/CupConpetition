@@ -100,6 +100,18 @@ test("許可外フィールドに 400 を返す", async () => {
   expect(body.code).toBe("FIELD_NOT_PATCHABLE");
 });
 
+test("型が不正な値に 400 を返す", async () => {
+  const before = await readState(await fetch(`${origin}/api/state`));
+  const response = await fetch(`${origin}/api/matches/${before.matches[0].id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ homeScore: "banana" }),
+  });
+  expect(response.status).toBe(400);
+  const body = await readError(response);
+  expect(body.code).toBe("INVALID_FIELD_VALUE");
+});
+
 test("不正なJSONボディに 400 を返す", async () => {
   const before = await readState(await fetch(`${origin}/api/state`));
   const response = await fetch(`${origin}/api/matches/${before.matches[0].id}`, {

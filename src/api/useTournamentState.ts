@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as client from "./client";
+import { shouldApply } from "./version";
 import { initialMatches } from "../data";
 import type { Match, TournamentState } from "../types";
 
@@ -32,7 +33,7 @@ export function useTournamentState() {
   /** A mutating call's response, which may land after a newer SSE push. */
   const applyIfNewer = useCallback(
     (state: TournamentState) => {
-      if (state.version < versionRef.current) return;
+      if (!shouldApply(state.version, versionRef.current, "response")) return;
       applyState(state);
     },
     [applyState],
@@ -45,7 +46,10 @@ export function useTournamentState() {
     source.addEventListener("state", (event) => {
       setConnection("live");
       setError(null);
-      applyState(JSON.parse((event as MessageEvent).data) as TournamentState);
+      const state = JSON.parse((event as MessageEvent).data) as TournamentState;
+      if (shouldApply(state.version, versionRef.current, "sse")) {
+        applyState(state);
+      }
     });
     source.onerror = () => setConnection("offline");
 
