@@ -14,6 +14,7 @@ export interface Match {
   groupId?: string;
   court: number;
   scheduledStart: string;
+  durationMinutes: number;
   status: MatchStatus;
   homeTeamId: string;
   awayTeamId: string;
