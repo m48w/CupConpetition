@@ -63,12 +63,14 @@ function App() {
 
   return (
     <div className="app-shell">
-      <ConnectionBanner connection={connection} error={error} />
-      <header className="topbar">
-        <button className="brand" onClick={() => navigate("/")}><span className="brand-mark">V</span><span>ELOCITY <span>CUP 2026</span></span></button>
-        <div className="event-meta"><span className="live-dot" /> LIVE EVENT <b>26 SEP 2026</b></div>
-        <button type="button" className="admin-toggle" onClick={handleAdminToggle}>{isAdmin ? "Exit admin" : "Admin login"} <span>↗</span></button>
-      </header>
+      <div className="app-header">
+        <ConnectionBanner connection={connection} error={error} />
+        <header className="topbar">
+          <button className="brand" onClick={() => navigate("/")}><span className="brand-mark">V</span><span>ELOCITY <span>CUP 2026</span></span></button>
+          <div className="event-meta"><span className="live-dot" /> LIVE EVENT <b>26 SEP 2026</b></div>
+          <button type="button" className="admin-toggle" onClick={handleAdminToggle}>{isAdmin ? "Exit admin" : "Admin login"} <span>↗</span></button>
+        </header>
+      </div>
       <div className="layout">
         <aside className="sidebar"><div className="side-caption">TOURNAMENT HUB</div>{navItems.map((item) => <NavLink key={item.to} to={item.to} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}><span>{item.icon}</span>{item.label}</NavLink>)}<div className="sidebar-bottom"><div className="mini-event"><div className="mini-ball">⚽</div><div><strong>Velocity Cup 2026</strong><small>40 teams · 95 matches</small></div></div>{isAdmin && <NavLink to="/admin/setup" className="nav-item admin-link">⚙ Setup</NavLink>}</div></aside>
         <main className="main-content"><Routes><Route path="/" element={<Overview matches={matches} />} /><Route path="/matches" element={<Matches matches={matches} />} /><Route path="/live" element={<Live matches={matches} />} /><Route path="/standings" element={<Standings matches={matches} />} /><Route path="/bracket" element={<Bracket matches={matches} />} /><Route path="/admin/setup" element={isAdmin ? <Admin matches={matches} updateMatch={updateMatch} generateSchedule={generateSchedule} resetTournament={resetTournament} connection={connection} /> : <AdminGate onUnlock={handleAdminLogin} />} /><Route path="*" element={<Overview matches={matches} />} /></Routes></main>
@@ -83,10 +85,11 @@ function App() {
 function ConnectionBanner({ connection, error }: { connection: ConnectionState; error: string | null }) {
   if (connection === "live" && !error) return null;
 
+  const tone = error ? "error" : connection;
   const message =
     error ?? (connection === "connecting" ? "Connecting to the match server…" : "Disconnected — showing last known data");
 
-  return <div className={`connection-banner ${connection}`}>{message}</div>;
+  return <div className={`connection-banner ${tone}`}>{message}</div>;
 }
 
 function AdminLoginModal({ onClose, onUnlock }: { onClose: () => void; onUnlock: (password: string) => boolean }) {
@@ -197,14 +200,17 @@ function Bracket({ matches }: { matches: Match[] }) { const r16 = matches.filter
 function Admin({ matches, updateMatch, generateSchedule, resetTournament, connection }: { matches: Match[]; updateMatch: (id: string, patch: Partial<Match>) => void; generateSchedule: () => void; resetTournament: () => void; connection: ConnectionState }) {
   const [selected, setSelected] = useState<Match | undefined>(() => matches.find((m) => m.status === "LIVE") ?? matches[0]);
   const [score, setScore] = useState<[number, number]>([selected?.homeScore ?? 0, selected?.awayScore ?? 0]);
+  const [scoreDirty, setScoreDirty] = useState(false);
 
   useEffect(() => {
     if (!selected) return;
     const nextMatch = matches.find((match) => match.id === selected.id);
     if (!nextMatch) return;
     setSelected(nextMatch);
-    setScore([nextMatch.homeScore, nextMatch.awayScore]);
-  }, [matches, selected?.id]);
+    // A broadcast for any other match must not discard an edit this operator
+    // has started but not yet saved.
+    if (!scoreDirty) setScore([nextMatch.homeScore, nextMatch.awayScore]);
+  }, [matches, selected?.id, scoreDirty]);
 
   const save = (status: MatchStatus) => {
     if (!selected) return;
@@ -214,8 +220,9 @@ function Admin({ matches, updateMatch, generateSchedule, resetTournament, connec
       awayScore: score[1],
       timerServerStartedAt: status === "LIVE" ? new Date().toISOString() : undefined,
     });
+    setScoreDirty(false);
   };
 
-  return <><PageTitle eyebrow="ADMIN CONSOLE" title="Match control"><span className="admin-pill">ADMIN MODE</span></PageTitle><div className="admin-grid"><section className="admin-panel"><label>SELECT MATCH</label><select value={selected?.id ?? ""} onChange={(event) => { const next = matches.find((m) => m.id === event.target.value); if (next) { setSelected(next); setScore([next.homeScore, next.awayScore]); } }}>{matches.filter((m) => m.status !== "FINISHED").slice(0, 20).map((m) => <option key={m.id} value={m.id}>{formatTime(m.scheduledStart)} · {findTeam(m.homeTeamId)?.name ?? "TBD"} vs {findTeam(m.awayTeamId)?.name ?? "TBD"}</option>)}</select>{selected && <><div className="control-score"><div><TeamBadge id={selected.homeTeamId} /><button onClick={() => setScore(([home, away]) => [Math.max(0, home - 1), away])}>−</button><b>{score[0]}</b><button onClick={() => setScore(([home, away]) => [home + 1, away])}>+</button></div><div><TeamBadge id={selected.awayTeamId} /><button onClick={() => setScore(([home, away]) => [home, Math.max(0, away - 1)])}>−</button><b>{score[1]}</b><button onClick={() => setScore(([home, away]) => [home, away + 1])}>+</button></div></div>  <div className="control-actions"><button type="button" className="primary-button" disabled={connection !== "live"} onClick={() => save("LIVE")}>▶ Start / resume</button><button type="button" className="outline-button" disabled={connection !== "live"} onClick={() => save("PAUSED")}>Ⅱ Pause</button><button type="button" className="danger-button" disabled={connection !== "live"} onClick={() => save("FINISHED")}>Finish match</button></div></>}</section><section className="admin-panel setup-panel"><label>SUPERADMIN SETUP</label><h3>Generate tournament schedule</h3><p>Round-robin group fixtures plus all 15 knockout slots will be generated across 3 courts from 09:00 to 20:00.</p><div className="warning-box">ⓘ Schedule check: 0 conflicts detected in the current plan.</div><button type="button" className="primary-button" disabled={connection !== "live"} onClick={generateSchedule}>✦ Seed knockout teams</button></section></div></>; }
+  return <><PageTitle eyebrow="ADMIN CONSOLE" title="Match control"><span className="admin-pill">ADMIN MODE</span></PageTitle><div className="admin-grid"><section className="admin-panel"><label>SELECT MATCH</label><select value={selected?.id ?? ""} onChange={(event) => { const next = matches.find((m) => m.id === event.target.value); if (next) { setSelected(next); setScore([next.homeScore, next.awayScore]); setScoreDirty(false); } }}>{matches.filter((m) => m.status !== "FINISHED").slice(0, 20).map((m) => <option key={m.id} value={m.id}>{formatTime(m.scheduledStart)} · {findTeam(m.homeTeamId)?.name ?? "TBD"} vs {findTeam(m.awayTeamId)?.name ?? "TBD"}</option>)}</select>{selected && <><div className="control-score"><div><TeamBadge id={selected.homeTeamId} /><button onClick={() => { setScore(([home, away]) => [Math.max(0, home - 1), away]); setScoreDirty(true); }}>−</button><b>{score[0]}</b><button onClick={() => { setScore(([home, away]) => [home + 1, away]); setScoreDirty(true); }}>+</button></div><div><TeamBadge id={selected.awayTeamId} /><button onClick={() => { setScore(([home, away]) => [home, Math.max(0, away - 1)]); setScoreDirty(true); }}>−</button><b>{score[1]}</b><button onClick={() => { setScore(([home, away]) => [home, away + 1]); setScoreDirty(true); }}>+</button></div></div>  <div className="control-actions"><button type="button" className="primary-button" disabled={connection !== "live"} onClick={() => save("LIVE")}>▶ Start / resume</button><button type="button" className="outline-button" disabled={connection !== "live"} onClick={() => save("PAUSED")}>Ⅱ Pause</button><button type="button" className="danger-button" disabled={connection !== "live"} onClick={() => save("FINISHED")}>Finish match</button></div></>}</section><section className="admin-panel setup-panel"><label>SUPERADMIN SETUP</label><h3>Generate tournament schedule</h3><p>Round-robin group fixtures plus all 15 knockout slots will be generated across 3 courts from 09:00 to 20:00.</p><div className="warning-box">ⓘ Schedule check: 0 conflicts detected in the current plan.</div><button type="button" className="primary-button" disabled={connection !== "live"} onClick={generateSchedule}>✦ Seed knockout teams</button></section></div></>; }
 function Empty({ text }: { text: string }) { return <div className="empty-state"><span>◌</span>{text}</div>; }
 export default App;
