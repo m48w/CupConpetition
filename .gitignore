@@ -3,3 +3,6 @@ dist/
 *.tsbuildinfo
 .DS_Store
 .superpowers/
+vite.config.js
+vite.config.d.ts
+TempServerData/*.json
