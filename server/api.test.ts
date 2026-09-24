@@ -5,6 +5,13 @@ import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { createApiHandler } from "./api";
 import { createStore } from "./store";
+import type { TournamentState } from "../src/types";
+
+const readState = async (response: Response): Promise<TournamentState> =>
+  (await response.json()) as TournamentState;
+
+const readError = async (response: Response): Promise<{ error: string; code?: string }> =>
+  (await response.json()) as { error: string; code?: string };
 
 let server: Server;
 let origin: string;
@@ -26,13 +33,13 @@ test("GET /api/state が全95試合を返す", async () => {
   const response = await fetch(`${origin}/api/state`);
   expect(response.status).toBe(200);
 
-  const state = await response.json();
+  const state = await readState(response);
   expect(state.matches).toHaveLength(95);
   expect(state.version).toBe(1);
 });
 
 test("PATCH /api/matches/:id がスコアを更新する", async () => {
-  const before = await (await fetch(`${origin}/api/state`)).json();
+  const before = await readState(await fetch(`${origin}/api/state`));
   const target = before.matches[0];
 
   const response = await fetch(`${origin}/api/matches/${target.id}`, {
@@ -42,8 +49,8 @@ test("PATCH /api/matches/:id がスコアを更新する", async () => {
   });
 
   expect(response.status).toBe(200);
-  const state = await response.json();
-  expect(state.matches.find((match: { id: string }) => match.id === target.id).homeScore).toBe(1);
+  const state = await readState(response);
+  expect(state.matches.find((match) => match.id === target.id)?.homeScore).toBe(1);
 });
 
 test("存在しない試合IDに 404 を返す", async () => {
@@ -53,32 +60,32 @@ test("存在しない試合IDに 404 を返す", async () => {
     body: JSON.stringify({ homeScore: 1 }),
   });
   expect(response.status).toBe(404);
-  const body = await response.json();
+  const body = await readError(response);
   expect(body.code).toBe("UNKNOWN_MATCH");
 });
 
 test("許可外フィールドに 400 を返す", async () => {
-  const before = await (await fetch(`${origin}/api/state`)).json();
+  const before = await readState(await fetch(`${origin}/api/state`));
   const response = await fetch(`${origin}/api/matches/${before.matches[0].id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ court: 99 }),
   });
   expect(response.status).toBe(400);
-  const body = await response.json();
+  const body = await readError(response);
   expect(body.code).toBe("FIELD_NOT_PATCHABLE");
 });
 
 test("POST /api/reset が全試合を未開始に戻す", async () => {
-  const before = await (await fetch(`${origin}/api/state`)).json();
+  const before = await readState(await fetch(`${origin}/api/state`));
   await fetch(`${origin}/api/matches/${before.matches[0].id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ status: "FINISHED" }),
   });
 
-  const state = await (await fetch(`${origin}/api/reset`, { method: "POST" })).json();
-  expect(state.matches.every((match: { status: string }) => match.status === "SCHEDULED")).toBe(true);
+  const state = await readState(await fetch(`${origin}/api/reset`, { method: "POST" }));
+  expect(state.matches.every((match) => match.status === "SCHEDULED")).toBe(true);
 });
 
 test("GET /api/stream が接続時に全stateを流し、更新を push する", async () => {
@@ -102,7 +109,7 @@ test("GET /api/stream が接続時に全stateを流し、更新を push する",
   const first = await readEvent();
   expect(first).toContain("event: state");
 
-  const state = await (await fetch(`${origin}/api/state`)).json();
+  const state = await readState(await fetch(`${origin}/api/state`));
   await fetch(`${origin}/api/matches/${state.matches[0].id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
