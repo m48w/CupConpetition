@@ -3,7 +3,7 @@ import { NavLink, Route, Routes, useNavigate } from "react-router-dom";
 import { findTeam, formatTime, teams } from "./data";
 import { calculateStandings, seedKnockoutTeams, stageLabel } from "./logic";
 import { useTournamentState, type ConnectionState } from "./api/useTournamentState";
-import { R16_SEEDS, TBD } from "./schedule";
+import { findCourtConflicts, R16_SEEDS, TBD } from "./schedule";
 import type { Match, MatchStatus } from "./types";
 
 const navItems = [
@@ -223,6 +223,35 @@ function Admin({ matches, updateMatch, generateSchedule, resetTournament, connec
     setScoreDirty(false);
   };
 
-  return <><PageTitle eyebrow="ADMIN CONSOLE" title="Match control"><span className="admin-pill">ADMIN MODE</span></PageTitle><div className="admin-grid"><section className="admin-panel"><label>SELECT MATCH</label><select value={selected?.id ?? ""} onChange={(event) => { const next = matches.find((m) => m.id === event.target.value); if (next) { setSelected(next); setScore([next.homeScore, next.awayScore]); setScoreDirty(false); } }}>{matches.filter((m) => m.status !== "FINISHED").slice(0, 20).map((m) => <option key={m.id} value={m.id}>{formatTime(m.scheduledStart)} · {findTeam(m.homeTeamId)?.name ?? "TBD"} vs {findTeam(m.awayTeamId)?.name ?? "TBD"}</option>)}</select>{selected && <><div className="control-score"><div><TeamBadge id={selected.homeTeamId} /><button onClick={() => { setScore(([home, away]) => [Math.max(0, home - 1), away]); setScoreDirty(true); }}>−</button><b>{score[0]}</b><button onClick={() => { setScore(([home, away]) => [home + 1, away]); setScoreDirty(true); }}>+</button></div><div><TeamBadge id={selected.awayTeamId} /><button onClick={() => { setScore(([home, away]) => [home, Math.max(0, away - 1)]); setScoreDirty(true); }}>−</button><b>{score[1]}</b><button onClick={() => { setScore(([home, away]) => [home, away + 1]); setScoreDirty(true); }}>+</button></div></div>  <div className="control-actions"><button type="button" className="primary-button" disabled={connection !== "live"} onClick={() => save("LIVE")}>▶ Start / resume</button><button type="button" className="outline-button" disabled={connection !== "live"} onClick={() => save("PAUSED")}>Ⅱ Pause</button><button type="button" className="danger-button" disabled={connection !== "live"} onClick={() => save("FINISHED")}>Finish match</button></div></>}</section><section className="admin-panel setup-panel"><label>SUPERADMIN SETUP</label><h3>Generate tournament schedule</h3><p>Round-robin group fixtures plus all 15 knockout slots will be generated across 3 courts from 09:00 to 20:00.</p><div className="warning-box">ⓘ Schedule check: 0 conflicts detected in the current plan.</div><button type="button" className="primary-button" disabled={connection !== "live"} onClick={generateSchedule}>✦ Seed knockout teams</button></section></div></>; }
+  return <><PageTitle eyebrow="ADMIN CONSOLE" title="Match control"><span className="admin-pill">ADMIN MODE</span></PageTitle><div className="admin-grid"><section className="admin-panel"><label>SELECT MATCH</label><select value={selected?.id ?? ""} onChange={(event) => { const next = matches.find((m) => m.id === event.target.value); if (next) { setSelected(next); setScore([next.homeScore, next.awayScore]); setScoreDirty(false); } }}>{matches.filter((m) => m.status !== "FINISHED").slice(0, 20).map((m) => <option key={m.id} value={m.id}>{formatTime(m.scheduledStart)} · {findTeam(m.homeTeamId)?.name ?? "TBD"} vs {findTeam(m.awayTeamId)?.name ?? "TBD"}</option>)}</select>{selected && <><div className="control-score"><div><TeamBadge id={selected.homeTeamId} /><button onClick={() => { setScore(([home, away]) => [Math.max(0, home - 1), away]); setScoreDirty(true); }}>−</button><b>{score[0]}</b><button onClick={() => { setScore(([home, away]) => [home + 1, away]); setScoreDirty(true); }}>+</button></div><div><TeamBadge id={selected.awayTeamId} /><button onClick={() => { setScore(([home, away]) => [home, Math.max(0, away - 1)]); setScoreDirty(true); }}>−</button><b>{score[1]}</b><button onClick={() => { setScore(([home, away]) => [home, away + 1]); setScoreDirty(true); }}>+</button></div></div>  <div className="control-actions"><button type="button" className="primary-button" disabled={connection !== "live"} onClick={() => save("LIVE")}>▶ Start / resume</button><button type="button" className="outline-button" disabled={connection !== "live"} onClick={() => save("PAUSED")}>Ⅱ Pause</button><button type="button" className="danger-button" disabled={connection !== "live"} onClick={() => save("FINISHED")}>Finish match</button></div></>}</section><section className="admin-panel setup-panel"><label>SUPERADMIN SETUP</label><h3>Seed knockout teams</h3><p>Group fixtures run from 09:00 on 3 courts. Once the group stage is final, this fills the Round of 16 from the standings without moving any kick-off time.</p><ScheduleCheck matches={matches} /><button type="button" className="primary-button" disabled={connection !== "live"} onClick={generateSchedule}>✦ Seed knockout teams</button><ResetButton onReset={resetTournament} disabled={connection !== "live"} /></section></div></>; }
+function ScheduleCheck({ matches }: { matches: Match[] }) {
+  const conflicts = findCourtConflicts(matches);
+  const finish = matches.length
+    ? formatTime(new Date(Math.max(...matches.map((match) => Date.parse(match.scheduledStart) + match.durationMinutes * 60_000))).toISOString())
+    : "—";
+
+  if (!conflicts.length) {
+    return <div className="warning-box ok">ⓘ Schedule check: {matches.length} matches, no court clashes, finishing {finish}.</div>;
+  }
+
+  return <div className="warning-box">⚠ Schedule check: {conflicts.length} court clash{conflicts.length > 1 ? "es" : ""} — {conflicts.slice(0, 3).map(([a, b]) => `${a.id}×${b.id}`).join(", ")}{conflicts.length > 3 ? "…" : ""}</div>;
+}
+
+function ResetButton({ onReset, disabled }: { onReset: () => void; disabled: boolean }) {
+  const [armed, setArmed] = useState(false);
+
+  if (!armed) {
+    return <button type="button" className="outline-button reset-button" disabled={disabled} onClick={() => setArmed(true)}>↺ Reset all matches</button>;
+  }
+
+  return (
+    <div className="reset-confirm">
+      <span>Reset all 95 matches to unplayed? Scores and timers will be cleared.</span>
+      <button type="button" className="danger-button" disabled={disabled} onClick={() => { onReset(); setArmed(false); }}>Yes, reset</button>
+      <button type="button" className="outline-button" onClick={() => setArmed(false)}>Cancel</button>
+    </div>
+  );
+}
+
 function Empty({ text }: { text: string }) { return <div className="empty-state"><span>◌</span>{text}</div>; }
 export default App;
