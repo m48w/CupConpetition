@@ -27,3 +27,9 @@ export interface Match {
   penaltyAwayScore?: number;
   sourceMatchIds?: string[];
 }
+
+export interface TournamentState {
+  version: number;
+  updatedAt: string;
+  matches: Match[];
+}
