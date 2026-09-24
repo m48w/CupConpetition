@@ -26,6 +26,15 @@ export interface Store {
   subscribe(listener: (state: TournamentState) => void): () => void;
 }
 
+export type StoreErrorCode = "UNKNOWN_MATCH" | "FIELD_NOT_PATCHABLE";
+
+export class StoreError extends Error {
+  constructor(message: string, readonly code: StoreErrorCode) {
+    super(message);
+    this.name = "StoreError";
+  }
+}
+
 function freshState(): TournamentState {
   return { version: 1, updatedAt: new Date().toISOString(), matches: buildTournamentSchedule(teams) };
 }
@@ -52,7 +61,8 @@ export function createStore(dataDir: string): Store {
     let raw: string;
     try {
       raw = await readFile(filePath, "utf8");
-    } catch {
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       return write(freshState());
     }
 
@@ -62,7 +72,8 @@ export function createStore(dataDir: string): Store {
         throw new Error("unexpected shape");
       }
       return parsed;
-    } catch {
+    } catch (error) {
+      console.error("[store] matches.json is unreadable; quarantining", error);
       await quarantine();
       return write(freshState());
     }
@@ -76,7 +87,13 @@ export function createStore(dataDir: string): Store {
   }
 
   function publish(state: TournamentState): TournamentState {
-    for (const listener of listeners) listener(state);
+    for (const listener of listeners) {
+      try {
+        listener(state);
+      } catch (error) {
+        console.error("[store] a subscriber threw; continuing", error);
+      }
+    }
     return state;
   }
 
@@ -95,11 +112,13 @@ export function createStore(dataDir: string): Store {
         const unknownField = Object.keys(patch).find(
           (field) => !PATCHABLE_FIELDS.includes(field as (typeof PATCHABLE_FIELDS)[number]),
         );
-        if (unknownField) throw new Error(`field is not patchable: ${unknownField}`);
+        if (unknownField) {
+          throw new StoreError(`field is not patchable: ${unknownField}`, "FIELD_NOT_PATCHABLE");
+        }
 
         const current = await load();
         if (!current.matches.some((match) => match.id === id)) {
-          throw new Error(`unknown match: ${id}`);
+          throw new StoreError(`unknown match: ${id}`, "UNKNOWN_MATCH");
         }
         return commit(
           current.matches.map((match) => (match.id === id ? { ...match, ...patch } : match)),

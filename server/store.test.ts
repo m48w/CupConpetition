@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createStore } from "./store";
 
 let dataDir: string;
@@ -60,24 +60,30 @@ describe("createStore", () => {
 
     await expect(
       store.patchMatch(state.matches[0].id, { court: 99 } as never),
-    ).rejects.toThrow(/court/);
+    ).rejects.toMatchObject({ message: expect.stringMatching(/court/), code: "FIELD_NOT_PATCHABLE" });
   });
 
   test("存在しない試合IDを拒否する", async () => {
     const store = createStore(dataDir);
     await store.read();
 
-    await expect(store.patchMatch("NOPE-1", { homeScore: 1 })).rejects.toThrow(/NOPE-1/);
+    await expect(store.patchMatch("NOPE-1", { homeScore: 1 })).rejects.toMatchObject({
+      message: expect.stringMatching(/NOPE-1/),
+      code: "UNKNOWN_MATCH",
+    });
   });
 
   test("壊れた JSON を退避して初期データで復旧する", async () => {
     await writeFile(join(dataDir, "matches.json"), "{ not json", "utf8");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const store = createStore(dataDir);
     const state = await store.read();
 
     expect(state.matches).toHaveLength(95);
     const files = await readdir(dataDir);
     expect(files.some((name) => name.startsWith("matches.corrupt-"))).toBe(true);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
   test("reset は全試合を未開始に戻す", async () => {
@@ -101,5 +107,34 @@ describe("createStore", () => {
     await store.patchMatch(state.matches[0].id, { homeScore: 2 });
 
     expect(seen).toEqual([2]);
+  });
+
+  test("購読者が例外を投げても後続の購読者への通知と書き込みの成功は妨げられない", async () => {
+    const store = createStore(dataDir);
+    const state = await store.read();
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    store.subscribe(() => {
+      throw new Error("boom");
+    });
+    const seen: number[] = [];
+    store.subscribe((next) => seen.push(next.version));
+
+    const after = await store.patchMatch(state.matches[0].id, { homeScore: 1 });
+
+    expect(after.matches.find((match) => match.id === state.matches[0].id)?.homeScore).toBe(1);
+    expect(seen).toEqual([after.version]);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  test("初期スケジュールの作成は読み込み前に購読していたリスナーへ通知しない", async () => {
+    const store = createStore(dataDir);
+    const seen: number[] = [];
+    store.subscribe((next) => seen.push(next.version));
+
+    await store.read();
+
+    expect(seen).toEqual([]);
   });
 });
