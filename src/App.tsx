@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { NavLink, Route, Routes, useNavigate } from "react-router-dom";
-import { findTeam, formatTime, initialMatches, teams } from "./data";
-import { calculateStandings, generateKnockoutMatches, stageLabel } from "./logic";
+import { findTeam, formatTime, teams } from "./data";
+import { calculateStandings, seedKnockoutTeams, stageLabel } from "./logic";
+import { useTournamentState, type ConnectionState } from "./api/useTournamentState";
+import { R16_SEEDS, TBD } from "./schedule";
 import type { Match, MatchStatus } from "./types";
 
 const navItems = [
@@ -16,59 +18,26 @@ const ADMIN_PASSWORD = "VELOCITY-DEMO-ONLY";
 const ADMIN_STORAGE_KEY = "cupflow-admin-authed";
 
 function App() {
-  const [matches, setMatches] = useState<Match[]>(() => {
-    const saved = localStorage.getItem("cupflow-matches");
-    if (!saved) return initialMatches;
-    const stored = JSON.parse(saved) as Match[];
-    return stored.map((match) => {
-      if (match.stage !== "GROUP") return match;
-      const matchNumber = Number(match.id.split("-").slice(-1)[0]);
-      return Number.isFinite(matchNumber) ? { ...match, court: ((matchNumber - 1) % 3) + 1 } : match;
-    });
-  });
+  const { matches, connection, error, patchMatch, replaceMatches, reset } = useTournamentState();
   const [isAdmin, setIsAdmin] = useState<boolean>(() => localStorage.getItem(ADMIN_STORAGE_KEY) === "true");
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const navigate = useNavigate();
-
-  const syncMatchesFromStorage = () => {
-    const saved = localStorage.getItem("cupflow-matches");
-    if (!saved) return;
-
-    try {
-      setMatches(JSON.parse(saved) as Match[]);
-    } catch {
-      // Ignore malformed stored state and keep the current in-memory value.
-    }
-  };
-
-  useEffect(() => {
-    localStorage.setItem("cupflow-matches", JSON.stringify(matches));
-  }, [matches]);
 
   useEffect(() => {
     localStorage.setItem(ADMIN_STORAGE_KEY, String(isAdmin));
   }, [isAdmin]);
 
-  useEffect(() => {
-    const refresh = () => {
-      if (!document.hidden) {
-        syncMatchesFromStorage();
-      }
-    };
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === "cupflow-matches") {
-        syncMatchesFromStorage();
-      }
-    };
-    const interval = window.setInterval(refresh, 30_000);
-    document.addEventListener("visibilitychange", refresh);
-    window.addEventListener("storage", handleStorage);
-    return () => {
-      window.clearInterval(interval);
-      document.removeEventListener("visibilitychange", refresh);
-      window.removeEventListener("storage", handleStorage);
-    };
-  }, []);
+  const updateMatch = (id: string, patch: Partial<Match>) => {
+    void patchMatch(id, patch);
+  };
+
+  const generateSchedule = () => {
+    void replaceMatches(seedKnockoutTeams(teams, matches));
+  };
+
+  const resetTournament = () => {
+    void reset();
+  };
 
   const handleAdminToggle = () => {
     if (isAdmin) {
@@ -92,24 +61,9 @@ function App() {
     return true;
   };
 
-  const updateMatch = (id: string, patch: Partial<Match>) => {
-    setMatches((current) => {
-      const next = current.map((match) => match.id === id ? { ...match, ...patch } : match);
-      localStorage.setItem("cupflow-matches", JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const generateSchedule = () => {
-    setMatches((current) => {
-      const next = [...current.filter((match) => match.stage === "GROUP"), ...generateKnockoutMatches(teams, current)];
-      localStorage.setItem("cupflow-matches", JSON.stringify(next));
-      return next;
-    });
-  };
-
   return (
     <div className="app-shell">
+      <ConnectionBanner connection={connection} error={error} />
       <header className="topbar">
         <button className="brand" onClick={() => navigate("/")}><span className="brand-mark">V</span><span>ELOCITY <span>CUP 2026</span></span></button>
         <div className="event-meta"><span className="live-dot" /> LIVE EVENT <b>26 SEP 2026</b></div>
@@ -117,13 +71,22 @@ function App() {
       </header>
       <div className="layout">
         <aside className="sidebar"><div className="side-caption">TOURNAMENT HUB</div>{navItems.map((item) => <NavLink key={item.to} to={item.to} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}><span>{item.icon}</span>{item.label}</NavLink>)}<div className="sidebar-bottom"><div className="mini-event"><div className="mini-ball">⚽</div><div><strong>Velocity Cup 2026</strong><small>40 teams · 95 matches</small></div></div>{isAdmin && <NavLink to="/admin/setup" className="nav-item admin-link">⚙ Setup</NavLink>}</div></aside>
-        <main className="main-content"><Routes><Route path="/" element={<Overview matches={matches} />} /><Route path="/matches" element={<Matches matches={matches} />} /><Route path="/live" element={<Live matches={matches} />} /><Route path="/standings" element={<Standings matches={matches} />} /><Route path="/bracket" element={<Bracket matches={matches} />} /><Route path="/admin/setup" element={isAdmin ? <Admin matches={matches} updateMatch={updateMatch} generateSchedule={generateSchedule} /> : <AdminGate onUnlock={handleAdminLogin} />} /><Route path="*" element={<Overview matches={matches} />} /></Routes></main>
+        <main className="main-content"><Routes><Route path="/" element={<Overview matches={matches} />} /><Route path="/matches" element={<Matches matches={matches} />} /><Route path="/live" element={<Live matches={matches} />} /><Route path="/standings" element={<Standings matches={matches} />} /><Route path="/bracket" element={<Bracket matches={matches} />} /><Route path="/admin/setup" element={isAdmin ? <Admin matches={matches} updateMatch={updateMatch} generateSchedule={generateSchedule} resetTournament={resetTournament} connection={connection} /> : <AdminGate onUnlock={handleAdminLogin} />} /><Route path="*" element={<Overview matches={matches} />} /></Routes></main>
       </div>
       <nav className="bottom-nav">{navItems.map((item) => <NavLink key={item.to} to={item.to} className={({ isActive }) => isActive ? "active" : ""}><span>{item.icon}</span>{item.label}</NavLink>)}</nav>
       <footer>© 2026 VELOCITY CUP <span>•</span> Tournament operations platform</footer>
       {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} onUnlock={handleAdminLogin} />}
     </div>
   );
+}
+
+function ConnectionBanner({ connection, error }: { connection: ConnectionState; error: string | null }) {
+  if (connection === "live" && !error) return null;
+
+  const message =
+    error ?? (connection === "connecting" ? "Connecting to the match server…" : "Disconnected — showing last known data");
+
+  return <div className={`connection-banner ${connection}`}>{message}</div>;
 }
 
 function AdminLoginModal({ onClose, onUnlock }: { onClose: () => void; onUnlock: (password: string) => boolean }) {
@@ -229,9 +192,9 @@ function Live({ matches }: { matches: Match[] }) { const live = matches.filter((
 
 function Standings({ matches }: { matches: Match[] }) { return <><PageTitle eyebrow="GROUP STAGE" title="Standings"><span className="muted">Last updated just now</span></PageTitle><div className="standings-grid">{["A", "B", "C", "D", "E", "F", "G", "H"].map((group) => <section className="table-card" key={group}><div className="table-title"><h3>Group {group}</h3><span>5 teams</span></div><div className="table-head"><span>TEAM</span><span>P</span><span>GD</span><span>PTS</span></div>{calculateStandings(group, teams, matches).map((row, index) => <div className="table-row" key={row.team.id}><b className={index === 0 ? "rank qualified" : "rank"}>{index + 1}</b><TeamBadge id={row.team.id} /><span>{row.played}</span><span>{row.goalsFor - row.goalsAgainst > 0 ? "+" : ""}{row.goalsFor - row.goalsAgainst}</span><strong>{row.points}</strong></div>)}</section>)}</div></>; }
 
-function Bracket({ matches }: { matches: Match[] }) { const r16 = matches.filter((match) => match.stage === "R16"); const rounds = [{ title: "Round of 16", games: r16.length ? r16.map((match) => [findTeam(match.homeTeamId)?.name ?? "TBD", findTeam(match.awayTeamId)?.name ?? "TBD"]) : [["A1", "H2"], ["H1", "A2"], ["B1", "G2"], ["G1", "B2"], ["C1", "F2"], ["F1", "C2"], ["D1", "E2"], ["E1", "D2"]] }, { title: "Quarter-finals", games: [["Winner M1", "Winner M2"], ["Winner M3", "Winner M4"], ["Winner M5", "Winner M6"], ["Winner M7", "Winner M8"]] }, { title: "Semi-finals", games: [["Winner QF1", "Winner QF2"], ["Winner QF3", "Winner QF4"]] }, { title: "Final", games: [["Winner SF1", "Winner SF2"]] }]; return <><PageTitle eyebrow="WORLD CUP KNOCKOUT" title="Velocity Cup 2026"><span className="bracket-note">15 matches · One champion</span></PageTitle><div className="tournament-banner"><span>VELOCITY CUP 2026</span><b>ROAD TO THE FINAL</b><small>Every match. Every moment. One champion.</small></div><div className="bracket world-cup-bracket">{rounds.map((round) => <section className="bracket-round" key={round.title}><h3>{round.title}</h3>{round.games.map((game, index) => <div className="bracket-game" key={index}><small>{round.title} · {index + 1}</small><span>{game[0]}</span><span>{game[1]}</span></div>)}</section>)}</div></>; }
+function Bracket({ matches }: { matches: Match[] }) { const r16 = matches.filter((match) => match.stage === "R16"); const rounds = [{ title: "Round of 16", games: r16.length ? r16.map((match, index) => [match.homeTeamId === TBD ? R16_SEEDS[index][0] : findTeam(match.homeTeamId)?.name ?? TBD, match.awayTeamId === TBD ? R16_SEEDS[index][1] : findTeam(match.awayTeamId)?.name ?? TBD]) : R16_SEEDS.map((seed) => [...seed]) }, { title: "Quarter-finals", games: [["Winner M1", "Winner M2"], ["Winner M3", "Winner M4"], ["Winner M5", "Winner M6"], ["Winner M7", "Winner M8"]] }, { title: "Semi-finals", games: [["Winner QF1", "Winner QF2"], ["Winner QF3", "Winner QF4"]] }, { title: "Final", games: [["Winner SF1", "Winner SF2"]] }]; return <><PageTitle eyebrow="WORLD CUP KNOCKOUT" title="Velocity Cup 2026"><span className="bracket-note">15 matches · One champion</span></PageTitle><div className="tournament-banner"><span>VELOCITY CUP 2026</span><b>ROAD TO THE FINAL</b><small>Every match. Every moment. One champion.</small></div><div className="bracket world-cup-bracket">{rounds.map((round) => <section className="bracket-round" key={round.title}><h3>{round.title}</h3>{round.games.map((game, index) => <div className="bracket-game" key={index}><small>{round.title} · {index + 1}</small><span>{game[0]}</span><span>{game[1]}</span></div>)}</section>)}</div></>; }
 
-function Admin({ matches, updateMatch, generateSchedule }: { matches: Match[]; updateMatch: (id: string, patch: Partial<Match>) => void; generateSchedule: () => void }) {
+function Admin({ matches, updateMatch, generateSchedule, resetTournament, connection }: { matches: Match[]; updateMatch: (id: string, patch: Partial<Match>) => void; generateSchedule: () => void; resetTournament: () => void; connection: ConnectionState }) {
   const [selected, setSelected] = useState<Match | undefined>(() => matches.find((m) => m.status === "LIVE") ?? matches[0]);
   const [score, setScore] = useState<[number, number]>([selected?.homeScore ?? 0, selected?.awayScore ?? 0]);
 
@@ -245,16 +208,14 @@ function Admin({ matches, updateMatch, generateSchedule }: { matches: Match[]; u
 
   const save = (status: MatchStatus) => {
     if (!selected) return;
-    const payload = {
+    updateMatch(selected.id, {
       status,
       homeScore: score[0],
       awayScore: score[1],
       timerServerStartedAt: status === "LIVE" ? new Date().toISOString() : undefined,
-    };
-    updateMatch(selected.id, payload);
-    setSelected({ ...selected, ...payload });
+    });
   };
 
-  return <><PageTitle eyebrow="ADMIN CONSOLE" title="Match control"><span className="admin-pill">ADMIN MODE</span></PageTitle><div className="admin-grid"><section className="admin-panel"><label>SELECT MATCH</label><select value={selected?.id ?? ""} onChange={(event) => { const next = matches.find((m) => m.id === event.target.value); if (next) { setSelected(next); setScore([next.homeScore, next.awayScore]); } }}>{matches.filter((m) => m.status !== "FINISHED").slice(0, 20).map((m) => <option key={m.id} value={m.id}>{formatTime(m.scheduledStart)} · {findTeam(m.homeTeamId)?.name ?? "TBD"} vs {findTeam(m.awayTeamId)?.name ?? "TBD"}</option>)}</select>{selected && <><div className="control-score"><div><TeamBadge id={selected.homeTeamId} /><button onClick={() => setScore(([home, away]) => [Math.max(0, home - 1), away])}>−</button><b>{score[0]}</b><button onClick={() => setScore(([home, away]) => [home + 1, away])}>+</button></div><div><TeamBadge id={selected.awayTeamId} /><button onClick={() => setScore(([home, away]) => [home, Math.max(0, away - 1)])}>−</button><b>{score[1]}</b><button onClick={() => setScore(([home, away]) => [home, away + 1])}>+</button></div></div>  <div className="control-actions"><button type="button" className="primary-button" onClick={() => save("LIVE")}>▶ Start / resume</button><button type="button" className="outline-button" onClick={() => save("PAUSED")}>Ⅱ Pause</button><button type="button" className="danger-button" onClick={() => save("FINISHED")}>Finish match</button></div></>}</section><section className="admin-panel setup-panel"><label>SUPERADMIN SETUP</label><h3>Generate tournament schedule</h3><p>Round-robin group fixtures plus all 15 knockout slots will be generated across 3 courts from 09:00 to 20:00.</p><div className="warning-box">ⓘ Schedule check: 0 conflicts detected in the current plan.</div><button type="button" className="primary-button" onClick={generateSchedule}>✦ Auto-generate 95 matches</button></section></div></>; }
+  return <><PageTitle eyebrow="ADMIN CONSOLE" title="Match control"><span className="admin-pill">ADMIN MODE</span></PageTitle><div className="admin-grid"><section className="admin-panel"><label>SELECT MATCH</label><select value={selected?.id ?? ""} onChange={(event) => { const next = matches.find((m) => m.id === event.target.value); if (next) { setSelected(next); setScore([next.homeScore, next.awayScore]); } }}>{matches.filter((m) => m.status !== "FINISHED").slice(0, 20).map((m) => <option key={m.id} value={m.id}>{formatTime(m.scheduledStart)} · {findTeam(m.homeTeamId)?.name ?? "TBD"} vs {findTeam(m.awayTeamId)?.name ?? "TBD"}</option>)}</select>{selected && <><div className="control-score"><div><TeamBadge id={selected.homeTeamId} /><button onClick={() => setScore(([home, away]) => [Math.max(0, home - 1), away])}>−</button><b>{score[0]}</b><button onClick={() => setScore(([home, away]) => [home + 1, away])}>+</button></div><div><TeamBadge id={selected.awayTeamId} /><button onClick={() => setScore(([home, away]) => [home, Math.max(0, away - 1)])}>−</button><b>{score[1]}</b><button onClick={() => setScore(([home, away]) => [home, away + 1])}>+</button></div></div>  <div className="control-actions"><button type="button" className="primary-button" disabled={connection !== "live"} onClick={() => save("LIVE")}>▶ Start / resume</button><button type="button" className="outline-button" disabled={connection !== "live"} onClick={() => save("PAUSED")}>Ⅱ Pause</button><button type="button" className="danger-button" disabled={connection !== "live"} onClick={() => save("FINISHED")}>Finish match</button></div></>}</section><section className="admin-panel setup-panel"><label>SUPERADMIN SETUP</label><h3>Generate tournament schedule</h3><p>Round-robin group fixtures plus all 15 knockout slots will be generated across 3 courts from 09:00 to 20:00.</p><div className="warning-box">ⓘ Schedule check: 0 conflicts detected in the current plan.</div><button type="button" className="primary-button" disabled={connection !== "live"} onClick={generateSchedule}>✦ Seed knockout teams</button></section></div></>; }
 function Empty({ text }: { text: string }) { return <div className="empty-state"><span>◌</span>{text}</div>; }
 export default App;
