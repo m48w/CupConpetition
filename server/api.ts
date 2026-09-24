@@ -8,7 +8,7 @@ const KEEPALIVE_MS = 15_000;
 class BadRequestError extends Error {}
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
-  const payload = JSON.stringify(body, null, 2);
+  const payload = JSON.stringify(body);
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
@@ -28,7 +28,7 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
 }
 
 function streamState(res: ServerResponse, state: TournamentState): void {
-  res.write(`event: state\ndata: ${JSON.stringify(state, null, 2)}\n\n`);
+  res.write(`event: state\ndata: ${JSON.stringify(state)}\n\n`);
 }
 
 /**

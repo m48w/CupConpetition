@@ -17,6 +17,21 @@ const readError = async (response: Response): Promise<{ error: string; code?: st
 /** `next()` が呼ばれたことを、ハンドラ自身の catch-all 404 と区別できる形で示す。 */
 const NEXT_FALLBACK_HEADER = "x-next-called";
 
+/** WHATWG SSE の仕様（と EventSource）どおりに1フレームをパースする。 */
+function parseSseFrame(block: string): { event: string; data: string } {
+  let event = "";
+  let data = "";
+  for (const line of block.split("\n")) {
+    if (line.startsWith(":")) continue;
+    const colon = line.indexOf(":");
+    const field = colon === -1 ? line : line.slice(0, colon);
+    const value = colon === -1 ? "" : line.slice(colon + 1).replace(/^ /, "");
+    if (field === "data") data += (data ? "\n" : "") + value;
+    else if (field === "event") event = value;
+  }
+  return { event, data };
+}
+
 let server: Server;
 let origin: string;
 
@@ -152,8 +167,10 @@ test("GET /api/stream が接続時に全stateを流し、更新を push する",
     return buffer;
   };
 
-  const first = await readEvent();
-  expect(first).toContain("event: state");
+  const first = parseSseFrame(await readEvent());
+  expect(first.event).toBe("state");
+  const initialState = JSON.parse(first.data) as TournamentState;
+  expect(initialState.matches).toHaveLength(95);
 
   const state = await readState(await fetch(`${origin}/api/state`));
   await fetch(`${origin}/api/matches/${state.matches[0].id}`, {
@@ -162,8 +179,10 @@ test("GET /api/stream が接続時に全stateを流し、更新を push する",
     body: JSON.stringify({ homeScore: 7 }),
   });
 
-  const pushed = await readEvent();
-  expect(pushed).toContain('"homeScore": 7');
+  const pushed = parseSseFrame(await readEvent());
+  expect(pushed.event).toBe("state");
+  const pushedState = JSON.parse(pushed.data) as TournamentState;
+  expect(pushedState.matches.find((match) => match.id === state.matches[0].id)?.homeScore).toBe(7);
 
   controller.abort();
 });
