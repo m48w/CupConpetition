@@ -5,7 +5,8 @@ import type { Match, TournamentState } from "../types";
 
 export type ConnectionState = "connecting" | "live" | "offline";
 
-/** 旧バージョンが localStorage に残した試合データを一度だけ捨てる。 */
+/** マウント時に旧バージョンが localStorage に残した試合データを捨てる。
+ *  StrictMode などで複数回呼ばれても removeItem は冪等なので安全。 */
 function dropLegacyStorage(): void {
   try {
     localStorage.removeItem("cupflow-matches");
@@ -20,11 +21,22 @@ export function useTournamentState() {
   const [error, setError] = useState<string | null>(null);
   const versionRef = useRef(0);
 
-  const accept = useCallback((state: TournamentState) => {
-    if (state.version < versionRef.current) return;
+  /** The server's current truth. SSE is ordered within a connection, and a new
+   *  connection's first message supersedes whatever we had — including after the
+   *  server rebuilt its state and restarted its version counter. */
+  const applyState = useCallback((state: TournamentState) => {
     versionRef.current = state.version;
     setMatches(state.matches);
   }, []);
+
+  /** A mutating call's response, which may land after a newer SSE push. */
+  const applyIfNewer = useCallback(
+    (state: TournamentState) => {
+      if (state.version < versionRef.current) return;
+      applyState(state);
+    },
+    [applyState],
+  );
 
   useEffect(() => {
     dropLegacyStorage();
@@ -33,24 +45,23 @@ export function useTournamentState() {
     source.addEventListener("state", (event) => {
       setConnection("live");
       setError(null);
-      accept(JSON.parse((event as MessageEvent).data) as TournamentState);
+      applyState(JSON.parse((event as MessageEvent).data) as TournamentState);
     });
     source.onerror = () => setConnection("offline");
 
     return () => source.close();
-  }, [accept]);
+  }, [applyState]);
 
   const run = useCallback(
     async (work: () => Promise<TournamentState>) => {
       try {
-        accept(await work());
+        applyIfNewer(await work());
         setError(null);
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));
-        throw cause;
       }
     },
-    [accept],
+    [applyIfNewer],
   );
 
   return {
