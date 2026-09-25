@@ -13,6 +13,7 @@
   },
   "include": [
     "vite.config.ts",
+    "vitest.config.ts",
     "server/**/*.ts",
     "src/types/index.ts",
     "src/features/tournament/data.ts",
