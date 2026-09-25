@@ -1,7 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import type { ServerMessage, TournamentState } from "../src/types";
 import { handleApi } from "./api";
+import { createLoginAttempts, type LoginAttempts } from "./attempts";
 import { jsonResponse } from "./http";
+import { handleLogin } from "./login";
 import { createSqlStore, type Store } from "./store";
 
 const serialize = (state: TournamentState) =>
@@ -9,16 +11,22 @@ const serialize = (state: TournamentState) =>
 
 export class TournamentRoom extends DurableObject<Env> {
   private readonly store: Store;
+  private readonly attempts: LoginAttempts;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.store = createSqlStore(ctx.storage);
+    this.attempts = createLoginAttempts(ctx.storage.sql);
     // Answered by the runtime without waking the object, so client heartbeats stay free.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
 
   async fetch(request: Request): Promise<Response> {
-    if (new URL(request.url).pathname === "/api/ws") return this.accept(request);
+    const path = new URL(request.url).pathname;
+    if (path === "/api/ws") return this.accept(request);
+    if (path === "/api/login" && request.method === "POST") {
+      return handleLogin(request, this.attempts, this.env, Date.now());
+    }
     return handleApi(request, this.store, (state) => this.broadcast(state));
   }
 
