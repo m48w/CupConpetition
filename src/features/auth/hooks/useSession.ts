@@ -40,12 +40,16 @@ export function useSession() {
     return next;
   }, []);
 
+  /** Clears the session only once the server confirms the logout, so a network hiccup
+   *  can't leave the UI believing it signed out while the cookie is still valid. */
   const signOut = useCallback(async () => {
     try {
       await api.logout();
-    } finally {
-      setSession(null);
+    } catch {
+      return false;
     }
+    setSession(null);
+    return true;
   }, []);
 
   return { session, loading, refresh, signIn, signOut };

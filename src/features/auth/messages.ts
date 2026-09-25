@@ -1,5 +1,8 @@
 import { ApiError } from "../../utils/http";
 
+/** Shown when `POST /api/logout` fails; the session is kept so the console stays usable. */
+export const SIGN_OUT_FAILED = "Could not sign out — check the connection and try again.";
+
 export function loginErrorMessage(cause: unknown): string {
   if (!(cause instanceof ApiError)) {
     return "Could not reach the server. Check the connection and try again.";

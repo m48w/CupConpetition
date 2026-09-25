@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PageTitle } from "../components/ui/PageTitle";
 import { MatchStateBanner, ResetButton, ScheduleCheck } from "../features/admin";
+import { SIGN_OUT_FAILED } from "../features/auth";
 import {
   findTeam,
   isOnPitch,
@@ -22,7 +23,8 @@ export function AdminSetup({
 }: {
   eyebrow: string;
   account: SessionInfo;
-  onSignOut: () => void;
+  /** Resolves to whether the server confirmed the logout, so the console can report a failure. */
+  onSignOut: () => Promise<boolean>;
   matches: Match[];
   updateMatch: (id: string, patch: Partial<Match>) => void;
   /** Super-admin だけに出す大会全体の操作。 */
@@ -30,8 +32,13 @@ export function AdminSetup({
   connection: ConnectionState;
 }) {
   const [selectedId, setSelectedId] = useState(() => (matches.find(isOnPitch) ?? matches[0])?.id);
+  const [signOutFailed, setSignOutFailed] = useState(false);
   const selected = matches.find((match) => match.id === selectedId);
   const offline = connection !== "live";
+
+  const handleSignOut = async () => {
+    setSignOutFailed(!(await onSignOut()));
+  };
 
   // Each tap is saved at once so spectators see the goal immediately.
   const changeScore = (side: "homeScore" | "awayScore", delta: number) => {
@@ -51,7 +58,8 @@ export function AdminSetup({
           <span className="admin-pill">
             {account.court === null ? "ALL COURTS" : `COURT ${account.court}`} · {account.username}
           </span>
-          <button type="button" className="outline-button" onClick={onSignOut}>
+          {signOutFailed && <div className="login-error">{SIGN_OUT_FAILED}</div>}
+          <button type="button" className="outline-button" onClick={() => void handleSignOut()}>
             Sign out
           </button>
         </div>

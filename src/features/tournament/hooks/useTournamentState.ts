@@ -129,6 +129,8 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
     matches,
     connection,
     error,
+    /** Drops the error banner, e.g. after signing back in makes it stale. */
+    clearError: useCallback(() => setError(null), []),
     /** Applied to the screen at once so rapid score taps build on each other
      *  instead of each one starting from the last confirmed score. */
     patchMatch: useCallback(

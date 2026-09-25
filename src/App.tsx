@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes, useNavigate } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { useSession } from "./features/auth";
 import {
   ConnectionBanner,
@@ -25,15 +25,21 @@ const navItems = [
 
 function App() {
   const { session, loading, refresh, signIn, signOut } = useSession();
-  const { matches, connection, error, patchMatch, replaceMatches, reset } = useTournamentState({
-    onUnauthorized: refresh,
-  });
+  const { matches, connection, error, patchMatch, replaceMatches, reset, clearError } =
+    useTournamentState({
+      onUnauthorized: refresh,
+    });
   const navigate = useNavigate();
 
   const consoleProps = {
     session,
-    signIn,
-    onSignOut: () => void signOut(),
+    // Signing back in makes the "sign in to change the tournament" banner stale; drop it.
+    signIn: async (username: string, password: string) => {
+      const next = await signIn(username, password);
+      clearError();
+      return next;
+    },
+    onSignOut: () => signOut(),
     matches,
     updateMatch: (id: string, patch: Partial<Match>) => void patchMatch(id, patch),
     connection,
@@ -129,6 +135,7 @@ function App() {
                 )
               }
             />
+            <Route path="/admin/setup" element={<Navigate to="/superadmin" replace />} />
             <Route path="*" element={<Overview matches={matches} />} />
           </Routes>
         </main>
