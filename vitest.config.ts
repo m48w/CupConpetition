@@ -12,7 +12,18 @@ export default defineConfig({
         },
       },
       {
-        plugins: [cloudflareTest({ wrangler: { configPath: "./wrangler.jsonc" } })],
+        plugins: [
+          cloudflareTest({
+            wrangler: { configPath: "./wrangler.jsonc" },
+            miniflare: {
+              bindings: {
+                SUPERADMIN_PASSWORD: "superadmin1234",
+                SUBADMIN_PASSWORD: "subadmin1234",
+                SESSION_SECRET: "test-session-secret",
+              },
+            },
+          }),
+        ],
         test: { name: "worker", include: ["worker/**/*.test.ts"] },
       },
     ],
