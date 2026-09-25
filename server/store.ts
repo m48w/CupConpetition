@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { teams } from "../src/data";
-import { buildTournamentSchedule } from "../src/schedule";
+import { teams } from "../src/features/tournament/data";
+import { buildTournamentSchedule } from "../src/features/tournament/schedule";
 import type { Match, MatchStatus, TournamentState } from "../src/types";
 
 const FILE_NAME = "matches.json";
@@ -52,14 +52,21 @@ export interface Store {
 export type StoreErrorCode = "UNKNOWN_MATCH" | "FIELD_NOT_PATCHABLE" | "INVALID_FIELD_VALUE";
 
 export class StoreError extends Error {
-  constructor(message: string, readonly code: StoreErrorCode) {
+  constructor(
+    message: string,
+    readonly code: StoreErrorCode,
+  ) {
     super(message);
     this.name = "StoreError";
   }
 }
 
 function freshState(): TournamentState {
-  return { version: 1, updatedAt: new Date().toISOString(), matches: buildTournamentSchedule(teams) };
+  return {
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    matches: buildTournamentSchedule(teams),
+  };
 }
 
 export function createStore(dataDir: string): Store {
@@ -141,7 +148,10 @@ export function createStore(dataDir: string): Store {
           ([field, value]) => !PATCH_FIELD_VALIDATORS[field](value),
         );
         if (invalidField) {
-          throw new StoreError(`invalid value for field: ${invalidField[0]}`, "INVALID_FIELD_VALUE");
+          throw new StoreError(
+            `invalid value for field: ${invalidField[0]}`,
+            "INVALID_FIELD_VALUE",
+          );
         }
 
         const current = await load();

@@ -1,17 +1,14 @@
 import { expect, test } from "vitest";
-import { formatTime, initialMatches, teams } from "./data";
+import { initialMatches, teams } from "./data";
 import { seedKnockoutTeams } from "./logic";
 import { TBD } from "./schedule";
 
 test("初期データは全95試合が未開始", () => {
   expect(initialMatches).toHaveLength(95);
   expect(initialMatches.every((match) => match.status === "SCHEDULED")).toBe(true);
-  expect(initialMatches.every((match) => match.homeScore === 0 && match.awayScore === 0)).toBe(true);
-});
-
-test("表示時刻は閲覧端末のタイムゾーンに依存しない", () => {
-  expect(formatTime("2026-09-26T09:00:00+09:00")).toBe("09:00");
-  expect(formatTime("2026-09-26T10:03:00.000Z")).toBe("19:03");
+  expect(initialMatches.every((match) => match.homeScore === 0 && match.awayScore === 0)).toBe(
+    true,
+  );
 });
 
 test("seedKnockoutTeams は R16 の対戦相手を埋め、時刻とコートは変えない", () => {

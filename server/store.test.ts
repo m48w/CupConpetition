@@ -60,7 +60,10 @@ describe("createStore", () => {
 
     await expect(
       store.patchMatch(state.matches[0].id, { court: 99 } as never),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/court/), code: "FIELD_NOT_PATCHABLE" });
+    ).rejects.toMatchObject({
+      message: expect.stringMatching(/court/),
+      code: "FIELD_NOT_PATCHABLE",
+    });
   });
 
   test("型が不正な値の更新を拒否し、ディスクにも書き込まない", async () => {
@@ -70,15 +73,20 @@ describe("createStore", () => {
 
     await expect(
       store.patchMatch(targetId, { homeScore: "banana" } as never),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/homeScore/), code: "INVALID_FIELD_VALUE" });
+    ).rejects.toMatchObject({
+      message: expect.stringMatching(/homeScore/),
+      code: "INVALID_FIELD_VALUE",
+    });
 
-    await expect(
-      store.patchMatch(targetId, { status: "BOGUS" } as never),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/status/), code: "INVALID_FIELD_VALUE" });
+    await expect(store.patchMatch(targetId, { status: "BOGUS" } as never)).rejects.toMatchObject({
+      message: expect.stringMatching(/status/),
+      code: "INVALID_FIELD_VALUE",
+    });
 
-    await expect(
-      store.patchMatch(targetId, { homeScore: null } as never),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/homeScore/), code: "INVALID_FIELD_VALUE" });
+    await expect(store.patchMatch(targetId, { homeScore: null } as never)).rejects.toMatchObject({
+      message: expect.stringMatching(/homeScore/),
+      code: "INVALID_FIELD_VALUE",
+    });
 
     const after = await store.read();
     expect(after.matches.find((match) => match.id === targetId)).toEqual(state.matches[0]);

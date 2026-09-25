@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import * as client from "./client";
-import { shouldApply } from "./version";
+import * as client from "../api/client";
+import { shouldApply } from "../api/version";
 import { initialMatches } from "../data";
-import type { Match, TournamentState } from "../types";
+import type { Match, TournamentState } from "../../../types";
 
 export type ConnectionState = "connecting" | "live" | "offline";
 
