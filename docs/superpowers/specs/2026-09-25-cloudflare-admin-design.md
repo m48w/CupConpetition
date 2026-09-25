@@ -115,7 +115,7 @@ Durable Object の SQLite に以下を持つ。
 
 ### 6.3 matches / draft_matches
 
-既存の `Match` 型を1行1試合で保存する（列は `Match` の各項目）。`draft_matches` は「試合作成」で作った下書きで、「確定」で `matches` へ丸ごとコピーする。
+既存の `Match` 型を1行1試合で保存する（列は `position`・`id`・`data`。`data` は `Match` の JSON）。段階2〜4で `Match` に項目を足してもテーブル定義を変えずに済むよう、項目ごとの列には分けない。`draft_matches` は「試合作成」で作った下書きで、「確定」で `matches` へ丸ごとコピーする。
 
 `Match` に追加する項目:
 
