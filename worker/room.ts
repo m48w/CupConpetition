@@ -1,9 +1,57 @@
 import { DurableObject } from "cloudflare:workers";
+import type { ServerMessage, TournamentState } from "../src/types";
+import { handleApi } from "./api";
 import { jsonResponse } from "./http";
+import { createSqlStore, type Store } from "./store";
+
+const serialize = (state: TournamentState) =>
+  JSON.stringify({ type: "state", state } satisfies ServerMessage);
 
 export class TournamentRoom extends DurableObject<Env> {
+  private readonly store: Store;
+
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    this.store = createSqlStore(ctx.storage);
+    // Answered by the runtime without waking the object, so client heartbeats stay free.
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
+  }
+
   async fetch(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    return jsonResponse(404, { error: `no route for ${request.method} ${url.pathname}` });
+    if (new URL(request.url).pathname === "/api/ws") return this.accept(request);
+    return handleApi(request, this.store, (state) => this.broadcast(state));
+  }
+
+  private accept(request: Request): Response {
+    if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
+      return jsonResponse(426, { error: "expected a websocket upgrade" });
+    }
+    const [client, server] = Object.values(new WebSocketPair());
+    this.ctx.acceptWebSocket(server);
+    server.send(serialize(this.store.read()));
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  private broadcast(state: TournamentState): void {
+    const message = serialize(state);
+    for (const socket of this.ctx.getWebSockets()) {
+      try {
+        socket.send(message);
+      } catch {
+        // A socket that is closing must not stop the others from being told.
+      }
+    }
+  }
+
+  async webSocketMessage(): Promise<void> {
+    // Clients only send "ping", which the auto-response answers.
+  }
+
+  async webSocketClose(socket: WebSocket, code: number, reason: string): Promise<void> {
+    try {
+      socket.close(code, reason);
+    } catch {
+      // Codes such as 1005/1006 cannot be echoed back; the socket is gone anyway.
+    }
   }
 }

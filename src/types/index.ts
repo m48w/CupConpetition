@@ -33,3 +33,9 @@ export interface TournamentState {
   updatedAt: string;
   matches: Match[];
 }
+
+/** WebSocket でサーバーが送るメッセージ。 */
+export interface ServerMessage {
+  type: "state";
+  state: TournamentState;
+}
