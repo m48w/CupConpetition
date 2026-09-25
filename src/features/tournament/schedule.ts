@@ -1,4 +1,4 @@
-import type { Match, Team } from "./types";
+import type { Match, Team } from "../../types";
 
 export const COURT_COUNT = 3;
 export const GROUP_MATCH_MINUTES = 15;

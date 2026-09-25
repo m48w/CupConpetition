@@ -7,7 +7,7 @@ import {
   matchEndMs,
   TBD,
 } from "./schedule";
-import type { Match } from "./types";
+import type { Match } from "../../types";
 
 const schedule = buildTournamentSchedule(teams);
 

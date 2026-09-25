@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { teams } from "../src/data";
-import { buildTournamentSchedule } from "../src/schedule";
+import { teams } from "../src/features/tournament/data";
+import { buildTournamentSchedule } from "../src/features/tournament/schedule";
 import type { Match, MatchStatus, TournamentState } from "../src/types";
 
 const FILE_NAME = "matches.json";

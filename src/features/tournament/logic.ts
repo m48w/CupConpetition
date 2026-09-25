@@ -1,5 +1,5 @@
 import { GROUP_IDS, R16_SEEDS, TBD } from "./schedule";
-import type { Match, Team } from "./types";
+import type { Match, Team } from "../../types";
 
 export interface Standing {
   team: Team;

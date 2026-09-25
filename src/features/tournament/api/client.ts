@@ -1,4 +1,4 @@
-import type { Match, TournamentState } from "../types";
+import type { Match, TournamentState } from "../../../types";
 
 async function request(path: string, init?: RequestInit): Promise<TournamentState> {
   const response = await fetch(path, {
