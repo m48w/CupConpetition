@@ -19,8 +19,8 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
 - Round of 16、Quarter-finals、Semi-finals、Final のトーナメントブラケットを表示。
 - ブラケットをワールドカップ風の青系・ゴールド基調のデザインに変更。
 - 管理者ログイン画面を追加。
-  - デモ用アクセスキー: `VELOCITY-DEMO-ONLY`
-  - `/admin/setup` への直接アクセスも認証対象。
+  - デモ用アクセスキー: `VELOCITY-DEMO-ONLY`（→ `/superadmin`・`/subadmin` でのサーバー側ログインに置き換え済み。現在は非該当）
+  - `/admin/setup` への直接アクセスも認証対象。（→ `/superadmin` へのリダイレクトに置き換え済み。現在は非該当）
 - 管理画面から試合を操作可能にした。
   - Start / resume
   - Pause

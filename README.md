@@ -37,6 +37,10 @@ Staff sign in at `/superadmin` (all courts) and `/subadmin` (`subadmin1`–`2` �
 `3`–`4` → Court 2, `5`–`6` → Court 3). The header links to these pages only in development.
 Changing `SESSION_SECRET` signs everyone out.
 
+- Sessions last 12 hours: sign in on the morning of the event, not the night before.
+- The session cookie is `Secure`, so testing from a phone against the dev server over
+  `http://<LAN IP>` will not keep you signed in; use `localhost` or an https tunnel.
+
 The app runs as one Worker (`velocity-cup`) that serves the built SPA and handles `/api/*`. All
 tournament state lives in a single SQLite-backed Durable Object (`TournamentRoom`) and is pushed to
 every open page over WebSocket.
