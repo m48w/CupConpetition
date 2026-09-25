@@ -1,11 +1,11 @@
 import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
-import { MatchCard, stageLabel, TeamBadge } from "../features/tournament";
+import { isOnPitch, MatchCard, stageLabel, TeamBadge } from "../features/tournament";
 import type { Match } from "../types";
 import { formatTime } from "../utils/format";
 
 export function Live({ matches }: { matches: Match[] }) {
-  const live = matches.filter((match) => match.status === "LIVE");
+  const live = matches.filter(isOnPitch);
   const nextByCourt = [
     ...matches
       .filter((match) => match.status === "SCHEDULED")

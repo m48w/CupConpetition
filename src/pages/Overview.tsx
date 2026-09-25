@@ -1,11 +1,11 @@
 import { NavLink } from "react-router-dom";
 import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
-import { MatchCard } from "../features/tournament";
+import { isOnPitch, MatchCard } from "../features/tournament";
 import type { Match } from "../types";
 
 export function Overview({ matches }: { matches: Match[] }) {
-  const live = matches.filter((m) => m.status === "LIVE");
+  const live = matches.filter(isOnPitch);
   const next = matches.filter((m) => m.status === "SCHEDULED").slice(0, 3);
   return (
     <>

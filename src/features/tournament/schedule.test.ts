@@ -75,14 +75,48 @@ describe("buildTournamentSchedule", () => {
     }
   });
 
-  test("グループ戦は27スロットに収まる", () => {
-    const slots = new Set(schedule.filter((m) => m.stage === "GROUP").map((m) => m.scheduledStart));
-    expect(slots.size).toBe(27);
+  test("Court 3 は 12:15 JST より前に試合を入れない", () => {
+    const court3Opens = Date.parse("2026-09-26T12:15:00+09:00");
+    const early = schedule.filter(
+      (m) => m.court === 3 && Date.parse(m.scheduledStart) < court3Opens,
+    );
+    expect(early.map((m) => m.id)).toEqual([]);
+    expect(
+      schedule.some((m) => m.court === 3 && Date.parse(m.scheduledStart) === court3Opens),
+    ).toBe(true);
   });
 
-  test("最終試合の終了は 2026-09-26 19:03 JST", () => {
+  test("グループ戦は31スロットに収まる", () => {
+    const slots = new Set(schedule.filter((m) => m.stage === "GROUP").map((m) => m.scheduledStart));
+    expect(slots.size).toBe(31);
+  });
+
+  test("試合時間は R16 18分・準々決勝と準決勝 15分（7分ハーフ+1分）・決勝 23分（10分ハーフ+3分）", () => {
+    const minutes = (stage: Match["stage"]) =>
+      new Set(schedule.filter((m) => m.stage === stage).map((m) => m.durationMinutes));
+    expect(minutes("GROUP")).toEqual(new Set([GROUP_MATCH_MINUTES]));
+    expect(minutes("R16")).toEqual(new Set([18]));
+    expect(minutes("QF")).toEqual(new Set([15]));
+    expect(minutes("SF")).toEqual(new Set([15]));
+    expect(minutes("FINAL")).toEqual(new Set([23]));
+  });
+
+  test("各ラウンドは前のラウンド終了の18分後に始まる", () => {
+    const stages: Match["stage"][] = ["GROUP", "R16", "QF", "SF", "FINAL"];
+    for (let i = 1; i < stages.length; i += 1) {
+      const previousEnd = Math.max(
+        ...schedule.filter((m) => m.stage === stages[i - 1]).map(matchEndMs),
+      );
+      const start = Math.min(
+        ...schedule.filter((m) => m.stage === stages[i]).map((m) => Date.parse(m.scheduledStart)),
+      );
+      expect((start - previousEnd) / 60_000, `${stages[i - 1]} → ${stages[i]}`).toBe(18);
+    }
+  });
+
+  test("最終試合の終了は 2026-09-26 19:59 JST", () => {
     const finish = Math.max(...schedule.map(matchEndMs));
-    expect(new Date(finish).toISOString()).toBe("2026-09-26T10:03:00.000Z");
+    expect(new Date(finish).toISOString()).toBe("2026-09-26T10:59:00.000Z");
   });
 
   test("同じ入力から常に同じ出力を返す", () => {

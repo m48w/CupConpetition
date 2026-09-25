@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as client from "../api/client";
 import { shouldApply } from "../api/version";
 import { initialMatches } from "../data";
+import { applyMatchPatch } from "../logic";
 import type { Match, TournamentState } from "../../../types";
 
 export type ConnectionState = "connecting" | "live" | "offline";
@@ -57,24 +58,40 @@ export function useTournamentState() {
   }, [applyState]);
 
   const run = useCallback(
-    async (work: () => Promise<TournamentState>) => {
+    async (work: () => Promise<TournamentState>, onError?: () => Promise<void>) => {
       try {
         applyIfNewer(await work());
         setError(null);
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));
+        await onError?.();
       }
     },
     [applyIfNewer],
   );
 
+  /** Drops an optimistic change the server refused by reloading its truth. If
+   *  that fails too, the next SSE push corrects the screen. */
+  const resync = useCallback(async () => {
+    try {
+      applyState(await client.fetchState());
+    } catch {
+      // The error banner is already showing; wait for the stream to recover.
+    }
+  }, [applyState]);
+
   return {
     matches,
     connection,
     error,
+    /** Applied to the screen at once so rapid score taps build on each other
+     *  instead of each one starting from the last confirmed score. */
     patchMatch: useCallback(
-      (id: string, patch: Partial<Match>) => run(() => client.patchMatch(id, patch)),
-      [run],
+      (id: string, patch: Partial<Match>) => {
+        setMatches((current) => applyMatchPatch(current, id, patch));
+        return run(() => client.patchMatch(id, patch), resync);
+      },
+      [run, resync],
     ),
     replaceMatches: useCallback((next: Match[]) => run(() => client.replaceMatches(next)), [run]),
     reset: useCallback(() => run(() => client.resetTournament()), [run]),

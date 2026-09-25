@@ -89,3 +89,11 @@ export function seedKnockoutTeams(teams: Team[], matches: Match[]): Match[] {
     return { ...match, homeTeamId: resolve(seed[0]), awayTeamId: resolve(seed[1]) };
   });
 }
+
+/** サーバーの返事を待たずに画面へ反映するため、1試合分の変更を重ねた新しい配列を返す。 */
+export function applyMatchPatch(matches: Match[], id: string, patch: Partial<Match>): Match[] {
+  return matches.map((match) => (match.id === id ? { ...match, ...patch } : match));
+}
+
+/** Live 画面に残す試合。一時停止中も残し、終了したら外す。 */
+export const isOnPitch = (match: Match) => match.status === "LIVE" || match.status === "PAUSED";

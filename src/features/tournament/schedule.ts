@@ -2,8 +2,11 @@ import type { Match, Team } from "../../types";
 
 export const COURT_COUNT = 3;
 export const GROUP_MATCH_MINUTES = 15;
-export const KNOCKOUT_MATCH_MINUTES = 18;
+/** ラウンド間の休憩。グループ戦終了から R16 開始までも同じ。 */
+export const ROUND_BREAK_MINUTES = 18;
 export const TOURNAMENT_START = "2026-09-26T09:00:00+09:00";
+/** Court 3 はこの時刻から使える。それより前は Court 1・2 のみ。 */
+export const COURT_3_OPENS_AT = "2026-09-26T12:15:00+09:00";
 export const TBD = "TBD";
 export const GROUP_IDS = ["A", "B", "C", "D", "E", "F", "G", "H"] as const;
 
@@ -19,11 +22,12 @@ export const R16_SEEDS = [
   ["E1", "D2"],
 ] as const;
 
+/** 試合時間はハーフタイム込み。QF・SF は7分ハーフ+1分、決勝は10分ハーフ+3分。 */
 const KNOCKOUT_ROUNDS = [
-  { stage: "R16", count: 8, sourcePrefix: null },
-  { stage: "QF", count: 4, sourcePrefix: "R16" },
-  { stage: "SF", count: 2, sourcePrefix: "QF" },
-  { stage: "FINAL", count: 1, sourcePrefix: "SF" },
+  { stage: "R16", count: 8, minutes: 18, sourcePrefix: null },
+  { stage: "QF", count: 4, minutes: 7 * 2 + 1, sourcePrefix: "R16" },
+  { stage: "SF", count: 2, minutes: 7 * 2 + 1, sourcePrefix: "QF" },
+  { stage: "FINAL", count: 1, minutes: 10 * 2 + 3, sourcePrefix: "SF" },
 ] as const;
 
 interface Pairing {
@@ -75,10 +79,10 @@ function buildGroupPairings(teams: Team[]): Pairing[] {
 
 /**
  * 15分スロットへ貪欲に詰める。
- * 制約: 1スロット最大3試合、同一スロットに同じチームは1回まで、直前スロットに
- * 出たチームは選ばない（休憩15分以上）。
+ * 制約: 1スロットの試合数は `courtsAt(スロット番号)` まで、同一スロットに同じ
+ * チームは1回まで、直前スロットに出たチームは選ばない（休憩15分以上）。
  */
-function packIntoSlots(pairings: Pairing[]): Pairing[][] {
+function packIntoSlots(pairings: Pairing[], courtsAt: (slotIndex: number) => number): Pairing[][] {
   const remaining = new Map<string, number>();
   for (const pairing of pairings) {
     remaining.set(pairing.homeTeamId, (remaining.get(pairing.homeTeamId) ?? 0) + 1);
@@ -108,7 +112,7 @@ function packIntoSlots(pairings: Pairing[]): Pairing[][] {
       .sort((a, b) => load(b) - load(a) || a.id.localeCompare(b.id));
 
     for (const pairing of candidates) {
-      if (slot.length >= COURT_COUNT) break;
+      if (slot.length >= courtsAt(slots.length)) break;
       if (busy.has(pairing.homeTeamId) || busy.has(pairing.awayTeamId)) continue;
       slot.push(pairing);
       busy.add(pairing.homeTeamId);
@@ -130,12 +134,16 @@ function packIntoSlots(pairings: Pairing[]): Pairing[][] {
 
 /**
  * 全95試合を未開始状態で生成する。
- * グループ戦は 09:00 から15分刻み、ノックアウトはグループ戦終了の1スロット後から
- * 18分刻みで、ラウンド間に1スロットの休憩を挟む。
+ * グループ戦は 09:00 から15分刻み（Court 3 は 12:15 から）、ノックアウトは
+ * グループ戦終了の18分後から始め、ラウンド間にも18分の休憩を挟む。
  */
 export function buildTournamentSchedule(teams: Team[]): Match[] {
   const startMs = Date.parse(TOURNAMENT_START);
-  const slots = packIntoSlots(buildGroupPairings(teams));
+  const court3OpensMs = Date.parse(COURT_3_OPENS_AT);
+  const slotStartMs = (slotIndex: number) => startMs + slotIndex * GROUP_MATCH_MINUTES * 60_000;
+  const slots = packIntoSlots(buildGroupPairings(teams), (slotIndex) =>
+    slotStartMs(slotIndex) < court3OpensMs ? COURT_COUNT - 1 : COURT_COUNT,
+  );
 
   const groupMatches: Match[] = slots.flatMap((slot, slotIndex) =>
     slot.map((pairing, courtIndex) => ({
@@ -143,7 +151,7 @@ export function buildTournamentSchedule(teams: Team[]): Match[] {
       stage: "GROUP" as const,
       groupId: pairing.groupId,
       court: courtIndex + 1,
-      scheduledStart: new Date(startMs + slotIndex * GROUP_MATCH_MINUTES * 60_000).toISOString(),
+      scheduledStart: new Date(slotStartMs(slotIndex)).toISOString(),
       durationMinutes: GROUP_MATCH_MINUTES,
       status: "SCHEDULED" as const,
       homeTeamId: pairing.homeTeamId,
@@ -154,8 +162,7 @@ export function buildTournamentSchedule(teams: Team[]): Match[] {
   );
 
   const knockoutMatches: Match[] = [];
-  let roundStartMs =
-    startMs + slots.length * GROUP_MATCH_MINUTES * 60_000 + KNOCKOUT_MATCH_MINUTES * 60_000;
+  let roundStartMs = slotStartMs(slots.length) + ROUND_BREAK_MINUTES * 60_000;
 
   for (const round of KNOCKOUT_ROUNDS) {
     for (let index = 0; index < round.count; index += 1) {
@@ -164,10 +171,8 @@ export function buildTournamentSchedule(teams: Team[]): Match[] {
         id: `${round.stage}-${index + 1}`,
         stage: round.stage,
         court: (index % COURT_COUNT) + 1,
-        scheduledStart: new Date(
-          roundStartMs + row * KNOCKOUT_MATCH_MINUTES * 60_000,
-        ).toISOString(),
-        durationMinutes: KNOCKOUT_MATCH_MINUTES,
+        scheduledStart: new Date(roundStartMs + row * round.minutes * 60_000).toISOString(),
+        durationMinutes: round.minutes,
         status: "SCHEDULED",
         homeTeamId: TBD,
         awayTeamId: TBD,
@@ -183,7 +188,8 @@ export function buildTournamentSchedule(teams: Team[]): Match[] {
           : {}),
       });
     }
-    roundStartMs += (Math.ceil(round.count / COURT_COUNT) + 1) * KNOCKOUT_MATCH_MINUTES * 60_000;
+    const rows = Math.ceil(round.count / COURT_COUNT);
+    roundStartMs += (rows * round.minutes + ROUND_BREAK_MINUTES) * 60_000;
   }
 
   return [...groupMatches, ...knockoutMatches];

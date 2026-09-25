@@ -294,6 +294,10 @@ label {
 .status.scheduled {
   color: var(--orange);
 }
+.status.paused,
+.timer.paused {
+  color: #f5c451;
+}
 .match-teams {
   padding: 12px 0;
 }
@@ -519,6 +523,39 @@ label {
   color: #dfe7f3;
   border-radius: 7px;
   padding: 13px;
+}
+.match-state {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0d1625;
+  font: 13px "DM Mono";
+  letter-spacing: 0.4px;
+}
+.match-state b {
+  font-size: 20px;
+}
+.match-state.live {
+  border-color: #2f5a3c;
+  background: #12261b;
+  color: var(--green);
+}
+.match-state.paused {
+  border-color: #6b5520;
+  background: #2a2413;
+  color: #f5c451;
+}
+.match-state.finished {
+  color: #98a7bb;
+}
+.control-score button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 .control-score {
   margin: 28px 0;
