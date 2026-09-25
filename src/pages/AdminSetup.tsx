@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PageTitle } from "../components/ui/PageTitle";
 import { ResetButton, ScheduleCheck } from "../features/admin";
 import { findTeam, TeamBadge, type ConnectionState } from "../features/tournament";
@@ -18,24 +18,17 @@ export function AdminSetup({
   resetTournament: () => void;
   connection: ConnectionState;
 }) {
-  const [selected, setSelected] = useState<Match | undefined>(
-    () => matches.find((m) => m.status === "LIVE") ?? matches[0],
+  const [selectedId, setSelectedId] = useState(
+    () => (matches.find((m) => m.status === "LIVE") ?? matches[0])?.id,
   );
-  const [score, setScore] = useState<[number, number]>([
-    selected?.homeScore ?? 0,
-    selected?.awayScore ?? 0,
-  ]);
-  const [scoreDirty, setScoreDirty] = useState(false);
-
-  useEffect(() => {
-    if (!selected) return;
-    const nextMatch = matches.find((match) => match.id === selected.id);
-    if (!nextMatch) return;
-    setSelected(nextMatch);
-    // A broadcast for any other match must not discard an edit this operator
-    // has started but not yet saved.
-    if (!scoreDirty) setScore([nextMatch.homeScore, nextMatch.awayScore]);
-  }, [matches, selected?.id, scoreDirty]);
+  // An edit this operator has started but not yet saved. While it is null the
+  // score follows the latest broadcast, so updates to other matches never
+  // discard an unsaved edit.
+  const [draft, setDraft] = useState<[number, number] | null>(null);
+  const selected = matches.find((match) => match.id === selectedId);
+  const score: [number, number] = draft ?? [selected?.homeScore ?? 0, selected?.awayScore ?? 0];
+  const editScore = (update: (score: [number, number]) => [number, number]) =>
+    setDraft((current) => update(current ?? score));
 
   const save = (status: MatchStatus) => {
     if (!selected) return;
@@ -45,7 +38,7 @@ export function AdminSetup({
       awayScore: score[1],
       timerServerStartedAt: status === "LIVE" ? new Date().toISOString() : undefined,
     });
-    setScoreDirty(false);
+    setDraft(null);
   };
 
   return (
@@ -61,9 +54,8 @@ export function AdminSetup({
             onChange={(event) => {
               const next = matches.find((m) => m.id === event.target.value);
               if (next) {
-                setSelected(next);
-                setScore([next.homeScore, next.awayScore]);
-                setScoreDirty(false);
+                setSelectedId(next.id);
+                setDraft(null);
               }
             }}
           >
@@ -83,42 +75,22 @@ export function AdminSetup({
                 <div>
                   <TeamBadge id={selected.homeTeamId} />
                   <button
-                    onClick={() => {
-                      setScore(([home, away]) => [Math.max(0, home - 1), away]);
-                      setScoreDirty(true);
-                    }}
+                    onClick={() => editScore(([home, away]) => [Math.max(0, home - 1), away])}
                   >
                     −
                   </button>
                   <b>{score[0]}</b>
-                  <button
-                    onClick={() => {
-                      setScore(([home, away]) => [home + 1, away]);
-                      setScoreDirty(true);
-                    }}
-                  >
-                    +
-                  </button>
+                  <button onClick={() => editScore(([home, away]) => [home + 1, away])}>+</button>
                 </div>
                 <div>
                   <TeamBadge id={selected.awayTeamId} />
                   <button
-                    onClick={() => {
-                      setScore(([home, away]) => [home, Math.max(0, away - 1)]);
-                      setScoreDirty(true);
-                    }}
+                    onClick={() => editScore(([home, away]) => [home, Math.max(0, away - 1)])}
                   >
                     −
                   </button>
                   <b>{score[1]}</b>
-                  <button
-                    onClick={() => {
-                      setScore(([home, away]) => [home, away + 1]);
-                      setScoreDirty(true);
-                    }}
-                  >
-                    +
-                  </button>
+                  <button onClick={() => editScore(([home, away]) => [home, away + 1])}>+</button>
                 </div>
               </div>{" "}
               <div className="control-actions">

@@ -5,19 +5,19 @@ import { stageLabel } from "../logic";
 import { TeamBadge } from "./TeamBadge";
 
 export function MatchCard({ match, compact = false }: { match: Match; compact?: boolean }) {
-  const [, setTick] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (match.status !== "LIVE") return;
-    const interval = window.setInterval(() => setTick((value) => value + 1), 1_000);
+    const interval = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(interval);
   }, [match.status]);
   const live = match.status === "LIVE";
+  // `now` is only refreshed while the match is live, so it can predate a restart
+  // until the next tick; clamp to the start time rather than count backwards.
+  const startedAt = match.timerServerStartedAt ? Date.parse(match.timerServerStartedAt) : 0;
   const elapsed = match.timerServerStartedAt
-    ? Math.max(
-        0,
-        Math.floor((Date.now() - Date.parse(match.timerServerStartedAt)) / 1_000) +
-          (match.timerElapsedSecondsAtPause ?? 0),
-      )
+    ? Math.floor((Math.max(now, startedAt) - startedAt) / 1_000) +
+      (match.timerElapsedSecondsAtPause ?? 0)
     : 0;
   const timer = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
