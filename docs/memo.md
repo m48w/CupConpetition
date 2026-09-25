@@ -70,12 +70,11 @@ npm run dev -- --host 0.0.0.0 --port 4173
 
 - 認証はサーバー側で行う。パスワードは Cloudflare の Secrets（`SUPERADMIN_PASSWORD`・`SUBADMIN_PASSWORD`・`SESSION_SECRET`）で管理し、ログインに成功すると署名付きの `session` Cookie を発行する。
 - 試合データは Durable Object に保存する。ローカルでは `.wrangler/state/` 以下にコピーが置かれる。
-- 複数端末間の同期はSSEで実現済みだが、認証のサーバー側実装や永続化されたDBなど、本番運用に必要な要素は未整備。
+- 複数端末間の同期は Durable Object からの WebSocket 配信で実現済み。認証もサーバー側に実装済みである。
 - データを初期状態に戻すには、Super-admin画面（`/superadmin`）の「↺ Reset all matches」ボタンを使うのが通常の方法である。プログラムから行う場合は Super-admin として `POST /api/reset` を呼ぶ。
 
 ## 次の候補
 
-- 永続化されたデータベースへの移行（現在はJSONファイル保存）。
 - 操作履歴・監査ログ。
 - 試合結果に応じたノックアウトチームの自動反映。
 - チーム名、ロゴ、試合時間、コート数を管理画面から編集可能にする。
