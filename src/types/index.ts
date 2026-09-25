@@ -33,3 +33,19 @@ export interface TournamentState {
   updatedAt: string;
   matches: Match[];
 }
+
+/** WebSocket でサーバーが送るメッセージ。 */
+export interface ServerMessage {
+  type: "state";
+  state: TournamentState;
+}
+
+export type Role = "superadmin" | "subadmin";
+
+/** ログイン中の利用者。`GET /api/session` と `POST /api/login` が返す。 */
+export interface SessionInfo {
+  username: string;
+  role: Role;
+  /** SubAdmin の担当コート。Super-admin は全コートなので null。 */
+  court: number | null;
+}

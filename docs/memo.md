@@ -19,8 +19,8 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
 - Round of 16、Quarter-finals、Semi-finals、Final のトーナメントブラケットを表示。
 - ブラケットをワールドカップ風の青系・ゴールド基調のデザインに変更。
 - 管理者ログイン画面を追加。
-  - デモ用アクセスキー: `VELOCITY-DEMO-ONLY`
-  - `/admin/setup` への直接アクセスも認証対象。
+  - デモ用アクセスキー: `VELOCITY-DEMO-ONLY`（→ `/superadmin`・`/subadmin` でのサーバー側ログインに置き換え済み。現在は非該当）
+  - `/admin/setup` への直接アクセスも認証対象。（→ `/superadmin` へのリダイレクトに置き換え済み。現在は非該当）
 - 管理画面から試合を操作可能にした。
   - Start / resume
   - Pause
@@ -63,19 +63,18 @@ npm run dev -- --host 0.0.0.0 --port 4173
 - `http://localhost:4173/matches`
 - `http://localhost:4173/live`
 - `http://localhost:4173/bracket`
-- `http://localhost:4173/admin/setup`
+- `http://localhost:4173/superadmin`
+- `http://localhost:4173/subadmin`
 
 ## 注意事項
 
-- 現在の認証はフロントエンド内の簡易認証であり、本番用の安全な認証ではない。公開用コードではデモ専用キーを使用している。
-- 試合データは `TempServerData/matches.json` に保存する。開発サーバーが起動している間だけ読み書きできる。
-- 複数端末間の同期はSSEで実現済みだが、認証のサーバー側実装や永続化されたDBなど、本番運用に必要な要素は未整備。
-- データを初期状態に戻すには、管理画面（`/admin/setup`）の「↺ Reset all matches」ボタンを使うのが通常の方法である。プログラムから行う場合は `POST /api/reset` を呼ぶ。手動での復旧がどうしても必要な場合に限り、`TempServerData/matches.json` を削除して開発サーバーを再起動する。
+- 認証はサーバー側で行う。パスワードは Cloudflare の Secrets（`SUPERADMIN_PASSWORD`・`SUBADMIN_PASSWORD`・`SESSION_SECRET`）で管理し、ログインに成功すると署名付きの `session` Cookie を発行する。
+- 試合データは Durable Object に保存する。ローカルでは `.wrangler/state/` 以下にコピーが置かれる。
+- 複数端末間の同期は Durable Object からの WebSocket 配信で実現済み。認証もサーバー側に実装済みである。
+- データを初期状態に戻すには、Super-admin画面（`/superadmin`）の「↺ Reset all matches」ボタンを使うのが通常の方法である。プログラムから行う場合は Super-admin として `POST /api/reset` を呼ぶ。
 
 ## 次の候補
 
-- 永続化されたデータベースへの移行（現在はJSONファイル保存）。
-- 管理者権限のサーバー側認証。
 - 操作履歴・監査ログ。
 - 試合結果に応じたノックアウトチームの自動反映。
 - チーム名、ロゴ、試合時間、コート数を管理画面から編集可能にする。

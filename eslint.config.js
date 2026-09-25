@@ -6,7 +6,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "TempServerData"] },
+  { ignores: ["dist", "TempServerData", ".wrangler", "worker-configuration.d.ts"] },
   {
     files: ["**/*.{ts,tsx}"],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -21,7 +21,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["server/**/*.ts", "vite.config.ts"],
+    files: ["vite.config.ts", "vitest.config.ts"],
     languageOptions: { globals: globals.node },
   },
   prettier,

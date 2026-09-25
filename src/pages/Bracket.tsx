@@ -1,41 +1,30 @@
 import { PageTitle } from "../components/ui/PageTitle";
-import { findTeam, R16_SEEDS, TBD } from "../features/tournament";
+import { bracketRounds, type BracketGame } from "../features/tournament";
 import type { Match } from "../types";
+import { formatTime } from "../utils/format";
+
+function BracketSide({ name, score }: { name: string; score: number | null }) {
+  return (
+    <div className="bracket-side">
+      <span>{name}</span>
+      {score !== null && <b>{score}</b>}
+    </div>
+  );
+}
+
+function BracketCard({ game }: { game: BracketGame }) {
+  return (
+    <div className="bracket-game">
+      <small>
+        {game.scheduledStart ? `${formatTime(game.scheduledStart)} · Court ${game.court}` : game.id}
+      </small>
+      <BracketSide name={game.home} score={game.homeScore} />
+      <BracketSide name={game.away} score={game.awayScore} />
+    </div>
+  );
+}
 
 export function Bracket({ matches }: { matches: Match[] }) {
-  const r16 = matches.filter((match) => match.stage === "R16");
-  const rounds = [
-    {
-      title: "Round of 16",
-      games: r16.length
-        ? r16.map((match, index) => [
-            match.homeTeamId === TBD
-              ? R16_SEEDS[index][0]
-              : (findTeam(match.homeTeamId)?.name ?? TBD),
-            match.awayTeamId === TBD
-              ? R16_SEEDS[index][1]
-              : (findTeam(match.awayTeamId)?.name ?? TBD),
-          ])
-        : R16_SEEDS.map((seed) => [...seed]),
-    },
-    {
-      title: "Quarter-finals",
-      games: [
-        ["Winner M1", "Winner M2"],
-        ["Winner M3", "Winner M4"],
-        ["Winner M5", "Winner M6"],
-        ["Winner M7", "Winner M8"],
-      ],
-    },
-    {
-      title: "Semi-finals",
-      games: [
-        ["Winner QF1", "Winner QF2"],
-        ["Winner QF3", "Winner QF4"],
-      ],
-    },
-    { title: "Final", games: [["Winner SF1", "Winner SF2"]] },
-  ];
   return (
     <>
       <PageTitle eyebrow="WORLD CUP KNOCKOUT" title="Velocity Cup 2026">
@@ -46,21 +35,21 @@ export function Bracket({ matches }: { matches: Match[] }) {
         <b>ROAD TO THE FINAL</b>
         <small>Every match. Every moment. One champion.</small>
       </div>
-      <div className="bracket world-cup-bracket">
-        {rounds.map((round) => (
-          <section className="bracket-round" key={round.title}>
-            <h3>{round.title}</h3>
-            {round.games.map((game, index) => (
-              <div className="bracket-game" key={index}>
-                <small>
-                  {round.title} · {index + 1}
-                </small>
-                <span>{game[0]}</span>
-                <span>{game[1]}</span>
+      <div className="bracket-scroll">
+        <div className="bracket">
+          {bracketRounds(matches).map((round) => (
+            <section className="bracket-round" key={round.stage}>
+              <h3>{round.title}</h3>
+              <div className="bracket-slots">
+                {round.games.map((game) => (
+                  <div className="bracket-slot" key={game.id}>
+                    <BracketCard game={game} />
+                  </div>
+                ))}
               </div>
-            ))}
-          </section>
-        ))}
+            </section>
+          ))}
+        </div>
       </div>
     </>
   );

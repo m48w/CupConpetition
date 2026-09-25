@@ -1,50 +1,68 @@
 import { useState } from "react";
 import { PageTitle } from "../components/ui/PageTitle";
-import { ResetButton, ScheduleCheck } from "../features/admin";
-import { findTeam, TeamBadge, type ConnectionState } from "../features/tournament";
-import type { Match, MatchStatus } from "../types";
+import { MatchStateBanner, ResetButton, ScheduleCheck } from "../features/admin";
+import { SIGN_OUT_FAILED } from "../features/auth";
+import {
+  findTeam,
+  isOnPitch,
+  statusPatch,
+  TeamBadge,
+  type ConnectionState,
+} from "../features/tournament";
+import type { Match, MatchStatus, SessionInfo } from "../types";
 import { formatTime } from "../utils/format";
 
 export function AdminSetup({
+  eyebrow,
+  account,
+  onSignOut,
   matches,
   updateMatch,
-  generateSchedule,
-  resetTournament,
+  setup,
   connection,
 }: {
+  eyebrow: string;
+  account: SessionInfo;
+  /** Resolves to whether the server confirmed the logout, so the console can report a failure. */
+  onSignOut: () => Promise<boolean>;
   matches: Match[];
   updateMatch: (id: string, patch: Partial<Match>) => void;
-  generateSchedule: () => void;
-  resetTournament: () => void;
+  /** Super-admin だけに出す大会全体の操作。 */
+  setup?: { generateSchedule: () => void; resetTournament: () => void };
   connection: ConnectionState;
 }) {
-  const [selectedId, setSelectedId] = useState(
-    () => (matches.find((m) => m.status === "LIVE") ?? matches[0])?.id,
-  );
-  // An edit this operator has started but not yet saved. While it is null the
-  // score follows the latest broadcast, so updates to other matches never
-  // discard an unsaved edit.
-  const [draft, setDraft] = useState<[number, number] | null>(null);
+  const [selectedId, setSelectedId] = useState(() => (matches.find(isOnPitch) ?? matches[0])?.id);
+  const [signOutFailed, setSignOutFailed] = useState(false);
   const selected = matches.find((match) => match.id === selectedId);
-  const score: [number, number] = draft ?? [selected?.homeScore ?? 0, selected?.awayScore ?? 0];
-  const editScore = (update: (score: [number, number]) => [number, number]) =>
-    setDraft((current) => update(current ?? score));
+  const offline = connection !== "live";
 
-  const save = (status: MatchStatus) => {
+  const handleSignOut = async () => {
+    setSignOutFailed(!(await onSignOut()));
+  };
+
+  // Each tap is saved at once so spectators see the goal immediately.
+  const changeScore = (side: "homeScore" | "awayScore", delta: number) => {
     if (!selected) return;
-    updateMatch(selected.id, {
-      status,
-      homeScore: score[0],
-      awayScore: score[1],
-      timerServerStartedAt: status === "LIVE" ? new Date().toISOString() : undefined,
-    });
-    setDraft(null);
+    updateMatch(selected.id, { [side]: Math.max(0, selected[side] + delta) });
+  };
+
+  const changeStatus = (status: MatchStatus) => {
+    if (!selected) return;
+    updateMatch(selected.id, statusPatch(selected, status));
   };
 
   return (
     <>
-      <PageTitle eyebrow="ADMIN CONSOLE" title="Match control">
-        <span className="admin-pill">ADMIN MODE</span>
+      <PageTitle eyebrow={eyebrow} title="Match control">
+        <div className="console-account">
+          <span className="admin-pill">
+            {account.court === null ? "ALL COURTS" : `COURT ${account.court}`} · {account.username}
+          </span>
+          {signOutFailed && <div className="login-error">{SIGN_OUT_FAILED}</div>}
+          <button type="button" className="outline-button" onClick={() => void handleSignOut()}>
+            Sign out
+          </button>
+        </div>
       </PageTitle>
       <div className="admin-grid">
         <section className="admin-panel">
@@ -53,93 +71,116 @@ export function AdminSetup({
             value={selected?.id ?? ""}
             onChange={(event) => {
               const next = matches.find((m) => m.id === event.target.value);
-              if (next) {
-                setSelectedId(next.id);
-                setDraft(null);
-              }
+              if (next) setSelectedId(next.id);
             }}
           >
             {matches
-              .filter((m) => m.status !== "FINISHED")
+              .filter((m) => m.status !== "FINISHED" || m.id === selectedId)
               .slice(0, 20)
               .map((m) => (
                 <option key={m.id} value={m.id}>
                   {formatTime(m.scheduledStart)} · {findTeam(m.homeTeamId)?.name ?? "TBD"} vs{" "}
                   {findTeam(m.awayTeamId)?.name ?? "TBD"}
+                  {m.status !== "SCHEDULED" && ` · ${m.status}`}
                 </option>
               ))}
           </select>
           {selected && (
             <>
+              <MatchStateBanner match={selected} />
               <div className="control-score">
-                <div>
-                  <TeamBadge id={selected.homeTeamId} />
-                  <button
-                    onClick={() => editScore(([home, away]) => [Math.max(0, home - 1), away])}
-                  >
-                    −
-                  </button>
-                  <b>{score[0]}</b>
-                  <button onClick={() => editScore(([home, away]) => [home + 1, away])}>+</button>
-                </div>
-                <div>
-                  <TeamBadge id={selected.awayTeamId} />
-                  <button
-                    onClick={() => editScore(([home, away]) => [home, Math.max(0, away - 1)])}
-                  >
-                    −
-                  </button>
-                  <b>{score[1]}</b>
-                  <button onClick={() => editScore(([home, away]) => [home, away + 1])}>+</button>
-                </div>
-              </div>{" "}
+                {(["homeScore", "awayScore"] as const).map((side) => (
+                  <div key={side}>
+                    <TeamBadge
+                      id={side === "homeScore" ? selected.homeTeamId : selected.awayTeamId}
+                    />
+                    <button
+                      type="button"
+                      disabled={offline || selected.status === "SCHEDULED"}
+                      onClick={() => changeScore(side, -1)}
+                    >
+                      −
+                    </button>
+                    <b>{selected[side]}</b>
+                    <button
+                      type="button"
+                      disabled={offline || selected.status === "SCHEDULED"}
+                      onClick={() => changeScore(side, 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                ))}
+                {selected.status === "SCHEDULED" && (
+                  <p className="muted">Start the match to record goals.</p>
+                )}
+              </div>
               <div className="control-actions">
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={connection !== "live"}
-                  onClick={() => save("LIVE")}
-                >
-                  ▶ Start / resume
-                </button>
-                <button
-                  type="button"
-                  className="outline-button"
-                  disabled={connection !== "live"}
-                  onClick={() => save("PAUSED")}
-                >
-                  Ⅱ Pause
-                </button>
-                <button
-                  type="button"
-                  className="danger-button"
-                  disabled={connection !== "live"}
-                  onClick={() => save("FINISHED")}
-                >
-                  Finish match
-                </button>
+                {selected.status === "SCHEDULED" && (
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={offline}
+                    onClick={() => changeStatus("LIVE")}
+                  >
+                    ▶ Start match
+                  </button>
+                )}
+                {selected.status === "LIVE" && (
+                  <button
+                    type="button"
+                    className="outline-button"
+                    disabled={offline}
+                    onClick={() => changeStatus("PAUSED")}
+                  >
+                    Ⅱ Pause
+                  </button>
+                )}
+                {selected.status === "PAUSED" && (
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={offline}
+                    onClick={() => changeStatus("LIVE")}
+                  >
+                    ▶ Resume
+                  </button>
+                )}
+                {(selected.status === "LIVE" || selected.status === "PAUSED") && (
+                  <button
+                    type="button"
+                    className="danger-button"
+                    disabled={offline}
+                    onClick={() => changeStatus("FINISHED")}
+                  >
+                    ■ Finish match
+                  </button>
+                )}
               </div>
             </>
           )}
         </section>
-        <section className="admin-panel setup-panel">
-          <label>SUPERADMIN SETUP</label>
-          <h3>Seed knockout teams</h3>
-          <p>
-            Group fixtures run from 09:00 on 3 courts. Once the group stage is final, this fills the
-            Round of 16 from the standings without moving any kick-off time.
-          </p>
-          <ScheduleCheck matches={matches} />
-          <button
-            type="button"
-            className="primary-button"
-            disabled={connection !== "live"}
-            onClick={generateSchedule}
-          >
-            ✦ Seed knockout teams
-          </button>
-          <ResetButton onReset={resetTournament} disabled={connection !== "live"} />
-        </section>
+        {setup && (
+          <section className="admin-panel setup-panel">
+            <label>SUPERADMIN SETUP</label>
+            <h3>Seed knockout teams</h3>
+            <p>
+              Group fixtures run from 09:00 on courts 1–2, with court 3 joining at 12:15. Once the
+              group stage is final, this fills the Round of 16 from the standings without moving any
+              kick-off time.
+            </p>
+            <ScheduleCheck matches={matches} />
+            <button
+              type="button"
+              className="primary-button"
+              disabled={offline}
+              onClick={setup.generateSchedule}
+            >
+              ✦ Seed knockout teams
+            </button>
+            <ResetButton onReset={setup.resetTournament} disabled={offline} />
+          </section>
+        )}
       </div>
     </>
   );
