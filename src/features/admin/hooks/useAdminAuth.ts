@@ -4,7 +4,9 @@ const ADMIN_PASSWORD = "VELOCITY-DEMO-ONLY";
 const ADMIN_STORAGE_KEY = "cupflow-admin-authed";
 
 export function useAdminAuth() {
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => localStorage.getItem(ADMIN_STORAGE_KEY) === "true");
+  const [isAdmin, setIsAdmin] = useState<boolean>(
+    () => localStorage.getItem(ADMIN_STORAGE_KEY) === "true",
+  );
 
   useEffect(() => {
     localStorage.setItem(ADMIN_STORAGE_KEY, String(isAdmin));

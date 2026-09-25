@@ -13,33 +13,60 @@ export interface Standing {
 }
 
 export function calculateStandings(groupId: string, teams: Team[], matches: Match[]): Standing[] {
-  const rows = teams.filter((team) => team.groupId === groupId).map((team) => ({
-    team,
-    played: 0,
-    won: 0,
-    drawn: 0,
-    lost: 0,
-    goalsFor: 0,
-    goalsAgainst: 0,
-    points: 0,
-  }));
+  const rows = teams
+    .filter((team) => team.groupId === groupId)
+    .map((team) => ({
+      team,
+      played: 0,
+      won: 0,
+      drawn: 0,
+      lost: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      points: 0,
+    }));
   const byId = new Map(rows.map((row) => [row.team.id, row]));
-  matches.filter((match) => match.groupId === groupId && match.status === "FINISHED").forEach((match) => {
-    const home = byId.get(match.homeTeamId);
-    const away = byId.get(match.awayTeamId);
-    if (!home || !away) return;
-    home.played += 1; away.played += 1;
-    home.goalsFor += match.homeScore; home.goalsAgainst += match.awayScore;
-    away.goalsFor += match.awayScore; away.goalsAgainst += match.homeScore;
-    if (match.homeScore > match.awayScore) { home.won += 1; home.points += 3; away.lost += 1; }
-    else if (match.homeScore < match.awayScore) { away.won += 1; away.points += 3; home.lost += 1; }
-    else { home.drawn += 1; away.drawn += 1; home.points += 1; away.points += 1; }
-  });
-  return rows.sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor);
+  matches
+    .filter((match) => match.groupId === groupId && match.status === "FINISHED")
+    .forEach((match) => {
+      const home = byId.get(match.homeTeamId);
+      const away = byId.get(match.awayTeamId);
+      if (!home || !away) return;
+      home.played += 1;
+      away.played += 1;
+      home.goalsFor += match.homeScore;
+      home.goalsAgainst += match.awayScore;
+      away.goalsFor += match.awayScore;
+      away.goalsAgainst += match.homeScore;
+      if (match.homeScore > match.awayScore) {
+        home.won += 1;
+        home.points += 3;
+        away.lost += 1;
+      } else if (match.homeScore < match.awayScore) {
+        away.won += 1;
+        away.points += 3;
+        home.lost += 1;
+      } else {
+        home.drawn += 1;
+        away.drawn += 1;
+        home.points += 1;
+        away.points += 1;
+      }
+    });
+  return rows.sort(
+    (a, b) =>
+      b.points - a.points ||
+      b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst) ||
+      b.goalsFor - a.goalsFor,
+  );
 }
 
 export const stageLabel: Record<Match["stage"], string> = {
-  GROUP: "Group stage", R16: "Best 16", QF: "Best 8", SF: "Best 4", FINAL: "Final",
+  GROUP: "Group stage",
+  R16: "Best 16",
+  QF: "Best 8",
+  SF: "Best 4",
+  FINAL: "Final",
 };
 
 /**

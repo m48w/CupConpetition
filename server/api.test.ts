@@ -224,7 +224,11 @@ function unimplementedStoreMethods(): Pick<Store, "patchMatch" | "replaceMatches
 
 test("SSE中にstore.read()が失敗してもサーバープロセスは落ちず、以後のリクエストにも応答し続ける", async () => {
   let readCalls = 0;
-  const fallbackState: TournamentState = { version: 1, updatedAt: new Date().toISOString(), matches: [] };
+  const fallbackState: TournamentState = {
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    matches: [],
+  };
 
   // 最初の呼び出し（/api/stream から）だけ失敗させ、以降は成功させる。
   // これにより「クラッシュしない」だけでなく「サーバーが生き続けて次のリクエストも処理できる」ことまで確認する。

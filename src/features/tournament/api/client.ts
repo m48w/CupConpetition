@@ -17,7 +17,10 @@ async function request(path: string, init?: RequestInit): Promise<TournamentStat
 export const fetchState = () => request("/api/state");
 
 export const patchMatch = (id: string, patch: Partial<Match>) =>
-  request(`/api/matches/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(patch) });
+  request(`/api/matches/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
 
 export const replaceMatches = (matches: Match[]) =>
   request("/api/matches", { method: "PUT", body: JSON.stringify({ matches }) });

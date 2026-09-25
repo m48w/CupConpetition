@@ -6,7 +6,9 @@ import { TBD } from "./schedule";
 test("初期データは全95試合が未開始", () => {
   expect(initialMatches).toHaveLength(95);
   expect(initialMatches.every((match) => match.status === "SCHEDULED")).toBe(true);
-  expect(initialMatches.every((match) => match.homeScore === 0 && match.awayScore === 0)).toBe(true);
+  expect(initialMatches.every((match) => match.homeScore === 0 && match.awayScore === 0)).toBe(
+    true,
+  );
 });
 
 test("seedKnockoutTeams は R16 の対戦相手を埋め、時刻とコートは変えない", () => {

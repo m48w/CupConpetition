@@ -11,5 +11,11 @@
     "strict": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["vite.config.ts", "server/**/*.ts", "src/types/index.ts", "src/features/tournament/data.ts", "src/features/tournament/schedule.ts"]
+  "include": [
+    "vite.config.ts",
+    "server/**/*.ts",
+    "src/types/index.ts",
+    "src/features/tournament/data.ts",
+    "src/features/tournament/schedule.ts"
+  ]
 }

@@ -9,8 +9,14 @@ export const GROUP_IDS = ["A", "B", "C", "D", "E", "F", "G", "H"] as const;
 
 /** Round of 16 のシード表。`A1` は Group A の1位を指す。 */
 export const R16_SEEDS = [
-  ["A1", "H2"], ["H1", "A2"], ["B1", "G2"], ["G1", "B2"],
-  ["C1", "F2"], ["F1", "C2"], ["D1", "E2"], ["E1", "D2"],
+  ["A1", "H2"],
+  ["H1", "A2"],
+  ["B1", "G2"],
+  ["G1", "B2"],
+  ["C1", "F2"],
+  ["F1", "C2"],
+  ["D1", "E2"],
+  ["E1", "D2"],
 ] as const;
 
 const KNOCKOUT_ROUNDS = [
@@ -54,7 +60,12 @@ function buildGroupPairings(teams: Team[]): Pairing[] {
     let number = 1;
     for (let i = 0; i < ids.length; i += 1) {
       for (let j = i + 1; j < ids.length; j += 1) {
-        pairings.push({ id: `G-${groupId}-${number}`, groupId, homeTeamId: ids[i], awayTeamId: ids[j] });
+        pairings.push({
+          id: `G-${groupId}-${number}`,
+          groupId,
+          homeTeamId: ids[i],
+          awayTeamId: ids[j],
+        });
         number += 1;
       }
     }
@@ -143,7 +154,8 @@ export function buildTournamentSchedule(teams: Team[]): Match[] {
   );
 
   const knockoutMatches: Match[] = [];
-  let roundStartMs = startMs + slots.length * GROUP_MATCH_MINUTES * 60_000 + KNOCKOUT_MATCH_MINUTES * 60_000;
+  let roundStartMs =
+    startMs + slots.length * GROUP_MATCH_MINUTES * 60_000 + KNOCKOUT_MATCH_MINUTES * 60_000;
 
   for (const round of KNOCKOUT_ROUNDS) {
     for (let index = 0; index < round.count; index += 1) {
@@ -152,7 +164,9 @@ export function buildTournamentSchedule(teams: Team[]): Match[] {
         id: `${round.stage}-${index + 1}`,
         stage: round.stage,
         court: (index % COURT_COUNT) + 1,
-        scheduledStart: new Date(roundStartMs + row * KNOCKOUT_MATCH_MINUTES * 60_000).toISOString(),
+        scheduledStart: new Date(
+          roundStartMs + row * KNOCKOUT_MATCH_MINUTES * 60_000,
+        ).toISOString(),
         durationMinutes: KNOCKOUT_MATCH_MINUTES,
         status: "SCHEDULED",
         homeTeamId: TBD,

@@ -102,7 +102,10 @@ export function createApiHandler(store: Store) {
             sendJson(res, 200, await store.patchMatch(decodeURIComponent(patchTarget[1]), patch));
           } catch (error) {
             if (error instanceof StoreError) {
-              sendJson(res, error.code === "UNKNOWN_MATCH" ? 404 : 400, { error: error.message, code: error.code });
+              sendJson(res, error.code === "UNKNOWN_MATCH" ? 404 : 400, {
+                error: error.message,
+                code: error.code,
+              });
               return;
             }
             throw error;

@@ -54,7 +54,8 @@ describe("buildTournamentSchedule", () => {
         (a, b) => Date.parse(a.scheduledStart) - Date.parse(b.scheduledStart),
       );
       for (let i = 1; i < ordered.length; i += 1) {
-        const restMinutes = (Date.parse(ordered[i].scheduledStart) - matchEndMs(ordered[i - 1])) / 60_000;
+        const restMinutes =
+          (Date.parse(ordered[i].scheduledStart) - matchEndMs(ordered[i - 1])) / 60_000;
         expect(restMinutes, `${teamId} の休憩`).toBeGreaterThanOrEqual(GROUP_MATCH_MINUTES);
       }
     }

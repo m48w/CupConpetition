@@ -19,10 +19,20 @@ export function AdminGate({ onUnlock }: { onUnlock: (password: string) => boolea
         <h1>Super Admin required</h1>
         <p>Enter the tournament control password to manage fixtures and live scores.</p>
         <form onSubmit={submit}>
-          <input type="password" value={password} onChange={(event) => { setPassword(event.target.value); setError(""); }} placeholder="Password" />
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              setError("");
+            }}
+            placeholder="Password"
+          />
           <div className="login-hint">Demo access key: VELOCITY-DEMO-ONLY</div>
           {error && <div className="login-error">{error}</div>}
-          <button className="primary-button" type="submit">Access console</button>
+          <button className="primary-button" type="submit">
+            Access console
+          </button>
         </form>
       </div>
     </div>
