@@ -5,7 +5,12 @@ import type { ServerMessage, TournamentState } from "../src/types";
 
 const BASE = "http://localhost";
 
-const call = (path: string, init?: RequestInit) => exports.default.fetch(`${BASE}${path}`, init);
+const call = async (path: string, init?: RequestInit) => {
+  const response = await exports.default.fetch(`${BASE}${path}`, init);
+  // Unread bodies keep the Durable Object referenced, which blocks evictDurableObject.
+  const body = await response.arrayBuffer();
+  return new Response(body, { status: response.status, headers: response.headers });
+};
 const json = (method: string, body: unknown): RequestInit => ({
   method,
   headers: { "content-type": "application/json" },
@@ -14,7 +19,10 @@ const json = (method: string, body: unknown): RequestInit => ({
 const readState = async () => (await (await call("/api/state")).json()) as TournamentState;
 
 async function connect() {
-  const response = await call("/api/ws", { headers: { Upgrade: "websocket" } });
+  // The 101 upgrade response carries a live `webSocket`; it must not be buffered like call() does.
+  const response = await exports.default.fetch(`${BASE}/api/ws`, {
+    headers: { Upgrade: "websocket" },
+  });
   expect(response.status).toBe(101);
   const socket = response.webSocket!;
   const queue: string[] = [];
