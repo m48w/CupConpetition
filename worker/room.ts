@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import type { ServerMessage, TournamentState } from "../src/types";
 import { handleApi } from "./api";
 import { createLoginAttempts, type LoginAttempts } from "./attempts";
+import { readIdentity } from "./auth";
 import { jsonResponse } from "./http";
 import { handleLogin } from "./login";
 import { createSqlStore, type Store } from "./store";
@@ -27,7 +28,9 @@ export class TournamentRoom extends DurableObject<Env> {
     if (path === "/api/login" && request.method === "POST") {
       return handleLogin(request, this.attempts, this.env, Date.now());
     }
-    return handleApi(request, this.store, (state) => this.broadcast(state));
+    return handleApi(request, this.store, readIdentity(request.headers), (state) =>
+      this.broadcast(state),
+    );
   }
 
   private accept(request: Request): Response {
