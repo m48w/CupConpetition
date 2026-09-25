@@ -5,6 +5,5 @@ dist/
 .superpowers/
 vite.config.js
 vite.config.d.ts
-TempServerData/*.json
 .wrangler/
 .dev.vars

@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as client from "../api/client";
+import { parseServerMessage, reconnectDelay, socketUrl } from "../api/socket";
 import { shouldApply } from "../api/version";
 import { initialMatches } from "../data";
 import { applyMatchPatch } from "../logic";
 import type { Match, TournamentState } from "../../../types";
 
 export type ConnectionState = "connecting" | "live" | "offline";
+
+/** これだけ何も届かなければ、つながっているように見えても切れているとみなして張り直す。 */
+const HEARTBEAT_INTERVAL_MS = 10_000;
+const HEARTBEAT_TIMEOUT_MS = 25_000;
 
 /** マウント時に旧バージョンが localStorage に残した試合データを捨てる。
  *  StrictMode などで複数回呼ばれても removeItem は冪等なので安全。 */
@@ -23,7 +28,7 @@ export function useTournamentState() {
   const [error, setError] = useState<string | null>(null);
   const versionRef = useRef(0);
 
-  /** The server's current truth. SSE is ordered within a connection, and a new
+  /** The server's current truth. WebSocket is ordered within a connection, and a new
    *  connection's first message supersedes whatever we had — including after the
    *  server rebuilt its state and restarted its version counter. */
   const applyState = useCallback((state: TournamentState) => {
@@ -43,18 +48,55 @@ export function useTournamentState() {
   useEffect(() => {
     dropLegacyStorage();
 
-    const source = new EventSource("/api/stream");
-    source.addEventListener("state", (event) => {
-      setConnection("live");
-      setError(null);
-      const state = JSON.parse((event as MessageEvent).data) as TournamentState;
-      if (shouldApply(state.version, versionRef.current, "sse")) {
-        applyState(state);
-      }
-    });
-    source.onerror = () => setConnection("offline");
+    let disposed = false;
+    let socket: WebSocket | null = null;
+    let attempt = 0;
+    let lastSeen = Date.now();
+    let reconnectTimer: number | undefined;
 
-    return () => source.close();
+    const connect = () => {
+      const current = new WebSocket(socketUrl(window.location));
+      socket = current;
+      current.onopen = () => {
+        attempt = 0;
+        lastSeen = Date.now();
+      };
+      current.onmessage = (event) => {
+        lastSeen = Date.now();
+        const state = parseServerMessage(event.data);
+        if (!state) return;
+        setConnection("live");
+        setError(null);
+        if (shouldApply(state.version, versionRef.current, "push")) applyState(state);
+      };
+      current.onclose = () => {
+        if (socket === current) socket = null;
+        if (disposed) return;
+        setConnection("offline");
+        reconnectTimer = window.setTimeout(connect, reconnectDelay(attempt));
+        attempt += 1;
+      };
+    };
+
+    connect();
+
+    // Browsers can take minutes to notice a dead connection, so ping and give up
+    // on a socket that has gone quiet; onclose then schedules the reconnect.
+    const heartbeat = window.setInterval(() => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      if (Date.now() - lastSeen > HEARTBEAT_TIMEOUT_MS) {
+        socket.close();
+        return;
+      }
+      socket.send("ping");
+    }, HEARTBEAT_INTERVAL_MS);
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(reconnectTimer);
+      window.clearInterval(heartbeat);
+      socket?.close();
+    };
   }, [applyState]);
 
   const run = useCallback(
