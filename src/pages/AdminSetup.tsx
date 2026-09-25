@@ -8,20 +8,25 @@ import {
   TeamBadge,
   type ConnectionState,
 } from "../features/tournament";
-import type { Match, MatchStatus } from "../types";
+import type { Match, MatchStatus, SessionInfo } from "../types";
 import { formatTime } from "../utils/format";
 
 export function AdminSetup({
+  eyebrow,
+  account,
+  onSignOut,
   matches,
   updateMatch,
-  generateSchedule,
-  resetTournament,
+  setup,
   connection,
 }: {
+  eyebrow: string;
+  account: SessionInfo;
+  onSignOut: () => void;
   matches: Match[];
   updateMatch: (id: string, patch: Partial<Match>) => void;
-  generateSchedule: () => void;
-  resetTournament: () => void;
+  /** Super-admin だけに出す大会全体の操作。 */
+  setup?: { generateSchedule: () => void; resetTournament: () => void };
   connection: ConnectionState;
 }) {
   const [selectedId, setSelectedId] = useState(() => (matches.find(isOnPitch) ?? matches[0])?.id);
@@ -41,8 +46,15 @@ export function AdminSetup({
 
   return (
     <>
-      <PageTitle eyebrow="ADMIN CONSOLE" title="Match control">
-        <span className="admin-pill">ADMIN MODE</span>
+      <PageTitle eyebrow={eyebrow} title="Match control">
+        <div className="console-account">
+          <span className="admin-pill">
+            {account.court === null ? "ALL COURTS" : `COURT ${account.court}`} · {account.username}
+          </span>
+          <button type="button" className="outline-button" onClick={onSignOut}>
+            Sign out
+          </button>
+        </div>
       </PageTitle>
       <div className="admin-grid">
         <section className="admin-panel">
@@ -140,25 +152,27 @@ export function AdminSetup({
             </>
           )}
         </section>
-        <section className="admin-panel setup-panel">
-          <label>SUPERADMIN SETUP</label>
-          <h3>Seed knockout teams</h3>
-          <p>
-            Group fixtures run from 09:00 on courts 1–2, with court 3 joining at 12:15. Once the
-            group stage is final, this fills the Round of 16 from the standings without moving any
-            kick-off time.
-          </p>
-          <ScheduleCheck matches={matches} />
-          <button
-            type="button"
-            className="primary-button"
-            disabled={offline}
-            onClick={generateSchedule}
-          >
-            ✦ Seed knockout teams
-          </button>
-          <ResetButton onReset={resetTournament} disabled={offline} />
-        </section>
+        {setup && (
+          <section className="admin-panel setup-panel">
+            <label>SUPERADMIN SETUP</label>
+            <h3>Seed knockout teams</h3>
+            <p>
+              Group fixtures run from 09:00 on courts 1–2, with court 3 joining at 12:15. Once the
+              group stage is final, this fills the Round of 16 from the standings without moving any
+              kick-off time.
+            </p>
+            <ScheduleCheck matches={matches} />
+            <button
+              type="button"
+              className="primary-button"
+              disabled={offline}
+              onClick={setup.generateSchedule}
+            >
+              ✦ Seed knockout teams
+            </button>
+            <ResetButton onReset={setup.resetTournament} disabled={offline} />
+          </section>
+        )}
       </div>
     </>
   );

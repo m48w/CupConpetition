@@ -5,6 +5,7 @@ import { shouldApply } from "../api/version";
 import { initialMatches } from "../data";
 import { applyMatchPatch } from "../logic";
 import type { Match, TournamentState } from "../../../types";
+import { ApiError } from "../../../utils/http";
 
 export type ConnectionState = "connecting" | "live" | "offline";
 
@@ -22,7 +23,7 @@ function dropLegacyStorage(): void {
   }
 }
 
-export function useTournamentState() {
+export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => void } = {}) {
   const [matches, setMatches] = useState<Match[]>(initialMatches);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [error, setError] = useState<string | null>(null);
@@ -106,10 +107,12 @@ export function useTournamentState() {
         setError(null);
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));
+        // The session ran out (12 hours) or was never valid: re-read it so the page shows the sign-in form.
+        if (cause instanceof ApiError && cause.status === 401) onUnauthorized?.();
         await onError?.();
       }
     },
-    [applyIfNewer],
+    [applyIfNewer, onUnauthorized],
   );
 
   /** Drops an optimistic change the server refused by reloading its truth. If

@@ -1,18 +1,18 @@
-import { useState } from "react";
 import { NavLink, Route, Routes, useNavigate } from "react-router-dom";
-import { AdminGate, AdminLoginModal, useAdminAuth } from "./features/admin";
+import { useSession } from "./features/auth";
 import {
   ConnectionBanner,
   seedKnockoutTeams,
   teams,
   useTournamentState,
 } from "./features/tournament";
-import { AdminSetup } from "./pages/AdminSetup";
 import { Bracket } from "./pages/Bracket";
 import { Live } from "./pages/Live";
 import { Matches } from "./pages/Matches";
 import { Overview } from "./pages/Overview";
 import { Standings } from "./pages/Standings";
+import { SubAdmin } from "./pages/SubAdmin";
+import { SuperAdmin } from "./pages/SuperAdmin";
 import type { Match } from "./types";
 
 const navItems = [
@@ -24,43 +24,21 @@ const navItems = [
 ];
 
 function App() {
-  const { matches, connection, error, patchMatch, replaceMatches, reset } = useTournamentState();
-  const { isAdmin, login, logout } = useAdminAuth();
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const { session, loading, refresh, signIn, signOut } = useSession();
+  const { matches, connection, error, patchMatch, replaceMatches, reset } = useTournamentState({
+    onUnauthorized: refresh,
+  });
   const navigate = useNavigate();
 
-  const updateMatch = (id: string, patch: Partial<Match>) => {
-    void patchMatch(id, patch);
+  const consoleProps = {
+    session,
+    signIn,
+    onSignOut: () => void signOut(),
+    matches,
+    updateMatch: (id: string, patch: Partial<Match>) => void patchMatch(id, patch),
+    connection,
   };
-
-  const generateSchedule = () => {
-    void replaceMatches(seedKnockoutTeams(teams, matches));
-  };
-
-  const resetTournament = () => {
-    void reset();
-  };
-
-  const handleAdminToggle = () => {
-    if (isAdmin) {
-      logout();
-      setShowAdminLogin(false);
-      navigate("/");
-      return;
-    }
-
-    setShowAdminLogin(true);
-  };
-
-  const handleAdminLogin = (password: string) => {
-    if (!login(password)) {
-      return false;
-    }
-
-    setShowAdminLogin(false);
-    navigate("/admin/setup");
-    return true;
-  };
+  const consolePath = session?.role === "superadmin" ? "/superadmin" : "/subadmin";
 
   return (
     <div className="app-shell">
@@ -76,9 +54,17 @@ function App() {
           <div className="event-meta">
             <span className="live-dot" /> LIVE EVENT <b>26 SEP 2026</b>
           </div>
-          <button type="button" className="admin-toggle" onClick={handleAdminToggle}>
-            {isAdmin ? "Exit admin" : "Admin login"} <span>↗</span>
-          </button>
+          {/* Staff open /superadmin and /subadmin directly in production; spectators never see these. */}
+          {import.meta.env.DEV && (
+            <div className="admin-links">
+              <NavLink to="/superadmin" className="admin-toggle">
+                Super-admin <span>↗</span>
+              </NavLink>
+              <NavLink to="/subadmin" className="admin-toggle">
+                SubAdmin <span>↗</span>
+              </NavLink>
+            </div>
+          )}
         </header>
       </div>
       <div className="layout">
@@ -102,9 +88,9 @@ function App() {
                 <small>40 teams · 95 matches</small>
               </div>
             </div>
-            {isAdmin && (
-              <NavLink to="/admin/setup" className="nav-item admin-link">
-                ⚙ Setup
+            {session && (
+              <NavLink to={consolePath} className="nav-item admin-link">
+                ⚙ Console
               </NavLink>
             )}
           </div>
@@ -117,18 +103,29 @@ function App() {
             <Route path="/standings" element={<Standings matches={matches} />} />
             <Route path="/bracket" element={<Bracket matches={matches} />} />
             <Route
-              path="/admin/setup"
+              path="/superadmin"
               element={
-                isAdmin ? (
-                  <AdminSetup
-                    matches={matches}
-                    updateMatch={updateMatch}
-                    generateSchedule={generateSchedule}
-                    resetTournament={resetTournament}
-                    connection={connection}
-                  />
+                loading ? (
+                  <p className="muted">Checking sign-in…</p>
                 ) : (
-                  <AdminGate onUnlock={handleAdminLogin} />
+                  <SuperAdmin
+                    {...consoleProps}
+                    setup={{
+                      generateSchedule: () =>
+                        void replaceMatches(seedKnockoutTeams(teams, matches)),
+                      resetTournament: () => void reset(),
+                    }}
+                  />
+                )
+              }
+            />
+            <Route
+              path="/subadmin"
+              element={
+                loading ? (
+                  <p className="muted">Checking sign-in…</p>
+                ) : (
+                  <SubAdmin {...consoleProps} />
                 )
               }
             />
@@ -151,9 +148,6 @@ function App() {
       <footer>
         © 2026 VELOCITY CUP <span>•</span> Tournament operations platform
       </footer>
-      {showAdminLogin && (
-        <AdminLoginModal onClose={() => setShowAdminLogin(false)} onUnlock={handleAdminLogin} />
-      )}
     </div>
   );
 }
