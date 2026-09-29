@@ -11,7 +11,8 @@ npm run dev
 ```
 
 `npm run dev` starts Vite together with the Cloudflare Worker and its Durable Object in the local
-workerd runtime. Tournament data is kept in `.wrangler/state/` (not committed).
+workerd runtime. Tournament matches, teams, and team logos are kept in SQLite under
+`.wrangler/state/` (not committed).
 
 ## Checks
 

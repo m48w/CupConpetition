@@ -317,11 +317,19 @@ label {
   font-size: 13px;
   color: #e2e8f2;
 }
-.team-badge i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
+.team-badge img,
+.team-badge .team-crest {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  object-fit: contain;
+}
+.team-badge .team-crest {
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: #09111c;
+  font: 700 9px "DM Mono";
 }
 .timer {
   color: var(--green);
@@ -391,7 +399,12 @@ label {
 .next-row .team-badge {
   font-size: 11px;
   line-height: 1.8;
-  display: block;
+}
+.next-row .team-badge img,
+.next-row .team-badge .team-crest {
+  width: 21px;
+  height: 21px;
+  flex-basis: 21px;
 }
 .next-row small {
   font-size: 10px;
@@ -882,6 +895,7 @@ footer span {
 }
 .bracket-side {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 5px 0;
@@ -892,6 +906,18 @@ footer span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.bracket-team {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.bracket-team .team-badge img,
+.bracket-team .team-badge .team-crest {
+  width: 20px;
+  height: 20px;
+  flex-basis: 20px;
 }
 .bracket-side b {
   font-family: "DM Mono";

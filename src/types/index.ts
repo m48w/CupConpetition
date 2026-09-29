@@ -6,6 +6,7 @@ export interface Team {
   name: string;
   groupId: string;
   color: string;
+  logoId?: string | null;
 }
 
 export interface Match {
@@ -31,6 +32,7 @@ export interface Match {
 export interface TournamentState {
   version: number;
   updatedAt: string;
+  teams: Team[];
   matches: Match[];
 }
 

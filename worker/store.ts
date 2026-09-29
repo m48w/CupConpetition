@@ -1,6 +1,6 @@
 import { teams } from "../src/features/tournament/data";
 import { buildTournamentSchedule } from "../src/features/tournament/schedule";
-import type { Match, MatchStatus, TournamentState } from "../src/types";
+import type { Match, MatchStatus, Team, TournamentState } from "../src/types";
 
 const MATCH_STATUSES: readonly MatchStatus[] = ["SCHEDULED", "LIVE", "PAUSED", "FINISHED"];
 
@@ -41,12 +41,27 @@ export class StoreError extends Error {
 
 export interface Store {
   read(): TournamentState;
+  readLogo(id: string): { contentType: string; dataBase64: string } | undefined;
   patchMatch(id: string, patch: Partial<Match>): TournamentState;
   replaceMatches(matches: Match[]): TournamentState;
   reset(): TournamentState;
 }
 
 const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS logos (
+     id TEXT PRIMARY KEY,
+     content_type TEXT NOT NULL,
+     data_base64 TEXT NOT NULL,
+     created_at TEXT NOT NULL
+   )`,
+  `CREATE TABLE IF NOT EXISTS teams (
+     id TEXT PRIMARY KEY,
+     position INTEGER NOT NULL UNIQUE,
+     name TEXT NOT NULL,
+     group_id TEXT NOT NULL,
+     color TEXT NOT NULL,
+     logo_id TEXT REFERENCES logos(id) ON DELETE SET NULL
+   )`,
   `CREATE TABLE IF NOT EXISTS meta (
      id INTEGER PRIMARY KEY CHECK (id = 1),
      version INTEGER NOT NULL,
@@ -67,6 +82,24 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
   const sql = storage.sql;
   for (const statement of SCHEMA) sql.exec(statement);
 
+  const teamCount = sql
+    .exec<{ count: number }>("SELECT COUNT(*) AS count FROM teams")
+    .toArray()[0].count;
+  if (teamCount === 0) {
+    storage.transactionSync(() => {
+      teams.forEach((team, position) =>
+        sql.exec(
+          "INSERT INTO teams (id, position, name, group_id, color, logo_id) VALUES (?, ?, ?, ?, ?, NULL)",
+          team.id,
+          position,
+          team.name,
+          team.groupId,
+          team.color,
+        ),
+      );
+    });
+  }
+
   const readMeta = () =>
     sql
       .exec<{ version: number; updated_at: string }>(
@@ -79,6 +112,32 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
       .exec<{ data: string }>("SELECT data FROM matches ORDER BY position")
       .toArray()
       .map((row) => JSON.parse(row.data) as Match);
+
+  const readTeams = () =>
+    sql
+      .exec<{
+        id: string;
+        name: string;
+        group_id: string;
+        color: string;
+        logo_id: string | null;
+      }>("SELECT id, name, group_id, color, logo_id FROM teams ORDER BY position")
+      .toArray()
+      .map((row): Team => ({
+        id: row.id,
+        name: row.name,
+        groupId: row.group_id,
+        color: row.color,
+        logoId: row.logo_id,
+      }));
+
+  const readLogo = (id: string) =>
+    sql
+      .exec<{ content_type: string; data_base64: string }>(
+        "SELECT content_type, data_base64 FROM logos WHERE id = ?",
+        id,
+      )
+      .toArray()[0];
 
   /** version を1つ進める。呼び出し側のトランザクションの中で使う。 */
   const bumpVersion = () => {
@@ -113,12 +172,22 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
 
   const snapshot = (): TournamentState => {
     const meta = readMeta();
-    return { version: meta.version, updatedAt: meta.updated_at, matches: readMatches() };
+    return {
+      version: meta.version,
+      updatedAt: meta.updated_at,
+      teams: readTeams(),
+      matches: readMatches(),
+    };
   };
 
   return {
     read() {
       return readMeta() ? snapshot() : writeAll(buildTournamentSchedule(teams));
+    },
+
+    readLogo(id) {
+      const logo = readLogo(id);
+      return logo ? { contentType: logo.content_type, dataBase64: logo.data_base64 } : undefined;
     },
 
     patchMatch(id, patch) {

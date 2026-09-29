@@ -3,9 +3,11 @@ import { runInDurableObject } from "cloudflare:test";
 import { expect, test } from "vitest";
 import { createSqlStore, StoreError, type Store } from "./store";
 
-function withStore<T>(fn: (store: Store) => T): Promise<T> {
+function withStore<T>(fn: (store: Store, storage: DurableObjectStorage) => T): Promise<T> {
   const stub = env.TOURNAMENT.get(env.TOURNAMENT.idFromName(crypto.randomUUID()));
-  return runInDurableObject(stub, (_instance, state) => fn(createSqlStore(state.storage)));
+  return runInDurableObject(stub, (_instance, state) =>
+    fn(createSqlStore(state.storage), state.storage),
+  );
 }
 
 function codeOf(fn: () => unknown): string | undefined {
@@ -22,7 +24,25 @@ test("空の Durable Object では初期スケジュール95試合を version 1 
   const state = await withStore((store) => store.read());
   expect(state.version).toBe(1);
   expect(state.matches).toHaveLength(95);
+  expect(state.teams).toHaveLength(40);
   expect(state.matches.every((m) => m.status === "SCHEDULED")).toBe(true);
+});
+
+test("ロゴをチームに関連付けてSQLiteから読み出す", async () => {
+  const result = await withStore((store, storage) => {
+    const logoId = "logo-a1";
+    storage.sql.exec(
+      "INSERT INTO logos (id, content_type, data_base64, created_at) VALUES (?, ?, ?, ?)",
+      logoId,
+      "image/png",
+      "AQID",
+      new Date().toISOString(),
+    );
+    storage.sql.exec("UPDATE teams SET logo_id = ? WHERE id = ?", logoId, "A1");
+    return { state: store.read(), logo: store.readLogo(logoId) };
+  });
+  expect(result.state.teams.find((team) => team.id === "A1")?.logoId).toBe("logo-a1");
+  expect(result.logo).toEqual({ contentType: "image/png", dataBase64: "AQID" });
 });
 
 test("2回目の read は作り直さず同じ version を返す", async () => {

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { initialMatches } from "../data";
+import { initialMatches, teams } from "../data";
 import { parseServerMessage, reconnectDelay, socketUrl } from "./socket";
 
 test("socketUrl は http のページでは ws:// を使う", () => {
@@ -21,7 +21,12 @@ test("reconnectDelay は 1秒から倍々に延ばし、10秒で頭打ちにす�
 });
 
 test("parseServerMessage は state メッセージから TournamentState を取り出す", () => {
-  const state = { version: 3, updatedAt: "2026-09-26T00:00:00.000Z", matches: initialMatches };
+  const state = {
+    version: 3,
+    updatedAt: "2026-09-26T00:00:00.000Z",
+    teams,
+    matches: initialMatches,
+  };
   expect(parseServerMessage(JSON.stringify({ type: "state", state }))).toEqual(state);
 });
 

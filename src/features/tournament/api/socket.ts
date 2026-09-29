@@ -24,6 +24,12 @@ export function parseServerMessage(data: unknown): TournamentState | null {
   if (typeof message !== "object" || message === null) return null;
   const { type, state } = message as { type?: unknown; state?: Partial<TournamentState> };
   if (type !== "state" || typeof state !== "object" || state === null) return null;
-  if (typeof state.version !== "number" || !Array.isArray(state.matches)) return null;
+  if (
+    typeof state.version !== "number" ||
+    !Array.isArray(state.matches) ||
+    !Array.isArray(state.teams)
+  ) {
+    return null;
+  }
   return state as TournamentState;
 }

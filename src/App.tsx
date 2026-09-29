@@ -3,7 +3,7 @@ import { useSession } from "./features/auth";
 import {
   ConnectionBanner,
   seedKnockoutTeams,
-  teams,
+  TeamsProvider,
   useTournamentState,
 } from "./features/tournament";
 import { Bracket } from "./pages/Bracket";
@@ -25,7 +25,7 @@ const navItems = [
 
 function App() {
   const { session, loading, refresh, signIn, signOut } = useSession();
-  const { matches, connection, error, patchMatch, replaceMatches, reset, clearError } =
+  const { matches, teams, connection, error, patchMatch, replaceMatches, reset, clearError } =
     useTournamentState({
       onUnauthorized: refresh,
     });
@@ -101,44 +101,46 @@ function App() {
             )}
           </div>
         </aside>
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Overview matches={matches} />} />
-            <Route path="/matches" element={<Matches matches={matches} />} />
-            <Route path="/live" element={<Live matches={matches} />} />
-            <Route path="/standings" element={<Standings matches={matches} />} />
-            <Route path="/bracket" element={<Bracket matches={matches} />} />
-            <Route
-              path="/superadmin"
-              element={
-                loading ? (
-                  <p className="muted">Checking sign-in…</p>
-                ) : (
-                  <SuperAdmin
-                    {...consoleProps}
-                    setup={{
-                      generateSchedule: () =>
-                        void replaceMatches(seedKnockoutTeams(teams, matches)),
-                      resetTournament: () => void reset(),
-                    }}
-                  />
-                )
-              }
-            />
-            <Route
-              path="/subadmin"
-              element={
-                loading ? (
-                  <p className="muted">Checking sign-in…</p>
-                ) : (
-                  <SubAdmin {...consoleProps} />
-                )
-              }
-            />
-            <Route path="/admin/setup" element={<Navigate to="/superadmin" replace />} />
-            <Route path="*" element={<Overview matches={matches} />} />
-          </Routes>
-        </main>
+        <TeamsProvider teams={teams}>
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<Overview matches={matches} />} />
+              <Route path="/matches" element={<Matches matches={matches} />} />
+              <Route path="/live" element={<Live matches={matches} />} />
+              <Route path="/standings" element={<Standings matches={matches} />} />
+              <Route path="/bracket" element={<Bracket matches={matches} />} />
+              <Route
+                path="/superadmin"
+                element={
+                  loading ? (
+                    <p className="muted">Checking sign-in…</p>
+                  ) : (
+                    <SuperAdmin
+                      {...consoleProps}
+                      setup={{
+                        generateSchedule: () =>
+                          void replaceMatches(seedKnockoutTeams(teams, matches)),
+                        resetTournament: () => void reset(),
+                      }}
+                    />
+                  )
+                }
+              />
+              <Route
+                path="/subadmin"
+                element={
+                  loading ? (
+                    <p className="muted">Checking sign-in…</p>
+                  ) : (
+                    <SubAdmin {...consoleProps} />
+                  )
+                }
+              />
+              <Route path="/admin/setup" element={<Navigate to="/superadmin" replace />} />
+              <Route path="*" element={<Overview matches={matches} />} />
+            </Routes>
+          </main>
+        </TeamsProvider>
       </div>
       <nav className="bottom-nav">
         {navItems.map((item) => (

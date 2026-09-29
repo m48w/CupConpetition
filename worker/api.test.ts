@@ -1,5 +1,5 @@
 import { env, exports } from "cloudflare:workers";
-import { evictDurableObject } from "cloudflare:test";
+import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { beforeAll, beforeEach, expect, test } from "vitest";
 import type { Match, ServerMessage, TournamentState } from "../src/types";
 
@@ -69,6 +69,27 @@ beforeEach(async () => {
 test("GET /api/state は未ログインでも全95試合を返す", async () => {
   const state = await readState();
   expect(state.matches).toHaveLength(95);
+  expect(state.teams).toHaveLength(40);
+});
+
+test("GET /api/logos/:id はSQLiteのロゴ画像を返す", async () => {
+  const logoId = `test-${crypto.randomUUID()}`;
+  const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("main"));
+  await runInDurableObject(room, (_instance, state) => {
+    state.storage.sql.exec(
+      "INSERT INTO logos (id, content_type, data_base64, created_at) VALUES (?, ?, ?, ?)",
+      logoId,
+      "image/png",
+      "AQID",
+      new Date().toISOString(),
+    );
+    state.storage.sql.exec("UPDATE teams SET logo_id = ? WHERE id = ?", logoId, "A1");
+  });
+
+  const response = await call(`/api/logos/${encodeURIComponent(logoId)}`);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toBe("image/png");
+  expect([...new Uint8Array(await response.arrayBuffer())]).toEqual([1, 2, 3]);
 });
 
 test("PATCH /api/matches/:id がスコアを更新する", async () => {

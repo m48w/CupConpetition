@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as client from "../api/client";
 import { parseServerMessage, reconnectDelay, socketUrl } from "../api/socket";
 import { shouldApply } from "../api/version";
-import { initialMatches } from "../data";
+import { initialMatches, teams as initialTeams } from "../data";
 import { applyMatchPatch } from "../logic";
-import type { Match, TournamentState } from "../../../types";
+import type { Match, Team, TournamentState } from "../../../types";
 import { ApiError } from "../../../utils/http";
 
 export type ConnectionState = "connecting" | "live" | "offline";
@@ -25,6 +25,7 @@ function dropLegacyStorage(): void {
 
 export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => void } = {}) {
   const [matches, setMatches] = useState<Match[]>(initialMatches);
+  const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [error, setError] = useState<string | null>(null);
   const versionRef = useRef(0);
@@ -35,6 +36,7 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
   const applyState = useCallback((state: TournamentState) => {
     versionRef.current = state.version;
     setMatches(state.matches);
+    setTeams(state.teams);
   }, []);
 
   /** A mutating call's response, which may land after a newer SSE push. */
@@ -127,6 +129,7 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
 
   return {
     matches,
+    teams,
     connection,
     error,
     /** Drops the error banner, e.g. after signing back in makes it stale. */

@@ -51,6 +51,8 @@ test("未開始の試合はスコアを出さず、始まった試合はチー�
   expect(r16.games[0]).toMatchObject({
     home: home.name,
     away: away.name,
+    homeTeamId: home.id,
+    awayTeamId: away.id,
     homeScore: 2,
     awayScore: 1,
   });

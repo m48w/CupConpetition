@@ -67,6 +67,28 @@ export async function handleApi(
   };
 
   try {
+    const logoTarget = path.match(/^\/api\/logos\/([^/]+)$/);
+    if (logoTarget && request.method === "GET") {
+      let id: string;
+      try {
+        id = decodeURIComponent(logoTarget[1]);
+      } catch {
+        throw new BadRequestError("logo id must be URL encoded");
+      }
+      const logo = store.readLogo(id);
+      if (!logo) return jsonResponse(404, { error: "logo not found" });
+
+      const binary = atob(logo.dataBase64);
+      const data = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      return new Response(data, {
+        headers: {
+          "content-type": logo.contentType,
+          "cache-control": "public, max-age=3600",
+          "x-content-type-options": "nosniff",
+        },
+      });
+    }
+
     if (path === "/api/state" && request.method === "GET") {
       return jsonResponse(200, store.read());
     }

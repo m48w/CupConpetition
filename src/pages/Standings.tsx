@@ -1,8 +1,15 @@
 import { PageTitle } from "../components/ui/PageTitle";
-import { calculateStandings, TeamBadge, teams } from "../features/tournament";
+import {
+  calculateStandings,
+  TeamBadge,
+  teams as initialTeams,
+  useTeams,
+} from "../features/tournament";
 import type { Match } from "../types";
 
 export function Standings({ matches }: { matches: Match[] }) {
+  const teams = useTeams();
+  const standingsTeams = teams.length ? teams : initialTeams;
   return (
     <>
       <PageTitle eyebrow="GROUP STAGE" title="Standings">
@@ -21,7 +28,7 @@ export function Standings({ matches }: { matches: Match[] }) {
               <span>GD</span>
               <span>PTS</span>
             </div>
-            {calculateStandings(group, teams, matches).map((row, index) => (
+            {calculateStandings(group, standingsTeams, matches).map((row, index) => (
               <div className="table-row" key={row.team.id}>
                 <b className={index === 0 ? "rank qualified" : "rank"}>{index + 1}</b>
                 <TeamBadge id={row.team.id} />

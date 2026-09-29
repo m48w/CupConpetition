@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PageTitle } from "../components/ui/PageTitle";
-import { MatchCard, stageLabel, teams } from "../features/tournament";
+import { MatchCard, stageLabel, useTeams } from "../features/tournament";
 import type { Match } from "../types";
 
 export function Matches({ matches }: { matches: Match[] }) {
@@ -8,6 +8,7 @@ export function Matches({ matches }: { matches: Match[] }) {
   const [teamId, setTeamId] = useState("ALL");
   const [groupId, setGroupId] = useState("ALL");
   const [court, setCourt] = useState("ALL");
+  const teams = useTeams();
   const filtered = matches.filter(
     (match) =>
       (stage === "ALL" || match.stage === stage) &&

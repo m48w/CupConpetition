@@ -1,12 +1,23 @@
 import { PageTitle } from "../components/ui/PageTitle";
-import { bracketRounds, type BracketGame } from "../features/tournament";
+import { bracketRounds, TeamBadge, type BracketGame, useTeams } from "../features/tournament";
 import type { Match } from "../types";
 import { formatTime } from "../utils/format";
 
-function BracketSide({ name, score }: { name: string; score: number | null }) {
+function BracketSide({
+  name,
+  teamId,
+  score,
+}: {
+  name: string;
+  teamId?: string;
+  score: number | null;
+}) {
   return (
     <div className="bracket-side">
-      <span>{name}</span>
+      <div className="bracket-team">
+        {teamId && <TeamBadge id={teamId} showName={false} />}
+        <span>{name}</span>
+      </div>
       {score !== null && <b>{score}</b>}
     </div>
   );
@@ -18,13 +29,14 @@ function BracketCard({ game }: { game: BracketGame }) {
       <small>
         {game.scheduledStart ? `${formatTime(game.scheduledStart)} · Court ${game.court}` : game.id}
       </small>
-      <BracketSide name={game.home} score={game.homeScore} />
-      <BracketSide name={game.away} score={game.awayScore} />
+      <BracketSide name={game.home} teamId={game.homeTeamId} score={game.homeScore} />
+      <BracketSide name={game.away} teamId={game.awayTeamId} score={game.awayScore} />
     </div>
   );
 }
 
 export function Bracket({ matches }: { matches: Match[] }) {
+  const teams = useTeams();
   return (
     <>
       <PageTitle eyebrow="WORLD CUP KNOCKOUT" title="Velocity Cup 2026">
@@ -37,7 +49,7 @@ export function Bracket({ matches }: { matches: Match[] }) {
       </div>
       <div className="bracket-scroll">
         <div className="bracket">
-          {bracketRounds(matches).map((round) => (
+          {bracketRounds(matches, teams).map((round) => (
             <section className="bracket-round" key={round.stage}>
               <h3>{round.title}</h3>
               <div className="bracket-slots">
