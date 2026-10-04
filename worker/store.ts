@@ -48,6 +48,10 @@ export interface Store {
 }
 
 const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS store_migrations (
+     id TEXT PRIMARY KEY,
+     applied_at TEXT NOT NULL
+   )`,
   `CREATE TABLE IF NOT EXISTS logos (
      id TEXT PRIMARY KEY,
      content_type TEXT NOT NULL,
@@ -74,6 +78,11 @@ const SCHEMA = [
    )`,
 ];
 
+const SCHEDULE_DATE_MIGRATION = "schedule-date-2026-12-20";
+const SCHEDULE_DATE_SHIFT_MS = 85 * 24 * 60 * 60 * 1_000;
+const PREVIOUS_EVENT_START_MS = Date.parse("2026-09-25T15:00:00.000Z");
+const NEXT_EVENT_START_MS = Date.parse("2026-09-26T15:00:00.000Z");
+
 /**
  * Durable Object の SQLite に大会の state を持つ。メモリにはキャッシュしないので、
  * 休止や退避から戻っても常に保存済みの内容を返す。
@@ -81,6 +90,37 @@ const SCHEMA = [
 export function createSqlStore(storage: DurableObjectStorage): Store {
   const sql = storage.sql;
   for (const statement of SCHEMA) sql.exec(statement);
+
+  const dateMigration = sql
+    .exec<{ id: string }>("SELECT id FROM store_migrations WHERE id = ?", SCHEDULE_DATE_MIGRATION)
+    .toArray()[0];
+  if (!dateMigration) {
+    storage.transactionSync(() => {
+      const rows = sql.exec<{ id: string; data: string }>("SELECT id, data FROM matches").toArray();
+      let migrated = 0;
+      for (const row of rows) {
+        const match = JSON.parse(row.data) as Match;
+        const startMs = Date.parse(match.scheduledStart);
+        if (startMs < PREVIOUS_EVENT_START_MS || startMs >= NEXT_EVENT_START_MS) continue;
+        match.scheduledStart = new Date(startMs + SCHEDULE_DATE_SHIFT_MS).toISOString();
+        sql.exec("UPDATE matches SET data = ? WHERE id = ?", JSON.stringify(match), row.id);
+        migrated += 1;
+      }
+      if (migrated > 0) {
+        sql.exec(
+          `UPDATE meta
+           SET version = version + 1, updated_at = ?
+           WHERE id = 1`,
+          new Date().toISOString(),
+        );
+      }
+      sql.exec(
+        "INSERT INTO store_migrations (id, applied_at) VALUES (?, ?)",
+        SCHEDULE_DATE_MIGRATION,
+        new Date().toISOString(),
+      );
+    });
+  }
 
   const teamCount = sql
     .exec<{ count: number }>("SELECT COUNT(*) AS count FROM teams")

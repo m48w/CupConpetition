@@ -51,6 +51,31 @@ test("2回目の read は作り直さず同じ version を返す", async () => {
   expect(second.matches).toEqual(first.matches);
 });
 
+test("保存済みの旧開催日を新しい開催日へ一度だけ移行する", async () => {
+  const result = await withStore((store, storage) => {
+    const before = store.read();
+    const match = before.matches[0];
+    const previousStart = "2026-09-26T00:00:00.000Z";
+    storage.sql.exec(
+      "UPDATE matches SET data = ? WHERE id = ?",
+      JSON.stringify({ ...match, scheduledStart: previousStart }),
+      match.id,
+    );
+    storage.sql.exec("DELETE FROM store_migrations WHERE id = ?", "schedule-date-2026-12-20");
+
+    const after = createSqlStore(storage).read();
+    const repeated = createSqlStore(storage).read();
+    return { before, after, repeated, matchId: match.id, previousStart };
+  });
+
+  const migrated = result.after.matches.find((match) => match.id === result.matchId)!;
+  expect(migrated.scheduledStart).toBe(
+    new Date(Date.parse(result.previousStart) + 85 * 24 * 60 * 60 * 1_000).toISOString(),
+  );
+  expect(result.after.version).toBe(result.before.version + 1);
+  expect(result.repeated.version).toBe(result.after.version);
+});
+
 test("patchMatch は対象の試合だけを書き換え、version を1つ増やす", async () => {
   const { before, after } = await withStore((store) => {
     const before = store.read();

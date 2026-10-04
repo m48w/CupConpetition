@@ -18,7 +18,9 @@ export function TeamBadge({ id, showName = true }: { id: string; showName?: bool
         />
       ) : (
         <i className="team-crest" style={{ background: team?.color }}>
-          {team?.name.slice(0, 2).toUpperCase() ?? "?"}
+          {team
+            ? (/^Team\d+$/.test(team.name) ? team.id : team.name.slice(0, 2)).toUpperCase()
+            : "?"}
         </i>
       )}
       {showName && <span>{team?.name ?? "TBD"}</span>}

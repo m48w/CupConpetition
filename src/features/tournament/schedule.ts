@@ -4,9 +4,9 @@ export const COURT_COUNT = 3;
 export const GROUP_MATCH_MINUTES = 15;
 /** ラウンド間の休憩。グループ戦終了から R16 開始までも同じ。 */
 export const ROUND_BREAK_MINUTES = 18;
-export const TOURNAMENT_START = "2026-09-26T09:00:00+09:00";
+export const TOURNAMENT_START = "2026-12-20T09:00:00+09:00";
 /** Court 3 はこの時刻から使える。それより前は Court 1・2 のみ。 */
-export const COURT_3_OPENS_AT = "2026-09-26T12:15:00+09:00";
+export const COURT_3_OPENS_AT = "2026-12-20T12:15:00+09:00";
 export const TBD = "TBD";
 export const GROUP_IDS = ["A", "B", "C", "D", "E", "F", "G", "H"] as const;
 

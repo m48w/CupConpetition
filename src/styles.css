@@ -31,10 +31,11 @@ button {
 .topbar {
   height: 76px;
   border-bottom: 1px solid var(--line);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) auto minmax(72px, 1fr);
   align-items: center;
   padding: 0 42px;
-  gap: 30px;
+  gap: 20px;
   background: rgba(8, 13, 23, 0.88);
   backdrop-filter: blur(16px);
   position: sticky;
@@ -42,14 +43,25 @@ button {
   z-index: 3;
 }
 .brand {
+  justify-self: center;
   background: none;
   border: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 2px;
+  white-space: nowrap;
+}
+.admin-links {
+  justify-self: end;
+}
+.header-logo {
+  justify-self: start;
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
 }
 .brand span span {
   color: var(--orange);
@@ -211,6 +223,114 @@ label {
   box-shadow:
     0 0 0 25px #ffffff05,
     0 0 0 50px #ffffff03;
+}
+.overview-countdown,
+.overview-section {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #16243a, #0e1727);
+  padding: 30px;
+}
+.overview-countdown {
+  text-align: center;
+  padding: 46px 24px;
+}
+.overview-countdown h1 {
+  margin: 10px 0 0;
+  font-size: clamp(30px, 5vw, 46px);
+  letter-spacing: -1.5px;
+}
+.countdown-date {
+  margin: 10px 0 26px;
+  color: #c3cede;
+  font-size: 16px;
+}
+.countdown-clock {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.countdown-unit {
+  min-width: 92px;
+  padding: 15px 12px;
+  border: 1px solid #344661;
+  border-radius: 10px;
+  background: #0c1421;
+}
+.countdown-unit strong,
+.countdown-unit span {
+  display: block;
+}
+.countdown-unit strong {
+  color: #f4c747;
+  font: 600 30px "DM Mono";
+}
+.countdown-unit span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.countdown-started {
+  color: #f4c747;
+  font-size: 22px;
+  font-weight: 700;
+}
+.overview-section {
+  margin-top: 22px;
+  padding: 24px;
+}
+.overview-section .section-heading {
+  margin-bottom: 18px;
+}
+.overview-section .section-heading h2 {
+  margin: 6px 0 0;
+}
+.team-logo-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  scrollbar-color: #40516c #111b2b;
+  scrollbar-width: thin;
+}
+.team-logo-tile {
+  flex: 0 0 112px;
+  min-height: 106px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 8px;
+  border: 1px solid #26354c;
+  border-radius: 10px;
+  background: #111b2b;
+}
+.team-logo-tile .team-badge {
+  justify-content: center;
+}
+.team-logo-tile .team-badge img,
+.team-logo-tile .team-badge .team-crest {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+}
+.team-logo-tile > span {
+  color: #d6dfed;
+  font-size: 12px;
+}
+.rules-section {
+  margin-bottom: 12px;
+}
+.rules-placeholder {
+  border: 1px dashed #344661;
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  color: #aab5c7;
+}
+.rules-placeholder p {
+  margin: 0;
 }
 .hero-kicker {
   color: var(--orange);
@@ -626,8 +746,8 @@ footer span {
   .event-meta {
     display: none;
   }
-  .admin-toggle {
-    margin-left: auto;
+  .admin-links .admin-toggle {
+    margin-left: 0;
   }
   .bottom-nav {
     display: flex;
@@ -693,9 +813,42 @@ footer span {
   }
   .topbar {
     height: 64px;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 0 10px;
   }
   .brand {
-    font-size: 15px;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+  .header-logo {
+    width: 42px;
+    height: 42px;
+  }
+  .admin-links {
+    gap: 4px;
+  }
+  .admin-toggle {
+    padding: 7px 8px;
+    font-size: 10px;
+  }
+  .overview-countdown,
+  .overview-section {
+    padding: 22px 16px;
+  }
+  .countdown-clock {
+    gap: 7px;
+  }
+  .countdown-unit {
+    min-width: 0;
+    flex: 1;
+    padding: 12px 5px;
+  }
+  .countdown-unit strong {
+    font-size: 22px;
+  }
+  .countdown-unit span {
+    font-size: 9px;
   }
 }
 .admin-gate-card {

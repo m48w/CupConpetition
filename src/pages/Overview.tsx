@@ -1,65 +1,83 @@
-import { NavLink } from "react-router-dom";
-import { Empty } from "../components/ui/Empty";
-import { PageTitle } from "../components/ui/PageTitle";
-import { isOnPitch, MatchCard } from "../features/tournament";
-import type { Match } from "../types";
+import { useEffect, useState } from "react";
+import { TeamBadge, useTeams } from "../features/tournament";
 
-export function Overview({ matches }: { matches: Match[] }) {
-  const live = matches.filter(isOnPitch);
-  const next = matches.filter((m) => m.status === "SCHEDULED").slice(0, 3);
+const EVENT_DATE = new Date("2026-12-19T15:00:00.000Z");
+
+function getCountdown(now: number) {
+  const remaining = Math.max(0, EVENT_DATE.getTime() - now);
+  return {
+    days: Math.floor(remaining / 86_400_000),
+    hours: Math.floor((remaining % 86_400_000) / 3_600_000),
+    minutes: Math.floor((remaining % 3_600_000) / 60_000),
+    seconds: Math.floor((remaining % 60_000) / 1_000),
+    started: remaining === 0,
+  };
+}
+
+export function Overview() {
+  const teams = useTeams();
+  const [now, setNow] = useState(() => Date.now());
+  const countdown = getCountdown(now);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   return (
     <>
-      <PageTitle eyebrow="SATURDAY · 26 SEPTEMBER 2026" title="Tournament overview">
-        <button className="outline-button">↗ Share event</button>
-      </PageTitle>
-      <section className="hero-grid">
-        <div className="hero-card">
-          <div className="hero-kicker">AUTUMN CUP 2026</div>
-          <h2>
-            One day.
-            <br />
-            <em>One champion.</em>
-          </h2>
-          <p>Follow every score, table and knockout moment in real time.</p>
-          <div className="hero-stats">
-            <div>
-              <b>40</b>
-              <span>Teams</span>
-            </div>
-            <div>
-              <b>95</b>
-              <span>Matches</span>
-            </div>
-            <div>
-              <b>8</b>
-              <span>Groups</span>
-            </div>
+      <section className="overview-countdown">
+        <div className="eyebrow">NEXT MATCH DAY</div>
+        <h1>Countdown to kick-off</h1>
+        <p className="countdown-date">Sunday, December 20, 2026</p>
+        {countdown.started ? (
+          <p className="countdown-started">Tournament day is here!</p>
+        ) : (
+          <div className="countdown-clock" aria-label="Time until tournament day">
+            {(
+              [
+                ["days", "Days"],
+                ["hours", "Hours"],
+                ["minutes", "Minutes"],
+                ["seconds", "Seconds"],
+              ] as const
+            ).map(([unit, label]) => (
+              <div className="countdown-unit" key={unit}>
+                <strong>{String(countdown[unit]).padStart(2, "0")}</strong>
+                <span>{label}</span>
+              </div>
+            ))}
           </div>
-        </div>
-        <div className="today-card">
-          <div className="section-heading">
-            <h3>Live now</h3>
-            <NavLink to="/live">View live ↗</NavLink>
-          </div>
-          {live.length ? (
-            live.map((match) => <MatchCard match={match} key={match.id} />)
-          ) : (
-            <Empty text="No matches are live right now" />
-          )}
-        </div>
+        )}
       </section>
-      <section className="section-block">
+
+      <section className="overview-section">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">UP NEXT</div>
-            <h2>Today’s schedule</h2>
+            <div className="eyebrow">THE CLUBS</div>
+            <h2>Participating teams</h2>
           </div>
-          <NavLink to="/matches">View all matches ↗</NavLink>
+          <span className="muted">{teams.length} teams</span>
         </div>
-        <div className="match-grid">
-          {next.map((match) => (
-            <MatchCard match={match} key={match.id} />
+        <div className="team-logo-strip" aria-label="Participating teams">
+          {teams.map((team) => (
+            <div className="team-logo-tile" key={team.id}>
+              <TeamBadge id={team.id} showName={false} />
+              <span>{team.name}</span>
+            </div>
           ))}
+        </div>
+      </section>
+
+      <section className="overview-section rules-section">
+        <div className="section-heading">
+          <div>
+            <div className="eyebrow">PLAY FAIR</div>
+            <h2>Tournament rules</h2>
+          </div>
+        </div>
+        <div className="rules-placeholder">
+          <p>The tournament rules will be announced soon.</p>
         </div>
       </section>
     </>

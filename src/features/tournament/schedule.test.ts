@@ -76,7 +76,7 @@ describe("buildTournamentSchedule", () => {
   });
 
   test("Court 3 は 12:15 JST より前に試合を入れない", () => {
-    const court3Opens = Date.parse("2026-09-26T12:15:00+09:00");
+    const court3Opens = Date.parse("2026-12-20T12:15:00+09:00");
     const early = schedule.filter(
       (m) => m.court === 3 && Date.parse(m.scheduledStart) < court3Opens,
     );
@@ -114,9 +114,9 @@ describe("buildTournamentSchedule", () => {
     }
   });
 
-  test("最終試合の終了は 2026-09-26 19:59 JST", () => {
+  test("最終試合の終了は 2026-12-20 19:59 JST", () => {
     const finish = Math.max(...schedule.map(matchEndMs));
-    expect(new Date(finish).toISOString()).toBe("2026-09-26T10:59:00.000Z");
+    expect(new Date(finish).toISOString()).toBe("2026-12-20T10:59:00.000Z");
   });
 
   test("同じ入力から常に同じ出力を返す", () => {

@@ -51,15 +51,10 @@ function App() {
       <div className="app-header">
         <ConnectionBanner connection={connection} error={error} />
         <header className="topbar">
+          <img className="header-logo" src="/velocity-fc-logo.png" alt="Velocity FC logo" />
           <button className="brand" onClick={() => navigate("/")}>
-            <span className="brand-mark">V</span>
-            <span>
-              ELOCITY <span>CUP 2026</span>
-            </span>
+            VELOCITY CUP 2026
           </button>
-          <div className="event-meta">
-            <span className="live-dot" /> LIVE EVENT <b>26 SEP 2026</b>
-          </div>
           {/* Staff open /superadmin and /subadmin directly in production; spectators never see these. */}
           {import.meta.env.DEV && (
             <div className="admin-links">
@@ -104,7 +99,7 @@ function App() {
         <TeamsProvider teams={teams}>
           <main className="main-content">
             <Routes>
-              <Route path="/" element={<Overview matches={matches} />} />
+              <Route path="/" element={<Overview />} />
               <Route path="/matches" element={<Matches matches={matches} />} />
               <Route path="/live" element={<Live matches={matches} />} />
               <Route path="/standings" element={<Standings matches={matches} />} />
@@ -137,7 +132,7 @@ function App() {
                 }
               />
               <Route path="/admin/setup" element={<Navigate to="/superadmin" replace />} />
-              <Route path="*" element={<Overview matches={matches} />} />
+              <Route path="*" element={<Overview />} />
             </Routes>
           </main>
         </TeamsProvider>
