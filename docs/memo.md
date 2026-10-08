@@ -4,6 +4,13 @@
 
 Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操作できる形で構築した。
 
+## 最新更新（2026-10-08）
+
+- 大会アプリの公開URLを `/20261220/` 配下に統一。サイトルート `/` は404とし、`/20261220` は末尾スラッシュ付きURLへ転送。
+- Worker が `/20261220/` 配下の画面・静的アセットを配信できるようにし、アセット要求から大会URLのprefixを除去。
+- Teams、Groups、試合詳細などの公開ルートと、管理ログイン・ダッシュボード・互換URLを追加。未実装の管理URLは認証後に大会用404を表示。
+- `README.md` と `docs/仕様書.md` を現行URL・画面構成に合わせて更新。
+
 ## 最新更新（2026-10-04）
 
 - ヘッダー左に添付されたVelocity FCロゴ、中央に「VELOCITY CUP 2026」を表示。「LIVE EVENT」と旧開催日表示は削除。
@@ -75,21 +82,20 @@ export PATH="$HOME/.nvm/versions/node/v24.21.0/bin:$PATH"
 npm run dev -- --host 0.0.0.0 --port 4173
 ```
 
-ブラウザー確認URL:
+ブラウザー確認URL（大会ルート）:
 
-- `http://localhost:4173/`
-- `http://localhost:4173/matches`
-- `http://localhost:4173/live`
-- `http://localhost:4173/bracket`
-- `http://localhost:4173/superadmin`
-- `http://localhost:4173/subadmin`
+- `http://localhost:4173/20261220/`
+- `http://localhost:4173/20261220/matches`
+- `http://localhost:4173/20261220/live`
+- `http://localhost:4173/20261220/knockout`
+- `http://localhost:4173/20261220/admin`
 
 ## 注意事項
 
 - 認証はサーバー側で行う。パスワードは Cloudflare の Secrets（`SUPERADMIN_PASSWORD`・`SUBADMIN_PASSWORD`・`SESSION_SECRET`）で管理し、ログインに成功すると署名付きの `session` Cookie を発行する。
 - 試合・チーム・ロゴのデータは Durable Object の SQLite に保存する。ローカルでは `.wrangler/state/` 以下に置かれる。旧 `TempServerData/matches.json` は削除済み。
 - 複数端末間の同期は Durable Object からの WebSocket 配信で実現済み。認証もサーバー側に実装済みである。
-- データを初期状態に戻すには、Super-admin画面（`/superadmin`）の「↺ Reset all matches」ボタンを使うのが通常の方法である。プログラムから行う場合は Super-admin として `POST /api/reset` を呼ぶ。
+- データを初期状態に戻すには、管理ダッシュボード（`/20261220/admin/dashboard`）の「↺ Reset all matches」ボタンを使うのが通常の方法である。プログラムから行う場合は Super-admin として `POST /api/reset` を呼ぶ。
 
 ## 次の候補
 

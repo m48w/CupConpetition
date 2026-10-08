@@ -2,6 +2,7 @@ import { env, exports } from "cloudflare:workers";
 import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { beforeAll, beforeEach, expect, test } from "vitest";
 import type { Match, ServerMessage, TournamentState } from "../src/types";
+import worker from "./index";
 
 const BASE = "http://localhost";
 
@@ -64,6 +65,39 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   expect((await reset()).status).toBe(200);
+});
+
+test("ルートURLには大会アプリを表示せず404を返す", async () => {
+  expect((await call("/")).status).toBe(404);
+});
+
+test("大会URLを正規の末尾スラッシュ付きURLに転送する", async () => {
+  const response = await worker.fetch(new Request(`${BASE}/20261220`), {} as Env);
+  expect(response.status).toBe(308);
+  expect(response.headers.get("location")).toBe(`${BASE}/20261220/`);
+});
+
+test("旧管理URLを大会URL配下の管理ログインへ転送する", async () => {
+  for (const pathname of ["/superadmin", "/subadmin"]) {
+    const response = await worker.fetch(new Request(`${BASE}${pathname}`), {} as Env);
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe(`${BASE}/20261220/admin`);
+  }
+});
+
+test("大会URLの静的アセット参照から大会Base Pathを除いて配信する", async () => {
+  let assetPath: string | undefined;
+  const env = {
+    ASSETS: {
+      fetch: async (request: Request) => {
+        assetPath = new URL(request.url).pathname;
+        return new Response("asset");
+      },
+    },
+  } as Env;
+  const response = await worker.fetch(new Request(`${BASE}/20261220/assets/app.js`), env);
+  expect(response.status).toBe(200);
+  expect(assetPath).toBe("/assets/app.js");
 });
 
 test("GET /api/state は未ログインでも全95試合を返す", async () => {

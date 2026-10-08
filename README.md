@@ -34,14 +34,16 @@ npx wrangler secret put SESSION_SECRET      # a long random string, e.g. `openss
 npm run deploy
 ```
 
-Staff sign in at `/superadmin` (all courts) and `/subadmin` (`subadmin1`–`2` → Court 1,
-`3`–`4` → Court 2, `5`–`6` → Court 3). The header links to these pages only in development.
-Changing `SESSION_SECRET` signs everyone out.
+The tournament app is served under `/20261220/`; the site root `/` returns 404. Staff sign in at
+`/20261220/admin`. The previous `/superadmin` and `/subadmin` URLs redirect to the admin sign-in
+page. The admin dashboard assigns `subadmin1`–`2` to Court 1, `3`–`4` to Court 2, and `5`–`6` to
+Court 3. Changing `SESSION_SECRET` signs everyone out.
 
 - Sessions last 12 hours: sign in on the morning of the event, not the night before.
 - The session cookie is `Secure`, so testing from a phone against the dev server over
   `http://<LAN IP>` will not keep you signed in; use `localhost` or an https tunnel.
 
-The app runs as one Worker (`velocity-cup`) that serves the built SPA and handles `/api/*`. All
-tournament state lives in a single SQLite-backed Durable Object (`TournamentRoom`) and is pushed to
-every open page over WebSocket.
+The app runs as one Worker (`velocity-cup`) that serves the built SPA under `/20261220/` and handles
+`/api/*`. Public pages include the overview, teams, matches, groups, live matches, standings, and
+knockout bracket. All tournament state lives in a single SQLite-backed Durable Object
+(`TournamentRoom`) and is pushed to every open page over WebSocket.

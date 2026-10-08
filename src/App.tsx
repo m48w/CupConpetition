@@ -7,21 +7,51 @@ import {
   useTournamentState,
 } from "./features/tournament";
 import { Bracket } from "./pages/Bracket";
+import { AdminDashboard, AdminEntry, ProtectedAdminNotFound } from "./pages/AdminRoutes";
+import { Groups, GroupDetail } from "./pages/Groups";
 import { Live } from "./pages/Live";
+import { MatchDetail } from "./pages/MatchDetail";
 import { Matches } from "./pages/Matches";
+import { NotFound } from "./pages/NotFound";
 import { Overview } from "./pages/Overview";
 import { Standings } from "./pages/Standings";
 import { SubAdmin } from "./pages/SubAdmin";
 import { SuperAdmin } from "./pages/SuperAdmin";
-import type { Match } from "./types";
+import { TeamDetail, Teams } from "./pages/Teams";
+import { EVENT_BASE_PATH } from "./config";
+import type { Match, SessionInfo } from "./types";
 
 const navItems = [
   { to: "/", label: "Overview", icon: "⌂" },
+  { to: "/teams", label: "Teams", icon: "♟" },
   { to: "/matches", label: "Matches", icon: "▦" },
+  { to: "/groups", label: "Groups", icon: "◫" },
   { to: "/live", label: "Live", icon: "◉" },
   { to: "/standings", label: "Standings", icon: "☷" },
-  { to: "/bracket", label: "Bracket", icon: "⌘" },
+  { to: "/knockout", label: "Knockout", icon: "⌘" },
 ];
+
+function AdminConsole({
+  session,
+  consoleProps,
+  setup,
+}: {
+  session: SessionInfo;
+  consoleProps: {
+    signIn: (username: string, password: string) => Promise<SessionInfo>;
+    onSignOut: () => Promise<boolean>;
+    matches: Match[];
+    updateMatch: (id: string, patch: Partial<Match>) => void;
+    connection: ReturnType<typeof useTournamentState>["connection"];
+  };
+  setup: { generateSchedule: () => void; resetTournament: () => void };
+}) {
+  return session.role === "superadmin" ? (
+    <SuperAdmin {...consoleProps} session={session} setup={setup} />
+  ) : (
+    <SubAdmin {...consoleProps} session={session} />
+  );
+}
 
 function App() {
   const { session, loading, refresh, signIn, signOut } = useSession();
@@ -32,37 +62,42 @@ function App() {
   const navigate = useNavigate();
 
   const consoleProps = {
-    session,
-    // Signing back in makes the "sign in to change the tournament" banner stale; drop it.
     signIn: async (username: string, password: string) => {
       const next = await signIn(username, password);
       clearError();
       return next;
     },
-    onSignOut: () => signOut(),
+    onSignOut: async () => {
+      const succeeded = await signOut();
+      if (succeeded) navigate("/admin", { replace: true });
+      return succeeded;
+    },
     matches,
     updateMatch: (id: string, patch: Partial<Match>) => void patchMatch(id, patch),
     connection,
   };
-  const consolePath = session?.role === "superadmin" ? "/superadmin" : "/subadmin";
+  const setup = {
+    generateSchedule: () => void replaceMatches(seedKnockoutTeams(teams, matches)),
+    resetTournament: () => void reset(),
+  };
 
   return (
     <div className="app-shell">
       <div className="app-header">
         <ConnectionBanner connection={connection} error={error} />
         <header className="topbar">
-          <img className="header-logo" src="/velocity-fc-logo.png" alt="Velocity FC logo" />
+          <img
+            className="header-logo"
+            src={`${EVENT_BASE_PATH}/velocity-fc-logo.png`}
+            alt="Velocity FC logo"
+          />
           <button className="brand" onClick={() => navigate("/")}>
             VELOCITY CUP 2026
           </button>
-          {/* Staff open /superadmin and /subadmin directly in production; spectators never see these. */}
           {import.meta.env.DEV && (
             <div className="admin-links">
-              <NavLink to="/superadmin" className="admin-toggle">
-                Super-admin <span>↗</span>
-              </NavLink>
-              <NavLink to="/subadmin" className="admin-toggle">
-                SubAdmin <span>↗</span>
+              <NavLink to="/admin" className="admin-toggle">
+                Admin <span>↗</span>
               </NavLink>
             </div>
           )}
@@ -75,6 +110,7 @@ function App() {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.to === "/"}
               className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}
             >
               <span>{item.icon}</span>
@@ -90,7 +126,7 @@ function App() {
               </div>
             </div>
             {session && (
-              <NavLink to={consolePath} className="nav-item admin-link">
+              <NavLink to="/admin/dashboard" className="nav-item admin-link">
                 ⚙ Console
               </NavLink>
             )}
@@ -100,39 +136,60 @@ function App() {
           <main className="main-content">
             <Routes>
               <Route path="/" element={<Overview />} />
+              <Route path="/teams" element={<Teams />} />
+              <Route path="/teams/:teamId" element={<TeamDetail matches={matches} />} />
               <Route path="/matches" element={<Matches matches={matches} />} />
+              <Route path="/matches/:matchId" element={<MatchDetail matches={matches} />} />
+              <Route path="/groups" element={<Groups matches={matches} />} />
+              <Route path="/groups/:groupId" element={<GroupDetail matches={matches} />} />
               <Route path="/live" element={<Live matches={matches} />} />
               <Route path="/standings" element={<Standings matches={matches} />} />
-              <Route path="/bracket" element={<Bracket matches={matches} />} />
+              <Route path="/knockout" element={<Bracket matches={matches} />} />
+              <Route path="/bracket" element={<Navigate to="/knockout" replace />} />
               <Route
-                path="/superadmin"
+                path="/admin"
                 element={
-                  loading ? (
-                    <p className="muted">Checking sign-in…</p>
-                  ) : (
-                    <SuperAdmin
-                      {...consoleProps}
-                      setup={{
-                        generateSchedule: () =>
-                          void replaceMatches(seedKnockoutTeams(teams, matches)),
-                        resetTournament: () => void reset(),
-                      }}
-                    />
-                  )
+                  <AdminEntry loading={loading} session={session} signIn={consoleProps.signIn} />
                 }
               />
               <Route
-                path="/subadmin"
+                path="/admin/dashboard"
                 element={
-                  loading ? (
-                    <p className="muted">Checking sign-in…</p>
-                  ) : (
-                    <SubAdmin {...consoleProps} />
-                  )
+                  <AdminDashboard loading={loading} session={session}>
+                    {(account) => (
+                      <AdminConsole session={account} consoleProps={consoleProps} setup={setup} />
+                    )}
+                  </AdminDashboard>
                 }
               />
-              <Route path="/admin/setup" element={<Navigate to="/superadmin" replace />} />
-              <Route path="*" element={<Overview />} />
+              <Route
+                path="/admin/matches"
+                element={
+                  <AdminDashboard loading={loading} session={session}>
+                    {(account) => (
+                      <AdminConsole session={account} consoleProps={consoleProps} setup={setup} />
+                    )}
+                  </AdminDashboard>
+                }
+              />
+              <Route
+                path="/admin/live"
+                element={
+                  <AdminDashboard loading={loading} session={session}>
+                    {(account) => (
+                      <AdminConsole session={account} consoleProps={consoleProps} setup={setup} />
+                    )}
+                  </AdminDashboard>
+                }
+              />
+              <Route path="/admin/setup" element={<Navigate to="/admin/dashboard" replace />} />
+              <Route
+                path="/admin/*"
+                element={<ProtectedAdminNotFound loading={loading} session={session} />}
+              />
+              <Route path="/superadmin" element={<Navigate to="/admin" replace />} />
+              <Route path="/subadmin" element={<Navigate to="/admin" replace />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
         </TeamsProvider>
@@ -142,6 +199,7 @@ function App() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === "/"}
             className={({ isActive }) => (isActive ? "active" : "")}
           >
             <span>{item.icon}</span>
