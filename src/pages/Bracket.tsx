@@ -37,18 +37,12 @@ function BracketCard({ game }: { game: BracketGame }) {
 
 export function Bracket({ matches }: { matches: Match[] }) {
   const teams = useTeams();
-  if (matches.length === 0) {
-    return (
-      <>
-        <PageTitle eyebrow="TOURNAMENT SETUP" title="Knockout bracket" />
-        <div className="empty-state">No tournament schedule has been created yet.</div>
-      </>
-    );
-  }
   return (
     <>
       <PageTitle eyebrow="WORLD CUP KNOCKOUT" title="Velocity Cup 2026">
-        <span className="bracket-note">15 matches · One champion</span>
+        <span className="bracket-note">
+          {matches.length === 0 ? "15 slots · Schedule pending" : "15 matches · One champion"}
+        </span>
       </PageTitle>
       <div className="tournament-banner">
         <span>VELOCITY CUP 2026</span>
