@@ -9,7 +9,9 @@ const BASE = "http://localhost";
 const validLogo = { logoContentType: "image/png", logoDataBase64: "iVBORw0KGgo=" };
 
 const call = async (path: string, init?: RequestInit) => {
-  const response = await exports.default.fetch(`${BASE}${path}`, init);
+  const headers = new Headers(init?.headers);
+  if (!headers.has("x-tournament-id")) headers.set("x-tournament-id", "test");
+  const response = await exports.default.fetch(`${BASE}${path}`, { ...init, headers });
   // Unread bodies keep the Durable Object referenced, which blocks evictDurableObject.
   const body = await response.arrayBuffer();
   return new Response(body, { status: response.status, headers: response.headers });
@@ -39,7 +41,7 @@ const firstOnCourt = (state: TournamentState, court: number) =>
 async function connect() {
   // The 101 upgrade response carries a live `webSocket`; it must not be buffered like call() does.
   const response = await exports.default.fetch(`${BASE}/api/ws`, {
-    headers: { Upgrade: "websocket" },
+    headers: { Upgrade: "websocket", "x-tournament-id": "test" },
   });
   expect(response.status).toBe(101);
   const socket = response.webSocket!;
@@ -299,7 +301,7 @@ test("チーム・メンバーの個人情報はsuperadminのみが一覧でき�
 });
 
 test("メンバー登録締切はJSTの2026年12月12日23:59までで、サーバー側で拒否される", async () => {
-  const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("main"));
+  const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("test"));
   await runInDurableObject(room, async (_instance, state) => {
     const registrations = new RegistrationStore(state.storage.sql, (callback) =>
       state.storage.transactionSync(callback),
@@ -438,7 +440,7 @@ test("GET /api/state は未ログインでも全95試合を返す", async () => 
 
 test("GET /api/logos/:id はSQLiteのロゴ画像を返す", async () => {
   const logoId = `test-${crypto.randomUUID()}`;
-  const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("main"));
+  const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("20261220"));
   await runInDurableObject(room, (_instance, state) => {
     state.storage.sql.exec(
       "INSERT INTO logos (id, content_type, data_base64, created_at) VALUES (?, ?, ?, ?)",
@@ -447,10 +449,11 @@ test("GET /api/logos/:id はSQLiteのロゴ画像を返す", async () => {
       "AQID",
       new Date().toISOString(),
     );
-    state.storage.sql.exec("UPDATE teams SET logo_id = ? WHERE id = ?", logoId, "A1");
   });
 
-  const response = await call(`/api/logos/${encodeURIComponent(logoId)}`);
+  const response = await call(`/api/logos/${encodeURIComponent(logoId)}`, {
+    headers: { "x-tournament-id": "20261220" },
+  });
   expect(response.status).toBe(200);
   expect(response.headers.get("content-type")).toBe("image/png");
   expect([...new Uint8Array(await response.arrayBuffer())]).toEqual([1, 2, 3]);
@@ -624,7 +627,7 @@ test("並行した PATCH がどちらも失われない", async () => {
 test("Durable Object が退避されても更新済みのスコアを返し、セッションも有効なまま", async () => {
   const [first] = (await readState()).matches;
   await patch(first.id, { homeScore: 6 });
-  await evictDurableObject(env.TOURNAMENT.get(env.TOURNAMENT.idFromName("main")));
+  await evictDurableObject(env.TOURNAMENT.get(env.TOURNAMENT.idFromName("test")));
   expect((await readState()).matches[0].homeScore).toBe(6);
   expect((await patch(first.id, { homeScore: 7 })).status).toBe(200);
 });

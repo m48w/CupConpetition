@@ -20,6 +20,7 @@ import { SubAdmin } from "./pages/SubAdmin";
 import { SuperAdmin } from "./pages/SuperAdmin";
 import { TeamDetail, Teams } from "./pages/Teams";
 import { EVENT_BASE_PATH } from "./config";
+import { getTournamentId } from "./config";
 import type { Match, SessionInfo } from "./types";
 
 const navItems = [
@@ -42,10 +43,20 @@ function AdminConsole({
     signIn: (username: string, password: string) => Promise<SessionInfo>;
     onSignOut: () => Promise<boolean>;
     matches: Match[];
+    teams: ReturnType<typeof useTournamentState>["teams"];
     updateMatch: (id: string, patch: Partial<Match>) => void;
     connection: ReturnType<typeof useTournamentState>["connection"];
   };
-  setup: { generateSchedule: () => void; resetTournament: () => void };
+  setup: {
+    tournamentId: string;
+    generateSchedule: () => void;
+    resetTournament: () => void;
+    initializeTournament: () => void;
+    createSchedule: () => void;
+    addTeam: ReturnType<typeof useTournamentState>["addTeam"];
+    updateTeam: ReturnType<typeof useTournamentState>["updateTeam"];
+    deleteTeam: ReturnType<typeof useTournamentState>["deleteTeam"];
+  };
 }) {
   return session.role === "superadmin" ? (
     <SuperAdmin {...consoleProps} session={session} setup={setup} />
@@ -56,10 +67,23 @@ function AdminConsole({
 
 function App() {
   const { session, loading, refresh, signIn, signOut } = useSession();
-  const { matches, teams, connection, error, patchMatch, replaceMatches, reset, clearError } =
-    useTournamentState({
-      onUnauthorized: refresh,
-    });
+  const {
+    matches,
+    teams,
+    connection,
+    error,
+    patchMatch,
+    replaceMatches,
+    reset,
+    clearError,
+    addTeam,
+    updateTeam,
+    deleteTeam,
+    initializeTournament,
+    generateSchedule,
+  } = useTournamentState({
+    onUnauthorized: refresh,
+  });
   const navigate = useNavigate();
 
   const consoleProps = {
@@ -74,12 +98,19 @@ function App() {
       return succeeded;
     },
     matches,
+    teams,
     updateMatch: (id: string, patch: Partial<Match>) => void patchMatch(id, patch),
     connection,
   };
   const setup = {
+    tournamentId: getTournamentId(),
     generateSchedule: () => void replaceMatches(seedKnockoutTeams(teams, matches)),
     resetTournament: () => void reset(),
+    initializeTournament: () => void initializeTournament(),
+    createSchedule: () => void generateSchedule(),
+    addTeam,
+    updateTeam,
+    deleteTeam,
   };
 
   return (
@@ -123,7 +154,9 @@ function App() {
               <div className="mini-ball">⚽</div>
               <div>
                 <strong>Velocity Cup 2026</strong>
-                <small>40 teams · 95 matches</small>
+                <small>
+                  {teams.length} teams · {matches.length} matches
+                </small>
               </div>
             </div>
             {session && (

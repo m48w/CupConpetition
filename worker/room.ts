@@ -31,6 +31,8 @@ export class TournamentRoom extends DurableObject<Env> {
 
   async fetch(request: Request): Promise<Response> {
     const path = new URL(request.url).pathname;
+    const tournamentId = request.headers.get("x-tournament-id") ?? "test";
+    this.store.setTournamentId(tournamentId);
     if (path === "/api/ws") return this.accept(request);
     if (path === "/api/login" && request.method === "POST") {
       return handleLogin(request, this.attempts, this.env, Date.now());
@@ -51,7 +53,9 @@ export class TournamentRoom extends DurableObject<Env> {
     }
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
-    server.send(serialize(this.store.read()));
+    server.send(
+      serialize(this.store.read((request.headers.get("x-tournament-id") ?? "test") === "test")),
+    );
     return new Response(null, { status: 101, webSocket: client });
   }
 

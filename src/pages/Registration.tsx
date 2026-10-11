@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { tournamentScopedUrl } from "../config";
 import { ApiError, requestJson } from "../utils/http";
 
 const TEAM_KEY = "velocity-registration-team";
@@ -361,7 +362,7 @@ function RegistrationComplete() {
       {firstTeam.logoId && (
         <img
           className="registration-club-logo"
-          src={`/api/logos/${encodeURIComponent(firstTeam.logoId)}`}
+          src={tournamentScopedUrl(`/api/logos/${encodeURIComponent(firstTeam.logoId)}`)}
           alt={`${firstTeam.clubName} club logo`}
         />
       )}
@@ -546,7 +547,9 @@ function MemberRegistration() {
       {registration?.logoId && (
         <img
           className="registration-club-logo"
-          src={`/api/registration/clubs/${encodeURIComponent(registration.clubId)}/logo`}
+          src={tournamentScopedUrl(
+            `/api/registration/clubs/${encodeURIComponent(registration.clubId)}/logo`,
+          )}
           alt={`${registration.clubName} logo`}
         />
       )}

@@ -138,10 +138,12 @@ function packIntoSlots(pairings: Pairing[], courtsAt: (slotIndex: number) => num
  * グループ戦終了の18分後から始め、ラウンド間にも18分の休憩を挟む。
  */
 export function buildTournamentSchedule(teams: Team[]): Match[] {
+  const pairings = buildGroupPairings(teams);
+  if (pairings.length === 0) return [];
   const startMs = Date.parse(TOURNAMENT_START);
   const court3OpensMs = Date.parse(COURT_3_OPENS_AT);
   const slotStartMs = (slotIndex: number) => startMs + slotIndex * GROUP_MATCH_MINUTES * 60_000;
-  const slots = packIntoSlots(buildGroupPairings(teams), (slotIndex) =>
+  const slots = packIntoSlots(pairings, (slotIndex) =>
     slotStartMs(slotIndex) < court3OpensMs ? COURT_COUNT - 1 : COURT_COUNT,
   );
 

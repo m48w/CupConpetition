@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as client from "../api/client";
 import { parseServerMessage, reconnectDelay, socketUrl } from "../api/socket";
 import { shouldApply } from "../api/version";
-import { initialMatches, teams as initialTeams } from "../data";
 import { applyMatchPatch } from "../logic";
 import type { Match, Team, TournamentState } from "../../../types";
 import { ApiError } from "../../../utils/http";
+import { getTournamentId } from "../../../config";
 
 export type ConnectionState = "connecting" | "live" | "offline";
 
@@ -24,8 +24,8 @@ function dropLegacyStorage(): void {
 }
 
 export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => void } = {}) {
-  const [matches, setMatches] = useState<Match[]>(initialMatches);
-  const [teams, setTeams] = useState<Team[]>(initialTeams);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [error, setError] = useState<string | null>(null);
   const versionRef = useRef(0);
@@ -58,7 +58,7 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
     let reconnectTimer: number | undefined;
 
     const connect = () => {
-      const current = new WebSocket(socketUrl(window.location));
+      const current = new WebSocket(socketUrl(window.location, getTournamentId()));
       socket = current;
       current.onopen = () => {
         attempt = 0;
@@ -145,5 +145,13 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
     ),
     replaceMatches: useCallback((next: Match[]) => run(() => client.replaceMatches(next)), [run]),
     reset: useCallback(() => run(() => client.resetTournament()), [run]),
+    addTeam: useCallback((team: Omit<Team, "id">) => run(() => client.addTeam(team)), [run]),
+    updateTeam: useCallback(
+      (id: string, team: Omit<Team, "id">) => run(() => client.updateTeam(id, team)),
+      [run],
+    ),
+    deleteTeam: useCallback((id: string) => run(() => client.deleteTeam(id)), [run]),
+    initializeTournament: useCallback(() => run(() => client.initializeTournament()), [run]),
+    generateSchedule: useCallback(() => run(() => client.generateSchedule()), [run]),
   };
 }

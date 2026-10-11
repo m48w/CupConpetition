@@ -1,3 +1,5 @@
+import { getTournamentId } from "../config";
+
 /** API がエラーを返した。status で「ログインし直す」「待つ」などを判断する。 */
 export class ApiError extends Error {
   constructor(
@@ -13,11 +15,19 @@ export class ApiError extends Error {
 
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const method = init?.method ?? "GET";
+  let headers = init?.headers;
+  if (method !== "GET" || typeof window !== "undefined") {
+    const mergedHeaders = new Headers(init?.headers);
+    if (typeof window !== "undefined") {
+      mergedHeaders.set("x-tournament-id", getTournamentId(window.location.pathname));
+    }
+    if (method !== "GET") mergedHeaders.set("content-type", "application/json");
+    headers = mergedHeaders;
+  }
   const response = await fetch(path, {
     ...init,
     // The server refuses changes that are not JSON; that is what stops other sites posting forms here.
-    headers:
-      method === "GET" ? init?.headers : { "content-type": "application/json", ...init?.headers },
+    headers,
   });
 
   if (!response.ok) {

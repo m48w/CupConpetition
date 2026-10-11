@@ -14,6 +14,7 @@ export { TournamentRoom };
 
 const EVENT_BASE_PATH = "/20261220";
 const REGISTRATION_BASE_PATH = "/registration/20261220";
+const DEFAULT_TOURNAMENT_ID = "20261220";
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /** HTML フォームは application/json を送れないので、これが他サイトからの書き込み（CSRF）を防ぐ。 */
@@ -24,6 +25,13 @@ export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/") return new Response(null, { status: 404 });
+    if (url.pathname === "/test") {
+      return Response.redirect(`${url.origin}/test/${url.search}`, 308);
+    }
+    if (url.pathname.startsWith("/test/")) {
+      url.pathname = `${EVENT_BASE_PATH}/`;
+      return env.ASSETS.fetch(new Request(url, request));
+    }
     if (url.pathname === "/superadmin" || url.pathname === "/subadmin") {
       return Response.redirect(`${url.origin}${EVENT_BASE_PATH}/admin${url.search}`, 308);
     }
@@ -60,6 +68,13 @@ export default {
       });
     }
 
+    const tournamentId =
+      request.headers.get("x-tournament-id") ??
+      url.searchParams.get("tournamentId") ??
+      DEFAULT_TOURNAMENT_ID;
+    if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(tournamentId)) {
+      return jsonResponse(400, { error: "invalid tournament id", code: "INVALID_TOURNAMENT_ID" });
+    }
     const token = readSessionToken(request.headers.get("cookie"));
     const session = token ? await verifySession(token, env.SESSION_SECRET, Date.now()) : null;
 
@@ -70,7 +85,9 @@ export default {
       return jsonResponse(200, { session: null }, { "set-cookie": CLEARED_SESSION_COOKIE });
     }
 
-    const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("main"));
-    return room.fetch(withIdentity(request, session));
+    const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName(tournamentId));
+    const headers = new Headers(request.headers);
+    headers.set("x-tournament-id", tournamentId);
+    return room.fetch(withIdentity(new Request(request, { headers }), session));
   },
 } satisfies ExportedHandler<Env>;

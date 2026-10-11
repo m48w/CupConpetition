@@ -3,8 +3,12 @@ import type { TournamentState } from "../../../types";
 const MAX_RECONNECT_DELAY_MS = 10_000;
 
 /** ページと同じホストの WebSocket URL。https のページでは wss:// でないとブラウザーが拒否する。 */
-export function socketUrl(location: { protocol: string; host: string }): string {
-  return `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/api/ws`;
+export function socketUrl(
+  location: { protocol: string; host: string },
+  tournamentId?: string,
+): string {
+  const url = `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/api/ws`;
+  return tournamentId ? `${url}?tournamentId=${encodeURIComponent(tournamentId)}` : url;
 }
 
 /** 再接続までの待ち時間。1秒から倍々に延ばし、10秒で頭打ち。 */

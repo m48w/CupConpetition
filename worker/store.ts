@@ -1,5 +1,5 @@
 import { teams } from "../src/features/tournament/data";
-import { buildTournamentSchedule } from "../src/features/tournament/schedule";
+import { buildTournamentSchedule, GROUP_IDS } from "../src/features/tournament/schedule";
 import type { Match, MatchStatus, Team, TournamentState } from "../src/types";
 
 const MATCH_STATUSES: readonly MatchStatus[] = ["SCHEDULED", "LIVE", "PAUSED", "FINISHED"];
@@ -27,7 +27,14 @@ export const PATCH_FIELD_VALIDATORS: Record<string, (value: unknown) => boolean>
 };
 
 export type StoreErrorCode =
-  "UNKNOWN_MATCH" | "FIELD_NOT_PATCHABLE" | "INVALID_FIELD_VALUE" | "INVALID_MATCHES";
+  | "UNKNOWN_MATCH"
+  | "FIELD_NOT_PATCHABLE"
+  | "INVALID_FIELD_VALUE"
+  | "INVALID_MATCHES"
+  | "INVALID_TEAM"
+  | "DUPLICATE_TEAM"
+  | "UNKNOWN_TEAM"
+  | "TEAM_IN_USE";
 
 export class StoreError extends Error {
   constructor(
@@ -40,11 +47,17 @@ export class StoreError extends Error {
 }
 
 export interface Store {
-  read(): TournamentState;
+  setTournamentId(id: string): void;
+  read(sampleData?: boolean): TournamentState;
   readLogo(id: string): { contentType: string; dataBase64: string } | undefined;
-  patchMatch(id: string, patch: Partial<Match>): TournamentState;
-  replaceMatches(matches: Match[]): TournamentState;
-  reset(): TournamentState;
+  patchMatch(id: string, patch: Partial<Match>, sampleData?: boolean): TournamentState;
+  replaceMatches(matches: Match[], sampleData?: boolean): TournamentState;
+  reset(sampleData?: boolean): TournamentState;
+  addTeam(team: Omit<Team, "id">, sampleData?: boolean): TournamentState;
+  updateTeam(id: string, team: Omit<Team, "id">, sampleData?: boolean): TournamentState;
+  deleteTeam(id: string, sampleData?: boolean): TournamentState;
+  initialize(sampleData?: boolean): TournamentState;
+  generateSchedule(sampleData?: boolean): TournamentState;
 }
 
 const SCHEMA = [
@@ -71,6 +84,10 @@ const SCHEMA = [
      version INTEGER NOT NULL,
      updated_at TEXT NOT NULL
    )`,
+  `CREATE TABLE IF NOT EXISTS tournament_info (
+     id INTEGER PRIMARY KEY CHECK (id = 1),
+     tournament_id TEXT NOT NULL
+   )`,
   `CREATE TABLE IF NOT EXISTS matches (
      position INTEGER PRIMARY KEY,
      id TEXT NOT NULL UNIQUE,
@@ -87,7 +104,7 @@ const NEXT_EVENT_START_MS = Date.parse("2026-09-26T15:00:00.000Z");
  * Durable Object の SQLite に大会の state を持つ。メモリにはキャッシュしないので、
  * 休止や退避から戻っても常に保存済みの内容を返す。
  */
-export function createSqlStore(storage: DurableObjectStorage): Store {
+export function createSqlStore(storage: DurableObjectStorage, defaultSampleData = false): Store {
   const sql = storage.sql;
   for (const statement of SCHEMA) sql.exec(statement);
 
@@ -118,24 +135,6 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
         "INSERT INTO store_migrations (id, applied_at) VALUES (?, ?)",
         SCHEDULE_DATE_MIGRATION,
         new Date().toISOString(),
-      );
-    });
-  }
-
-  const teamCount = sql
-    .exec<{ count: number }>("SELECT COUNT(*) AS count FROM teams")
-    .toArray()[0].count;
-  if (teamCount === 0) {
-    storage.transactionSync(() => {
-      teams.forEach((team, position) =>
-        sql.exec(
-          "INSERT INTO teams (id, position, name, group_id, color, logo_id) VALUES (?, ?, ?, ?, ?, NULL)",
-          team.id,
-          position,
-          team.name,
-          team.groupId,
-          team.color,
-        ),
       );
     });
   }
@@ -179,6 +178,43 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
       )
       .toArray()[0];
 
+  const insertTeams = (nextTeams: Team[]) =>
+    nextTeams.forEach((team, position) =>
+      sql.exec(
+        "INSERT INTO teams (id, position, name, group_id, color, logo_id) VALUES (?, ?, ?, ?, ?, ?)",
+        team.id,
+        position,
+        team.name,
+        team.groupId,
+        team.color,
+        team.logoId ?? null,
+      ),
+    );
+
+  const insertMatches = (matches: Match[]) =>
+    matches.forEach((match, position) =>
+      sql.exec(
+        "INSERT INTO matches (position, id, data) VALUES (?, ?, ?)",
+        position,
+        match.id,
+        JSON.stringify(match),
+      ),
+    );
+
+  const ensureInitialized = (sampleData: boolean) => {
+    if (readMeta()) return;
+    const startingTeams = sampleData ? teams : [];
+    const startingMatches = sampleData ? buildTournamentSchedule(startingTeams) : [];
+    storage.transactionSync(() => {
+      insertTeams(startingTeams);
+      insertMatches(startingMatches);
+      sql.exec(
+        "INSERT INTO meta (id, version, updated_at) VALUES (1, 1, ?)",
+        new Date().toISOString(),
+      );
+    });
+  };
+
   /** version を1つ進める。呼び出し側のトランザクションの中で使う。 */
   const bumpVersion = () => {
     const version = (readMeta()?.version ?? 0) + 1;
@@ -190,21 +226,15 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
     );
   };
 
-  const writeAll = (matches: Match[]) => {
+  const writeAll = (matches: Match[], sampleData: boolean) => {
+    ensureInitialized(sampleData);
     const ids = new Set(matches.map((match) => match.id));
     if (ids.size !== matches.length) {
       throw new StoreError("match ids must be unique", "INVALID_MATCHES");
     }
     storage.transactionSync(() => {
       sql.exec("DELETE FROM matches");
-      matches.forEach((match, position) =>
-        sql.exec(
-          "INSERT INTO matches (position, id, data) VALUES (?, ?, ?)",
-          position,
-          match.id,
-          JSON.stringify(match),
-        ),
-      );
+      insertMatches(matches);
       bumpVersion();
     });
     return snapshot();
@@ -220,9 +250,55 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
     };
   };
 
+  const ensureTeamsEditable = (sampleData: boolean) => {
+    ensureInitialized(sampleData);
+    const activeMatch = readMatches().find(
+      (match) => match.status !== "SCHEDULED" || match.homeScore > 0 || match.awayScore > 0,
+    );
+    if (activeMatch) {
+      throw new StoreError(
+        "teams cannot be changed after a match has started; initialize the tournament first",
+        "TEAM_IN_USE",
+      );
+    }
+  };
+
+  const replaceTeamsAndSchedule = (nextTeams: Team[], sampleData: boolean) => {
+    ensureTeamsEditable(sampleData);
+    storage.transactionSync(() => {
+      sql.exec("DELETE FROM matches");
+      sql.exec("DELETE FROM teams");
+      insertTeams(nextTeams);
+      bumpVersion();
+    });
+    return snapshot();
+  };
+
+  const validateTeam = (team: Omit<Team, "id">) => {
+    const name = typeof team.name === "string" ? team.name.trim() : "";
+    if (
+      !name ||
+      name.length > 120 ||
+      !GROUP_IDS.includes(team.groupId as (typeof GROUP_IDS)[number]) ||
+      typeof team.color !== "string" ||
+      !/^#[\da-f]{6}$/i.test(team.color)
+    ) {
+      throw new StoreError("team name, group, or color is invalid", "INVALID_TEAM");
+    }
+    return { ...team, name, groupId: team.groupId, color: team.color.toLowerCase() };
+  };
+
   return {
-    read() {
-      return readMeta() ? snapshot() : writeAll(buildTournamentSchedule(teams));
+    setTournamentId(id) {
+      sql.exec(
+        `INSERT INTO tournament_info (id, tournament_id) VALUES (1, ?)
+         ON CONFLICT(id) DO UPDATE SET tournament_id = excluded.tournament_id`,
+        id,
+      );
+    },
+    read(sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      return snapshot();
     },
 
     readLogo(id) {
@@ -230,7 +306,8 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
       return logo ? { contentType: logo.content_type, dataBase64: logo.data_base64 } : undefined;
     },
 
-    patchMatch(id, patch) {
+    patchMatch(id, patch, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
       const unknownField = Object.keys(patch).find((field) => !(field in PATCH_FIELD_VALIDATORS));
       if (unknownField) {
         throw new StoreError(`field is not patchable: ${unknownField}`, "FIELD_NOT_PATCHABLE");
@@ -242,7 +319,6 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
         throw new StoreError(`invalid value for field: ${invalidField[0]}`, "INVALID_FIELD_VALUE");
       }
 
-      this.read();
       const row = sql
         .exec<{ data: string }>("SELECT data FROM matches WHERE id = ?", id)
         .toArray()[0];
@@ -256,12 +332,93 @@ export function createSqlStore(storage: DurableObjectStorage): Store {
       return snapshot();
     },
 
-    replaceMatches(matches) {
-      return writeAll(matches);
+    replaceMatches(matches, sampleData = defaultSampleData) {
+      return writeAll(matches, sampleData);
     },
 
-    reset() {
-      return writeAll(buildTournamentSchedule(teams));
+    reset(sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const currentTeams = readTeams();
+      const groupCounts = new Map<string, number>();
+      for (const team of currentTeams) {
+        groupCounts.set(team.groupId, (groupCounts.get(team.groupId) ?? 0) + 1);
+      }
+      const scheduleReady =
+        currentTeams.length === 40 && GROUP_IDS.every((groupId) => groupCounts.get(groupId) === 5);
+      return writeAll(scheduleReady ? buildTournamentSchedule(currentTeams) : [], sampleData);
+    },
+
+    addTeam(team, sampleData = defaultSampleData) {
+      ensureTeamsEditable(sampleData);
+      const valid = validateTeam(team);
+      const duplicate = sql
+        .exec<{ id: string }>("SELECT id FROM teams WHERE lower(name) = lower(?)", valid.name)
+        .toArray()[0];
+      if (duplicate) throw new StoreError("team name is already in use", "DUPLICATE_TEAM");
+      const nextTeams = readTeams();
+      nextTeams.push({ ...valid, id: crypto.randomUUID() });
+      return replaceTeamsAndSchedule(nextTeams, sampleData);
+    },
+
+    updateTeam(id, team, sampleData = defaultSampleData) {
+      ensureTeamsEditable(sampleData);
+      const valid = validateTeam(team);
+      const current = readTeams();
+      if (!current.some((item) => item.id === id)) {
+        throw new StoreError(`unknown team: ${id}`, "UNKNOWN_TEAM");
+      }
+      if (
+        current.some(
+          (item) => item.id !== id && item.name.toLowerCase() === valid.name.toLowerCase(),
+        )
+      ) {
+        throw new StoreError("team name is already in use", "DUPLICATE_TEAM");
+      }
+      return replaceTeamsAndSchedule(
+        current.map((item) => (item.id === id ? { ...valid, id, logoId: item.logoId } : item)),
+        sampleData,
+      );
+    },
+
+    deleteTeam(id, sampleData = defaultSampleData) {
+      ensureTeamsEditable(sampleData);
+      const current = readTeams();
+      if (!current.some((item) => item.id === id)) {
+        throw new StoreError(`unknown team: ${id}`, "UNKNOWN_TEAM");
+      }
+      return replaceTeamsAndSchedule(
+        current.filter((item) => item.id !== id),
+        sampleData,
+      );
+    },
+
+    initialize(sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      storage.transactionSync(() => {
+        sql.exec("DELETE FROM matches");
+        sql.exec("DELETE FROM teams");
+        bumpVersion();
+      });
+      return snapshot();
+    },
+
+    generateSchedule(sampleData = defaultSampleData) {
+      ensureTeamsEditable(sampleData);
+      const currentTeams = readTeams();
+      const groupCounts = new Map<string, number>();
+      for (const team of currentTeams) {
+        groupCounts.set(team.groupId, (groupCounts.get(team.groupId) ?? 0) + 1);
+      }
+      if (
+        currentTeams.length !== 40 ||
+        GROUP_IDS.some((groupId) => groupCounts.get(groupId) !== 5)
+      ) {
+        throw new StoreError(
+          "the schedule requires 40 teams with exactly 5 teams in each group",
+          "INVALID_TEAM",
+        );
+      }
+      return writeAll(buildTournamentSchedule(currentTeams), sampleData);
     },
   };
 }

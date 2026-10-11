@@ -3,14 +3,15 @@ import { PageTitle } from "../components/ui/PageTitle";
 import { MatchStateBanner, ResetButton, ScheduleCheck } from "../features/admin";
 import { SIGN_OUT_FAILED } from "../features/auth";
 import {
-  findTeam,
   isOnPitch,
   statusPatch,
   TeamBadge,
   type ConnectionState,
+  useTeams,
 } from "../features/tournament";
-import type { Match, MatchStatus, SessionInfo } from "../types";
+import type { Match, MatchStatus, SessionInfo, Team } from "../types";
 import { formatTime } from "../utils/format";
+import { TeamManager } from "./TeamManager";
 
 export function AdminSetup({
   eyebrow,
@@ -20,21 +21,34 @@ export function AdminSetup({
   updateMatch,
   setup,
   connection,
+  teams,
 }: {
   eyebrow: string;
   account: SessionInfo;
   /** Resolves to whether the server confirmed the logout, so the console can report a failure. */
   onSignOut: () => Promise<boolean>;
   matches: Match[];
+  teams: Team[];
   updateMatch: (id: string, patch: Partial<Match>) => void;
   /** Super-admin だけに出す大会全体の操作。 */
-  setup?: { generateSchedule: () => void; resetTournament: () => void };
+  setup?: {
+    tournamentId: string;
+    generateSchedule: () => void;
+    resetTournament: () => void;
+    initializeTournament: () => void;
+    createSchedule: () => void;
+    addTeam: (team: Omit<Team, "id">) => Promise<void>;
+    updateTeam: (id: string, team: Omit<Team, "id">) => Promise<void>;
+    deleteTeam: (id: string) => Promise<void>;
+  };
   connection: ConnectionState;
 }) {
   const [selectedId, setSelectedId] = useState(() => (matches.find(isOnPitch) ?? matches[0])?.id);
   const [signOutFailed, setSignOutFailed] = useState(false);
-  const selected = matches.find((match) => match.id === selectedId);
+  const selected =
+    matches.find((match) => match.id === selectedId) ?? matches.find(isOnPitch) ?? matches[0];
   const offline = connection !== "live";
+  const currentTeams = useTeams();
 
   const handleSignOut = async () => {
     setSignOutFailed(!(await onSignOut()));
@@ -64,23 +78,39 @@ export function AdminSetup({
           </button>
         </div>
       </PageTitle>
+      {setup && (
+        <TeamManager
+          teams={teams}
+          matches={matches}
+          tournamentId={setup.tournamentId}
+          disabled={offline}
+          onInitialize={setup.initializeTournament}
+          onGenerateSchedule={setup.createSchedule}
+          onAddTeam={setup.addTeam}
+          onUpdateTeam={setup.updateTeam}
+          onDeleteTeam={setup.deleteTeam}
+        />
+      )}
       <div className="admin-grid">
         <section className="admin-panel">
           <label>SELECT MATCH</label>
           <select
             value={selected?.id ?? ""}
+            disabled={matches.length === 0}
             onChange={(event) => {
               const next = matches.find((m) => m.id === event.target.value);
               if (next) setSelectedId(next.id);
             }}
           >
+            {matches.length === 0 && <option value="">No matches initialized</option>}
             {matches
               .filter((m) => m.status !== "FINISHED" || m.id === selectedId)
               .slice(0, 20)
               .map((m) => (
                 <option key={m.id} value={m.id}>
-                  {formatTime(m.scheduledStart)} · {findTeam(m.homeTeamId)?.name ?? "TBD"} vs{" "}
-                  {findTeam(m.awayTeamId)?.name ?? "TBD"}
+                  {formatTime(m.scheduledStart)} ·{" "}
+                  {currentTeams.find((team) => team.id === m.homeTeamId)?.name ?? "TBD"} vs{" "}
+                  {currentTeams.find((team) => team.id === m.awayTeamId)?.name ?? "TBD"}
                   {m.status !== "SCHEDULED" && ` · ${m.status}`}
                 </option>
               ))}

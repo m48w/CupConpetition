@@ -6,7 +6,7 @@ import { createSqlStore, StoreError, type Store } from "./store";
 function withStore<T>(fn: (store: Store, storage: DurableObjectStorage) => T): Promise<T> {
   const stub = env.TOURNAMENT.get(env.TOURNAMENT.idFromName(crypto.randomUUID()));
   return runInDurableObject(stub, (_instance, state) =>
-    fn(createSqlStore(state.storage), state.storage),
+    fn(createSqlStore(state.storage, true), state.storage),
   );
 }
 
@@ -30,6 +30,7 @@ test("空の Durable Object では初期スケジュール95試合を version 1 
 
 test("ロゴをチームに関連付けてSQLiteから読み出す", async () => {
   const result = await withStore((store, storage) => {
+    store.read();
     const logoId = "logo-a1";
     storage.sql.exec(
       "INSERT INTO logos (id, content_type, data_base64, created_at) VALUES (?, ?, ?, ?)",

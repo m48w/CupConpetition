@@ -48,9 +48,9 @@ function superadminOnly(identity: Identity | null): Identity {
 }
 
 /** SubAdmin は担当コートの試合だけを変更できる。存在しない試合は store が 404 にする。 */
-function assertCourt(store: Store, who: Identity, matchId: string): void {
+function assertCourt(store: Store, who: Identity, matchId: string, sampleData: boolean): void {
   if (who.role === "superadmin") return;
-  const match = store.read().matches.find((m) => m.id === matchId);
+  const match = store.read(sampleData).matches.find((m) => m.id === matchId);
   if (match && match.court !== who.court) {
     throw new AuthError(
       403,
@@ -71,9 +71,10 @@ export async function handleApi(
 ): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
-  const mutated = (state: TournamentState) => {
+  const sampleData = (request.headers.get("x-tournament-id") ?? "test") === "test";
+  const mutated = (state: TournamentState, status = 200) => {
     broadcast(state);
-    return jsonResponse(200, state);
+    return jsonResponse(status, state);
   };
 
   try {
@@ -207,13 +208,69 @@ export async function handleApi(
       });
     }
 
+    if (path === "/api/teams" && request.method === "POST") {
+      superadminOnly(identity);
+      const body = (await readJsonBody(request)) as {
+        name?: unknown;
+        groupId?: unknown;
+        color?: unknown;
+      };
+      return mutated(
+        store.addTeam(
+          {
+            name: String(body.name ?? ""),
+            groupId: String(body.groupId ?? ""),
+            color: String(body.color ?? ""),
+          },
+          sampleData,
+        ),
+        201,
+      );
+    }
+
+    const teamTarget = path.match(/^\/api\/teams\/([^/]+)$/);
+    if (teamTarget && request.method === "PATCH") {
+      superadminOnly(identity);
+      const body = (await readJsonBody(request)) as {
+        name?: unknown;
+        groupId?: unknown;
+        color?: unknown;
+      };
+      return mutated(
+        store.updateTeam(
+          decodeURIComponent(teamTarget[1]),
+          {
+            name: String(body.name ?? ""),
+            groupId: String(body.groupId ?? ""),
+            color: String(body.color ?? ""),
+          },
+          sampleData,
+        ),
+      );
+    }
+
+    if (teamTarget && request.method === "DELETE") {
+      superadminOnly(identity);
+      return mutated(store.deleteTeam(decodeURIComponent(teamTarget[1]), sampleData));
+    }
+
+    if (path === "/api/initialize" && request.method === "POST") {
+      superadminOnly(identity);
+      return mutated(store.initialize(sampleData));
+    }
+
+    if (path === "/api/schedule" && request.method === "POST") {
+      superadminOnly(identity);
+      return mutated(store.generateSchedule(sampleData));
+    }
+
     if (path === "/api/state" && request.method === "GET") {
-      return jsonResponse(200, store.read());
+      return jsonResponse(200, store.read(sampleData));
     }
 
     if (path === "/api/reset" && request.method === "POST") {
       superadminOnly(identity);
-      return mutated(store.reset());
+      return mutated(store.reset(sampleData));
     }
 
     if (path === "/api/matches" && request.method === "PUT") {
@@ -222,16 +279,16 @@ export async function handleApi(
       if (!Array.isArray(body.matches)) {
         return jsonResponse(400, { error: "matches must be an array" });
       }
-      return mutated(store.replaceMatches(body.matches));
+      return mutated(store.replaceMatches(body.matches, sampleData));
     }
 
     const patchTarget = path.match(/^\/api\/matches\/(.+)$/);
     if (patchTarget && request.method === "PATCH") {
       const who = signedIn(identity);
       const id = decodeURIComponent(patchTarget[1]);
-      assertCourt(store, who, id);
+      assertCourt(store, who, id, sampleData);
       const patch = (await readJsonBody(request)) as Partial<Match>;
-      return mutated(store.patchMatch(id, patch));
+      return mutated(store.patchMatch(id, patch, sampleData));
     }
 
     return jsonResponse(404, { error: `no route for ${request.method} ${path}` });
@@ -240,7 +297,13 @@ export async function handleApi(
       return jsonResponse(error.status, { error: error.message, code: error.code });
     }
     if (error instanceof StoreError) {
-      return jsonResponse(error.code === "UNKNOWN_MATCH" ? 404 : 400, {
+      const status =
+        error.code === "UNKNOWN_MATCH" || error.code === "UNKNOWN_TEAM"
+          ? 404
+          : error.code === "DUPLICATE_TEAM" || error.code === "TEAM_IN_USE"
+            ? 409
+            : 400;
+      return jsonResponse(status, {
         error: error.message,
         code: error.code,
       });

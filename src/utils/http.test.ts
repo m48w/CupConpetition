@@ -13,7 +13,7 @@ test("GET 以外は本文が無くても content-type: application/json を付�
   vi.stubGlobal("fetch", fetchMock);
   await requestJson("/api/logout", { method: "POST" });
   const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-  expect(init.headers).toMatchObject({ "content-type": "application/json" });
+  expect(new Headers(init.headers).get("content-type")).toBe("application/json");
 });
 
 test("GET には content-type を付けない", async () => {

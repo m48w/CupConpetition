@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { tournamentScopedUrl } from "../config";
 import type { SessionInfo } from "../types";
 import { ApiError, requestJson } from "../utils/http";
 
@@ -123,7 +124,12 @@ export function AdminRegistrations({ session }: { session: SessionInfo }) {
           <article className="registration-admin-club" key={club.id}>
             <header>
               {club.logoId ? (
-                <img src={`/api/registration/clubs/${encodeURIComponent(club.id)}/logo`} alt="" />
+                <img
+                  src={tournamentScopedUrl(
+                    `/api/registration/clubs/${encodeURIComponent(club.id)}/logo`,
+                  )}
+                  alt=""
+                />
               ) : (
                 <span className="team-crest">FC</span>
               )}
