@@ -19,7 +19,6 @@ import { Standings } from "./pages/Standings";
 import { SubAdmin } from "./pages/SubAdmin";
 import { SuperAdmin } from "./pages/SuperAdmin";
 import { TeamDetail, Teams } from "./pages/Teams";
-import { EVENT_BASE_PATH } from "./config";
 import { getTournamentId } from "./config";
 import type { Match, SessionInfo } from "./types";
 
@@ -120,7 +119,7 @@ function App() {
         <header className="topbar">
           <img
             className="header-logo"
-            src={`${EVENT_BASE_PATH}/velocity-fc-logo.png`}
+            src={`${import.meta.env.BASE_URL}velocity-fc-logo.png`}
             alt="Velocity FC logo"
           />
           <button className="brand" onClick={() => navigate("/")}>
