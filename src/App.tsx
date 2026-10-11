@@ -8,6 +8,7 @@ import {
 } from "./features/tournament";
 import { Bracket } from "./pages/Bracket";
 import { AdminDashboard, AdminEntry, ProtectedAdminNotFound } from "./pages/AdminRoutes";
+import { AdminRegistrations } from "./pages/AdminRegistrations";
 import { Groups, GroupDetail } from "./pages/Groups";
 import { Live } from "./pages/Live";
 import { MatchDetail } from "./pages/MatchDetail";
@@ -126,9 +127,16 @@ function App() {
               </div>
             </div>
             {session && (
-              <NavLink to="/admin/dashboard" className="nav-item admin-link">
-                ⚙ Console
-              </NavLink>
+              <>
+                <NavLink to="/admin/dashboard" className="nav-item admin-link">
+                  ⚙ Console
+                </NavLink>
+                {session.role === "superadmin" && (
+                  <NavLink to="/admin/registrations" className="nav-item admin-link">
+                    Team registrations
+                  </NavLink>
+                )}
+              </>
             )}
           </div>
         </aside>
@@ -179,6 +187,14 @@ function App() {
                     {(account) => (
                       <AdminConsole session={account} consoleProps={consoleProps} setup={setup} />
                     )}
+                  </AdminDashboard>
+                }
+              />
+              <Route
+                path="/admin/registrations"
+                element={
+                  <AdminDashboard loading={loading} session={session}>
+                    {(account) => <AdminRegistrations session={account} />}
                   </AdminDashboard>
                 }
               />

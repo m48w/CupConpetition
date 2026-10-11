@@ -47,3 +47,13 @@ The app runs as one Worker (`velocity-cup`) that serves the built SPA under `/20
 `/api/*`. Public pages include the overview, teams, matches, groups, live matches, standings, and
 knockout bracket. All tournament state lives in a single SQLite-backed Durable Object
 (`TournamentRoom`) and is pushed to every open page over WebSocket.
+
+Team representatives register at `/registration/20261220/`. Member access is verified against the
+registered email and phone; registration sessions last one hour. Member entry closes at 23:59 JST
+on 12 December 2026, with a server-side 11-player limit per team. Super Admins can review
+registrations and update shared club logos at `/20261220/admin/registrations`. A representative must
+upload a shared club logo with each team registration; a multi-team application can submit several
+distinct team names from the same club at once. Additional teams may reuse the registered contact
+details. Registration
+records are kept separate from the fixed match schedule until an administrator assigns teams to
+match slots.

@@ -339,6 +339,402 @@ label {
   padding: 80px 20px;
   text-align: center;
 }
+.registration-shell {
+  width: min(100% - 32px, 720px);
+  margin: 0 auto;
+  padding: 20px 0 42px;
+}
+.registration-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  padding: 14px 0 22px;
+  border-bottom: 1px solid var(--line);
+}
+.registration-header img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+.registration-header div {
+  display: grid;
+  gap: 4px;
+}
+.registration-header strong {
+  letter-spacing: 0.08em;
+}
+.registration-header span {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+.registration-shell > footer {
+  margin-top: 32px;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+.registration-card {
+  display: grid;
+  gap: 16px;
+  padding: clamp(20px, 5vw, 36px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #101827;
+}
+.registration-card h1,
+.registration-card p {
+  margin: 0;
+}
+.registration-card h1 {
+  font-size: clamp(28px, 6vw, 40px);
+}
+.registration-card > p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.registration-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+}
+.registration-form label,
+.registration-team-choice label,
+.registration-logo-upload {
+  display: grid;
+  gap: 7px;
+  color: #cbd5e1;
+  font-size: 13px;
+}
+.registration-form input,
+.registration-team-choice select,
+.registration-logo-upload input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0b1220;
+  color: #f8fafc;
+  font: inherit;
+}
+.registration-form input:focus,
+.registration-team-choice select:focus {
+  outline: 2px solid var(--orange);
+  outline-offset: 1px;
+}
+.registration-form .registration-multiple-toggle {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #0d1624;
+  cursor: pointer;
+}
+.registration-form .registration-multiple-toggle input[type="checkbox"] {
+  appearance: none;
+  flex: 0 0 19px;
+  width: 19px;
+  height: 19px;
+  min-height: 19px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #52627a;
+  border-radius: 5px;
+  background: #0b1220;
+  cursor: pointer;
+}
+.registration-form .registration-multiple-toggle input[type="checkbox"]:checked {
+  border-color: var(--orange);
+  background: var(--orange);
+}
+.registration-form .registration-multiple-toggle input[type="checkbox"]:checked::after {
+  display: block;
+  color: #101827;
+  content: "✓";
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+}
+.registration-team-names {
+  display: grid;
+  gap: 12px;
+}
+.registration-team-name-control {
+  display: flex;
+  gap: 8px;
+}
+.registration-team-name-control input {
+  min-width: 0;
+  flex: 1;
+}
+.registration-add-team,
+.registration-remove-team,
+.registration-logo-clear {
+  flex: 0 0 44px;
+  width: 44px;
+  min-height: 44px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #172338;
+  color: #f8fafc;
+  font-size: 23px;
+}
+.registration-add-team {
+  border-color: var(--orange);
+  background: var(--orange);
+  color: #101827;
+  font-weight: 700;
+}
+.registration-logo-field {
+  display: grid;
+  gap: 9px;
+  color: #cbd5e1;
+  font-size: 13px;
+}
+.registration-logo-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.registration-logo-heading small {
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+.registration-form input.registration-logo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.registration-logo-picker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 104px;
+  padding: 14px;
+  border: 1px dashed #43516a;
+  border-radius: 10px;
+  background: #0b1220;
+}
+.registration-logo-picker > img,
+.registration-logo-placeholder {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  border-radius: 9px;
+  object-fit: contain;
+}
+.registration-logo-picker > img {
+  background: #fff;
+}
+.registration-logo-placeholder {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: #111c2d;
+  color: var(--orange);
+  font-size: 26px;
+}
+.registration-logo-copy {
+  display: grid;
+  flex: 1;
+  gap: 5px;
+  min-width: 0;
+}
+.registration-logo-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.registration-logo-copy span,
+.registration-logo-field > small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.registration-logo-action {
+  flex: 0 0 auto;
+}
+.registration-logo-clear {
+  flex-basis: 34px;
+  width: 34px;
+  min-height: 34px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+}
+.registration-card .primary-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 46px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--orange);
+  color: #101827;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.registration-card .primary-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.registration-card > small {
+  color: var(--muted);
+}
+.registration-card a:not(.primary-button) {
+  color: var(--orange);
+}
+.registration-error {
+  margin: 0;
+  color: #fca5a5;
+}
+.registration-notice {
+  color: #86efac;
+}
+.registration-complete {
+  text-align: center;
+}
+.complete-mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #14532d;
+  color: #bbf7d0;
+  font-size: 28px;
+}
+.registration-complete dl,
+.registration-admin-team dl {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) 1.2fr;
+  gap: 9px 16px;
+  margin: 8px 0;
+  text-align: left;
+}
+.registration-complete dt,
+.registration-admin-team dt {
+  color: var(--muted);
+}
+.registration-complete dd,
+.registration-admin-team dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.registration-team-choice {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.registration-members {
+  display: grid;
+  gap: 8px;
+}
+.registration-members > div {
+  display: flex;
+  gap: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.registration-members > div span {
+  color: var(--orange);
+  font-variant-numeric: tabular-nums;
+}
+.registration-club-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+.registration-link-button {
+  justify-self: start;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.registration-admin {
+  display: grid;
+  gap: 18px;
+}
+.registration-admin-list {
+  display: grid;
+  gap: 16px;
+}
+.registration-admin-club {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #101827;
+}
+.registration-admin-club > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.registration-admin-club > header img,
+.registration-admin-club > header .team-crest {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+.registration-admin-club > header h2,
+.registration-admin-team h3 {
+  margin: 0 0 4px;
+}
+.registration-admin-club > header span,
+.registration-admin-team-title span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.registration-admin-team {
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line);
+}
+.registration-admin-team-title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.registration-admin-team h4 {
+  margin-bottom: 8px;
+}
+.registration-admin-members {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+}
 .not-found h1,
 .not-found h2 {
   margin: 0;
@@ -886,6 +1282,72 @@ footer span {
   }
 }
 @media (max-width: 560px) {
+  .registration-shell {
+    width: min(100% - 24px, 720px);
+    padding: 12px 0 28px;
+  }
+  .registration-header {
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 10px 0 16px;
+  }
+  .registration-header img {
+    width: 44px;
+    height: 44px;
+  }
+  .registration-card {
+    gap: 14px;
+    padding: 18px 14px;
+    border-radius: 12px;
+  }
+  .registration-card > p {
+    font-size: 14px;
+  }
+  .registration-form {
+    gap: 12px;
+  }
+  .registration-form input,
+  .registration-team-choice select {
+    min-height: 48px;
+  }
+  .registration-team-name-control .registration-add-team,
+  .registration-team-name-control .registration-remove-team {
+    flex-basis: 48px;
+    width: 48px;
+    min-height: 48px;
+  }
+  .registration-card .primary-button {
+    min-height: 50px;
+  }
+  .registration-logo-picker {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 10px;
+  }
+  .registration-logo-picker > img,
+  .registration-logo-placeholder {
+    grid-column: 1;
+    grid-row: 1;
+    width: 58px;
+    height: 58px;
+  }
+  .registration-logo-picker > img {
+    flex-basis: 58px;
+  }
+  .registration-logo-copy {
+    grid-column: 2 / 4;
+    grid-row: 1;
+  }
+  .registration-logo-action {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+  }
+  .registration-logo-clear {
+    grid-column: 3;
+    grid-row: 2;
+  }
   .page-title {
     align-items: start;
     gap: 15px;

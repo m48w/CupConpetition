@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 import {
   CLEARED_SESSION_COOKIE,
   publicSession,
@@ -11,6 +13,7 @@ import { TournamentRoom } from "./room";
 export { TournamentRoom };
 
 const EVENT_BASE_PATH = "/20261220";
+const REGISTRATION_BASE_PATH = "/registration/20261220";
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /** HTML フォームは application/json を送れないので、これが他サイトからの書き込み（CSRF）を防ぐ。 */
@@ -27,8 +30,25 @@ export default {
     if (url.pathname === EVENT_BASE_PATH) {
       return Response.redirect(`${url.origin}${EVENT_BASE_PATH}/`, 308);
     }
+    if (url.pathname === REGISTRATION_BASE_PATH) {
+      return Response.redirect(`${url.origin}${REGISTRATION_BASE_PATH}/`, 308);
+    }
+    if (url.pathname.startsWith(`${REGISTRATION_BASE_PATH}/`)) {
+      // The dev server's Vite base is EVENT_BASE_PATH, so request its app shell
+      // while keeping the original registration URL in the browser.
+      url.pathname = `${EVENT_BASE_PATH}/`;
+      return env.ASSETS.fetch(new Request(url, request));
+    }
     if (url.pathname.startsWith(`${EVENT_BASE_PATH}/`)) {
-      url.pathname = url.pathname.slice(EVENT_BASE_PATH.length) || "/";
+      const assetPath = url.pathname.slice(EVENT_BASE_PATH.length);
+      // Keep SPA routes under Vite's configured base path. Built assets live at
+      // the root of the ASSETS binding, so strip the event prefix for files.
+      if (
+        !import.meta.env.DEV &&
+        (assetPath.startsWith("/assets/") || /^\/[^/]+\.[^/]+$/.test(assetPath))
+      ) {
+        url.pathname = assetPath;
+      }
       return env.ASSETS.fetch(new Request(url, request));
     }
     if (!url.pathname.startsWith("/api/")) return new Response(null, { status: 404 });

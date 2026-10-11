@@ -24,7 +24,7 @@ export default defineConfig({
             },
           }),
         ],
-        test: { name: "worker", include: ["worker/**/*.test.ts"] },
+        test: { name: "worker", include: ["worker/**/*.test.ts"], exclude: ["**/._*.test.ts"] },
       },
     ],
   },

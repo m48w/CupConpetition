@@ -2,19 +2,22 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
-import { EVENT_BASE_PATH } from "./config";
+import { EVENT_BASE_PATH, REGISTRATION_BASE_PATH } from "./config";
+import { RegistrationApp } from "./pages/Registration";
 import "./styles.css";
+
+const isRegistrationPage = window.location.pathname.startsWith(`${REGISTRATION_BASE_PATH}/`);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter
-      basename={EVENT_BASE_PATH}
+      basename={isRegistrationPage ? REGISTRATION_BASE_PATH : EVENT_BASE_PATH}
       future={{
         v7_startTransition: true,
         v7_relativeSplatPath: true,
       }}
     >
-      <App />
+      {isRegistrationPage ? <RegistrationApp /> : <App />}
     </BrowserRouter>
   </StrictMode>,
 );

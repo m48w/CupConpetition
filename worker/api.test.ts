@@ -3,8 +3,10 @@ import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { beforeAll, beforeEach, expect, test } from "vitest";
 import type { Match, ServerMessage, TournamentState } from "../src/types";
 import worker from "./index";
+import { RegistrationStore } from "./registration";
 
 const BASE = "http://localhost";
+const validLogo = { logoContentType: "image/png", logoDataBase64: "iVBORw0KGgo=" };
 
 const call = async (path: string, init?: RequestInit) => {
   const response = await exports.default.fetch(`${BASE}${path}`, init);
@@ -85,7 +87,22 @@ test("旧管理URLを大会URL配下の管理ログインへ転送する", async
   }
 });
 
-test("大会URLの静的アセット参照から大会Base Pathを除いて配信する", async () => {
+test("登録フォームの全URLをSPAへフォールバックする", async () => {
+  let assetPath = "";
+  const env = {
+    ASSETS: {
+      fetch: async (request: Request) => {
+        assetPath = new URL(request.url).pathname;
+        return new Response("app");
+      },
+    },
+  } as Env;
+  const response = await worker.fetch(new Request(`${BASE}/registration/20261220/members`), env);
+  expect(response.status).toBe(200);
+  expect(assetPath).toBe("/20261220/");
+});
+
+test("開発中の大会URLではViteのBase Pathを保って静的アセットを配信する", async () => {
   let assetPath: string | undefined;
   const env = {
     ASSETS: {
@@ -97,7 +114,320 @@ test("大会URLの静的アセット参照から大会Base Pathを除いて配�
   } as Env;
   const response = await worker.fetch(new Request(`${BASE}/20261220/assets/app.js`), env);
   expect(response.status).toBe(200);
-  expect(assetPath).toBe("/assets/app.js");
+  expect(assetPath).toBe("/20261220/assets/app.js");
+});
+
+test("同じクラブの複数チームを登録でき、連絡先照合後のみチームのメンバーを扱える", async () => {
+  const details = {
+    clubName: "Brothers FC",
+    representativeName: "Team Rep",
+    email: "REP@example.com",
+    phone: "090-1234-5678",
+    ...validLogo,
+  };
+  const first = await call(
+    "/api/registration/teams",
+    json("POST", { ...details, teamName: "Brothers A FC" }),
+  );
+  const second = await call(
+    "/api/registration/teams",
+    json("POST", { ...details, teamName: "Brothers B FC" }),
+  );
+  expect(first.status).toBe(201);
+  expect(second.status).toBe(201);
+  const firstBody = (await first.json()) as { registration: { id: string; clubId: string } };
+  const secondBody = (await second.json()) as { registration: { id: string; clubId: string } };
+  const firstTeam = firstBody.registration;
+  const secondTeam = secondBody.registration;
+  expect(firstTeam.clubId).toBe(secondTeam.clubId);
+
+  const unauthorized = await call(`/api/registration/members?teamId=${firstTeam.id}`);
+  expect(unauthorized.status).toBe(401);
+
+  const verified = await call(
+    "/api/registration/verify",
+    json("POST", { email: "rep@example.com", phone: "+81 90 1234 5678" }),
+  );
+  expect(verified.status).toBe(200);
+  const verification = (await verified.json()) as { teams: { id: string }[] };
+  const available = verification.teams;
+  expect(available.map(({ id }) => id)).toEqual([firstTeam.id, secondTeam.id]);
+  const registrationCookie = verified.headers.get("set-cookie")!.split(";")[0];
+
+  const firstMember = await call(
+    "/api/registration/members",
+    json("POST", { teamId: firstTeam.id, name: "Player One", backNumber: 7 }, registrationCookie),
+  );
+  const sameNumberOnOtherTeam = await call(
+    "/api/registration/members",
+    json("POST", { teamId: secondTeam.id, name: "Player Two", backNumber: 7 }, registrationCookie),
+  );
+  expect(firstMember.status).toBe(201);
+  expect(sameNumberOnOtherTeam.status).toBe(201);
+  const adminRoster = await call("/api/admin/registrations", {
+    headers: { cookie: superadmin },
+  });
+  const roster = (await adminRoster.json()) as {
+    clubs: { name: string; teams: { teamName: string; members: { backNumber: number }[] }[] }[];
+  };
+  const registeredClub = roster.clubs.find((club) => club.name === "Brothers FC")!;
+  expect(registeredClub.teams.find((team) => team.teamName === "Brothers A FC")?.members).toEqual([
+    expect.objectContaining({ backNumber: 7 }),
+  ]);
+
+  const duplicateNumber = await call(
+    "/api/registration/members",
+    json(
+      "POST",
+      { teamId: firstTeam.id, name: "Player Duplicate", backNumber: 7 },
+      registrationCookie,
+    ),
+  );
+  expect(duplicateNumber.status).toBe(409);
+
+  for (let backNumber = 8; backNumber <= 17; backNumber += 1) {
+    const added = await call(
+      "/api/registration/members",
+      json(
+        "POST",
+        { teamId: firstTeam.id, name: `Player ${backNumber}`, backNumber },
+        registrationCookie,
+      ),
+    );
+    expect(added.status).toBe(201);
+  }
+  const twelfthMember = await call(
+    "/api/registration/members",
+    json(
+      "POST",
+      { teamId: firstTeam.id, name: "Player Twelve", backNumber: 18 },
+      registrationCookie,
+    ),
+  );
+  expect(twelfthMember.status).toBe(409);
+});
+
+test("チーム登録は必須連絡先を検証し、チーム名の重複を拒否する", async () => {
+  const registration = {
+    clubName: "Example FC",
+    teamName: "Example A",
+    representativeName: "Rep",
+    email: "rep@example.com",
+    phone: "09012345678",
+    ...validLogo,
+  };
+  expect(
+    (await call("/api/registration/teams", json("POST", { ...registration, email: "" }))).status,
+  ).toBe(400);
+  expect((await call("/api/registration/teams", json("POST", registration))).status).toBe(201);
+  const duplicate = await call("/api/registration/teams", json("POST", registration));
+  expect(duplicate.status).toBe(409);
+});
+
+test("チーム登録時のクラブロゴを検証して保存し、同クラブ内で共有する", async () => {
+  const details = {
+    clubName: "Shared Logo FC",
+    representativeName: "Rep",
+    email: "shared-logo@example.com",
+    phone: "09012345678",
+  };
+  const first = await call(
+    "/api/registration/teams",
+    json("POST", {
+      ...details,
+      teamName: "Shared Logo A",
+      logoContentType: "image/png",
+      logoDataBase64: "iVBORw0KGgo=",
+    }),
+  );
+  expect(first.status).toBe(201);
+  const firstBody = (await first.json()) as {
+    registration: { clubId: string; logoId: string | null };
+  };
+  expect(firstBody.registration.logoId).toBeTruthy();
+  const second = await call(
+    "/api/registration/teams",
+    json("POST", {
+      ...details,
+      teamName: "Shared Logo B",
+      logoContentType: "image/png",
+      logoDataBase64: "iVBORw0KGgoAAQ==",
+    }),
+  );
+  expect(second.status).toBe(201);
+  const secondBody = (await second.json()) as {
+    registration: { logoId: string | null };
+  };
+  expect(secondBody.registration.logoId).toBe(firstBody.registration.logoId);
+
+  const third = await call(
+    "/api/registration/teams",
+    json("POST", {
+      ...details,
+      teamName: "Shared Logo C",
+      ...validLogo,
+    }),
+  );
+  expect(third.status).toBe(201);
+  const thirdBody = (await third.json()) as {
+    registration: { logoId: string | null };
+  };
+  expect(thirdBody.registration.logoId).toBe(firstBody.registration.logoId);
+  const logo = await call(`/api/registration/clubs/${firstBody.registration.clubId}/logo`);
+  expect(logo.status).toBe(200);
+
+  const invalid = await call(
+    "/api/registration/teams",
+    json("POST", {
+      ...details,
+      teamName: "Invalid Logo Team",
+      logoContentType: "image/png",
+      logoDataBase64: "bm90LWltYWdl",
+    }),
+  );
+  expect(invalid.status).toBe(400);
+});
+
+test("チーム・メンバーの個人情報はsuperadminのみが一覧できる", async () => {
+  expect((await call("/api/admin/registrations")).status).toBe(401);
+  expect((await call("/api/admin/registrations", { headers: { cookie: court1 } })).status).toBe(
+    403,
+  );
+  const response = await call("/api/admin/registrations", { headers: { cookie: superadmin } });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toHaveProperty("clubs");
+});
+
+test("メンバー登録締切はJSTの2026年12月12日23:59までで、サーバー側で拒否される", async () => {
+  const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("main"));
+  await runInDurableObject(room, async (_instance, state) => {
+    const registrations = new RegistrationStore(state.storage.sql, (callback) =>
+      state.storage.transactionSync(callback),
+    );
+    const beforeDeadline = Date.parse("2026-12-12T14:59:59.999Z");
+    const team = registrations.registerTeam(
+      {
+        clubName: "Deadline FC",
+        teamName: `Deadline ${crypto.randomUUID()}`,
+        representativeName: "Rep",
+        email: "deadline@example.com",
+        phone: "09012345678",
+        ...validLogo,
+      },
+      beforeDeadline,
+    );
+    const verified = await registrations.verifyContact(
+      { email: "deadline@example.com", phone: "09012345678" },
+      "test-ip",
+      beforeDeadline,
+    );
+    expect(
+      await registrations.addMember(
+        team.id,
+        { name: "On time", backNumber: 1 },
+        verified.token,
+        beforeDeadline,
+      ),
+    ).toMatchObject({ name: "On time", backNumber: 1 });
+    await expect(
+      registrations.listMembers(team.id, verified.token, beforeDeadline + 60 * 60 * 1000),
+    ).rejects.toMatchObject({ code: "VERIFY_REQUIRED", status: 401 });
+    await expect(
+      registrations.addMember(
+        team.id,
+        { name: "Too late", backNumber: 2 },
+        verified.token,
+        Date.parse("2026-12-12T15:00:00.000Z"),
+      ),
+    ).rejects.toMatchObject({ code: "MEMBER_REGISTRATION_CLOSED", status: 403 });
+  });
+});
+
+test("クラブロゴはsuperadminだけが画像形式を検証して登録できる", async () => {
+  const registered = await call(
+    "/api/registration/teams",
+    json("POST", {
+      clubName: "Logo FC",
+      teamName: "Logo Team",
+      representativeName: "Rep",
+      email: "logo@example.com",
+      phone: "09012345678",
+      ...validLogo,
+    }),
+  );
+  const registeredBody = (await registered.json()) as {
+    registration: { clubId: string };
+  };
+  const invalid = await call(
+    `/api/admin/registrations/clubs/${registeredBody.registration.clubId}/logo`,
+    json("PUT", { contentType: "image/png", dataBase64: "bm90LWltYWdl" }, superadmin),
+  );
+  expect(invalid.status).toBe(400);
+  const uploaded = await call(
+    `/api/admin/registrations/clubs/${registeredBody.registration.clubId}/logo`,
+    json("PUT", { contentType: "image/png", dataBase64: "iVBORw0KGgo=" }, superadmin),
+  );
+  expect(uploaded.status).toBe(200);
+  const sharedLogo = await call(
+    `/api/registration/clubs/${registeredBody.registration.clubId}/logo`,
+  );
+  expect(sharedLogo.status).toBe(200);
+  expect(sharedLogo.headers.get("content-type")).toBe("image/png");
+  const forbidden = await call(
+    `/api/admin/registrations/clubs/${registeredBody.registration.clubId}/logo`,
+    json("PUT", { contentType: "image/png", dataBase64: "iVBORw0KGgo=" }, court1),
+  );
+  expect(forbidden.status).toBe(403);
+});
+
+test("本人確認エラーは登録の有無を区別せず、接続元単位で試行を制限する", async () => {
+  const ip = "198.51.100.24";
+  const verify = () =>
+    call("/api/registration/verify", {
+      ...json("POST", { email: "unknown@example.com", phone: "09012345678" }),
+      headers: {
+        "content-type": "application/json",
+        "cf-connecting-ip": ip,
+      },
+    });
+  const first = await verify();
+  const firstBody = await first.text();
+  expect(first.status).toBe(401);
+  expect(firstBody).not.toContain("unknown@example.com");
+  for (let attempt = 1; attempt < 5; attempt += 1) {
+    expect((await verify()).status).toBe(401);
+  }
+  const limited = await verify();
+  expect(limited.status).toBe(429);
+  expect(await limited.text()).not.toContain("unknown@example.com");
+});
+
+test("代表者が別チームへ切り替えると現在の本人確認セッションを失効できる", async () => {
+  const teamResponse = await call(
+    "/api/registration/teams",
+    json("POST", {
+      clubName: "Revoke FC",
+      teamName: `Revoke ${crypto.randomUUID()}`,
+      representativeName: "Rep",
+      email: "revoke@example.com",
+      phone: "09012345678",
+      ...validLogo,
+    }),
+  );
+  const teamBody = (await teamResponse.json()) as {
+    registration: { id: string };
+  };
+  const verified = await call(
+    "/api/registration/verify",
+    json("POST", { email: "revoke@example.com", phone: "09012345678" }),
+  );
+  const cookie = verified.headers.get("set-cookie")!.split(";")[0];
+  const revokeResponse = await call("/api/registration/verify", json("DELETE", {}, cookie));
+  expect(revokeResponse.status).toBe(200);
+  const afterRevoke = await call(`/api/registration/members?teamId=${teamBody.registration.id}`, {
+    headers: { cookie },
+  });
+  expect(afterRevoke.status).toBe(401);
 });
 
 test("GET /api/state は未ログインでも全95試合を返す", async () => {

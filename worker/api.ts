@@ -1,6 +1,13 @@
 import type { Match, TournamentState } from "../src/types";
 import type { Identity } from "./auth";
 import { jsonResponse } from "./http";
+import {
+  clearRegistrationAccessCookie,
+  type RegistrationVerificationService,
+  registrationAccessToken,
+  RegistrationError,
+  type RegistrationStore,
+} from "./registration";
 import { StoreError, type Store } from "./store";
 
 /** JSON リクエストボディが壊れている場合に投げる。400 にマップされる。 */
@@ -59,14 +66,125 @@ export async function handleApi(
   store: Store,
   identity: Identity | null,
   broadcast: (state: TournamentState) => void,
+  registrations: RegistrationStore,
+  verification: RegistrationVerificationService,
 ): Promise<Response> {
-  const path = new URL(request.url).pathname;
+  const url = new URL(request.url);
+  const path = url.pathname;
   const mutated = (state: TournamentState) => {
     broadcast(state);
     return jsonResponse(200, state);
   };
 
   try {
+    if (path === "/api/registration/teams" && request.method === "POST") {
+      const registeredTeams = registrations.registerTeams(await readJsonBody(request), Date.now());
+      return jsonResponse(
+        201,
+        registeredTeams.length === 1
+          ? { registration: registeredTeams[0] }
+          : { registrations: registeredTeams },
+      );
+    }
+
+    if (path === "/api/registration/verify" && request.method === "POST") {
+      const verified = await verification.verify(
+        await readJsonBody(request),
+        request.headers.get("cf-connecting-ip") ?? "unknown",
+        Date.now(),
+      );
+      return jsonResponse(
+        200,
+        { teams: verified.teams },
+        { "set-cookie": registrations.accessCookie(verified.token) },
+      );
+    }
+
+    if (path === "/api/registration/verify" && request.method === "DELETE") {
+      await registrations.revokeAccess(registrationAccessToken(request.headers.get("cookie")));
+      return jsonResponse(
+        200,
+        { verified: false },
+        { "set-cookie": clearRegistrationAccessCookie() },
+      );
+    }
+
+    if (path === "/api/registration/members" && request.method === "GET") {
+      const teamId = url.searchParams.get("teamId") ?? "";
+      if (!teamId) throw new BadRequestError("teamId is required");
+      const registration = await registrations.listMembers(
+        teamId,
+        registrationAccessToken(request.headers.get("cookie")),
+        Date.now(),
+      );
+      return jsonResponse(200, { registration });
+    }
+
+    if (path === "/api/registration/members" && request.method === "POST") {
+      const body = (await readJsonBody(request)) as Record<string, unknown>;
+      if (typeof body.teamId !== "string") throw new BadRequestError("teamId is required");
+      const member = await registrations.addMember(
+        body.teamId,
+        body,
+        registrationAccessToken(request.headers.get("cookie")),
+        Date.now(),
+      );
+      return jsonResponse(201, { member });
+    }
+
+    if (path === "/api/admin/registrations" && request.method === "GET") {
+      superadminOnly(identity);
+      return jsonResponse(200, registrations.listClubs(Date.now()));
+    }
+
+    const logoUpload = path.match(/^\/api\/admin\/registrations\/clubs\/([^/]+)\/logo$/);
+    if (logoUpload && request.method === "PUT") {
+      superadminOnly(identity);
+      const body = (await readJsonBody(request)) as {
+        contentType?: unknown;
+        dataBase64?: unknown;
+      };
+      if (typeof body.contentType !== "string" || typeof body.dataBase64 !== "string") {
+        throw new BadRequestError("contentType and dataBase64 are required");
+      }
+      let clubId: string;
+      try {
+        clubId = decodeURIComponent(logoUpload[1]);
+      } catch {
+        throw new BadRequestError("club id must be URL encoded");
+      }
+      const logoId = registrations.setClubLogo(
+        clubId,
+        body.contentType,
+        body.dataBase64,
+        Date.now(),
+      );
+      return jsonResponse(200, { logoId });
+    }
+
+    const clubLogo = path.match(/^\/api\/registration\/clubs\/([^/]+)\/logo$/);
+    if (clubLogo && request.method === "GET") {
+      let clubId: string;
+      try {
+        clubId = decodeURIComponent(clubLogo[1]);
+      } catch {
+        throw new BadRequestError("club id must be URL encoded");
+      }
+      const logo = registrations.readClubLogo(clubId);
+      if (!logo) return jsonResponse(404, { error: "club logo not found" });
+      const binary = atob(logo.dataBase64);
+      return new Response(
+        Uint8Array.from(binary, (character) => character.charCodeAt(0)),
+        {
+          headers: {
+            "content-type": logo.contentType,
+            "cache-control": "public, max-age=3600",
+            "x-content-type-options": "nosniff",
+          },
+        },
+      );
+    }
+
     const logoTarget = path.match(/^\/api\/logos\/([^/]+)$/);
     if (logoTarget && request.method === "GET") {
       let id: string;
@@ -129,6 +247,9 @@ export async function handleApi(
     }
     if (error instanceof BadRequestError) {
       return jsonResponse(400, { error: error.message });
+    }
+    if (error instanceof RegistrationError) {
+      return jsonResponse(error.status, { error: error.message, code: error.code });
     }
     console.error("[api] failed while handling a request", error);
     return jsonResponse(500, { error: error instanceof Error ? error.message : String(error) });

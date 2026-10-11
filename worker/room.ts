@@ -5,6 +5,7 @@ import { createLoginAttempts, type LoginAttempts } from "./attempts";
 import { readIdentity } from "./auth";
 import { jsonResponse } from "./http";
 import { handleLogin } from "./login";
+import { ContactPairRegistrationVerification, RegistrationStore } from "./registration";
 import { createSqlStore, type Store } from "./store";
 
 const serialize = (state: TournamentState) =>
@@ -12,11 +13,17 @@ const serialize = (state: TournamentState) =>
 
 export class TournamentRoom extends DurableObject<Env> {
   private readonly store: Store;
+  private readonly registrations: RegistrationStore;
+  private readonly registrationVerification: ContactPairRegistrationVerification;
   private readonly attempts: LoginAttempts;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.store = createSqlStore(ctx.storage);
+    this.registrations = new RegistrationStore(ctx.storage.sql, (callback) =>
+      ctx.storage.transactionSync(callback),
+    );
+    this.registrationVerification = new ContactPairRegistrationVerification(this.registrations);
     this.attempts = createLoginAttempts(ctx.storage.sql);
     // Answered by the runtime without waking the object, so client heartbeats stay free.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
@@ -28,8 +35,13 @@ export class TournamentRoom extends DurableObject<Env> {
     if (path === "/api/login" && request.method === "POST") {
       return handleLogin(request, this.attempts, this.env, Date.now());
     }
-    return handleApi(request, this.store, readIdentity(request.headers), (state) =>
-      this.broadcast(state),
+    return handleApi(
+      request,
+      this.store,
+      readIdentity(request.headers),
+      (state) => this.broadcast(state),
+      this.registrations,
+      this.registrationVerification,
     );
   }
 
