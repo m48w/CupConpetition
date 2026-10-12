@@ -13,7 +13,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "npm run build && node scripts/clean-appledouble.mjs && wrangler deploy",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
