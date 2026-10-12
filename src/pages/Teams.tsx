@@ -14,18 +14,29 @@ interface RegisteredTeam {
   clubName: string;
   teamName: string;
   logoId: string | null;
+  members: { name: string; backNumber: number }[];
 }
 
 export function Teams() {
   const teams = useTeams();
   const [registeredTeams, setRegisteredTeams] = useState<RegisteredTeam[]>([]);
   const [registrationError, setRegistrationError] = useState("");
+  const [selectedTeam, setSelectedTeam] = useState<RegisteredTeam | null>(null);
 
   useEffect(() => {
     void requestJson<{ teams: RegisteredTeam[] }>("/api/registration/teams")
       .then(({ teams: registrations }) => setRegisteredTeams(registrations))
       .catch(() => setRegistrationError("Could not load registered teams."));
   }, []);
+
+  useEffect(() => {
+    if (!selectedTeam) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedTeam(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedTeam]);
 
   return (
     <>
@@ -46,7 +57,13 @@ export function Teams() {
         ) : registeredTeams.length ? (
           <div className="team-directory">
             {registeredTeams.map((team) => (
-              <article className="team-directory-card" key={team.id}>
+              <button
+                className="team-directory-card registered-team-card"
+                key={team.id}
+                type="button"
+                aria-label={`View ${team.teamName} and registered members`}
+                onClick={() => setSelectedTeam(team)}
+              >
                 {team.logoId ? (
                   <img
                     className="registered-team-logo"
@@ -59,8 +76,7 @@ export function Teams() {
                   <span className="team-crest">FC</span>
                 )}
                 <strong>{team.teamName}</strong>
-                <span>{team.clubName} · Registration received</span>
-              </article>
+              </button>
             ))}
           </div>
         ) : (
@@ -83,6 +99,65 @@ export function Teams() {
             ))}
           </div>
         </section>
+      )}
+      {selectedTeam && (
+        <div className="team-roster-overlay">
+          <section
+            className="team-roster-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="team-roster-title"
+          >
+            <header className="team-roster-header">
+              <h2 id="team-roster-title">{selectedTeam.teamName}</h2>
+              <div>
+                <button
+                  className="outline-button"
+                  type="button"
+                  onClick={() => setSelectedTeam(null)}
+                >
+                  Back
+                </button>
+                <button
+                  className="team-roster-close"
+                  type="button"
+                  aria-label="Close team details"
+                  onClick={() => setSelectedTeam(null)}
+                >
+                  ×
+                </button>
+              </div>
+            </header>
+            <div className="team-roster-content">
+              {selectedTeam.logoId ? (
+                <img
+                  className="team-roster-logo"
+                  src={tournamentScopedUrl(
+                    `/api/registration/clubs/${encodeURIComponent(selectedTeam.clubId)}/logo`,
+                  )}
+                  alt={`${selectedTeam.teamName} logo`}
+                />
+              ) : (
+                <span className="team-crest team-roster-logo">FC</span>
+              )}
+              <section className="team-roster-list">
+                <h3>Registered members</h3>
+                {selectedTeam.members.length ? (
+                  <ol>
+                    {selectedTeam.members.map((member) => (
+                      <li key={`${member.backNumber}-${member.name}`}>
+                        <span>#{member.backNumber}</span>
+                        <strong>{member.name}</strong>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="muted">No members registered yet.</p>
+                )}
+              </section>
+            </div>
+          </section>
+        </div>
       )}
     </>
   );

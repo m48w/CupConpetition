@@ -51,6 +51,7 @@ export interface PublicRegistrationTeam {
   clubName: string;
   teamName: string;
   logoId: string | null;
+  members: { name: string; backNumber: number }[];
 }
 
 interface AdminRegisteredMember {
@@ -711,26 +712,45 @@ export class RegistrationStore {
   }
 
   listPublicTeams(): PublicRegistrationTeam[] {
-    return this.sql
+    const rows = this.sql
       .exec<{
         id: string;
         club_id: string;
         team_name: string;
         club_name: string;
         logo_id: string | null;
+        member_name: string | null;
+        back_number: number | null;
       }>(
-        `SELECT t.id, c.id AS club_id, t.name AS team_name, c.name AS club_name, c.logo_id
+        `SELECT t.id, c.id AS club_id, t.name AS team_name, c.name AS club_name, c.logo_id,
+                m.name AS member_name, m.back_number
          FROM registration_teams t JOIN registration_clubs c ON c.id = t.club_id
-         ORDER BY c.name COLLATE NOCASE, t.name COLLATE NOCASE`,
+         LEFT JOIN registration_members m ON m.team_id = t.id
+         ORDER BY c.name COLLATE NOCASE, t.name COLLATE NOCASE, m.back_number`,
       )
-      .toArray()
-      .map((team) => ({
-        id: team.id,
-        clubId: team.club_id,
-        teamName: team.team_name,
-        clubName: team.club_name,
-        logoId: team.logo_id,
-      }));
+      .toArray();
+    const teams = new Map<string, PublicRegistrationTeam>();
+    for (const row of rows) {
+      let team = teams.get(row.id);
+      if (!team) {
+        team = {
+          id: row.id,
+          clubId: row.club_id,
+          teamName: row.team_name,
+          clubName: row.club_name,
+          logoId: row.logo_id,
+          members: [],
+        };
+        teams.set(row.id, team);
+      }
+      if (row.member_name !== null && row.back_number !== null) {
+        team.members.push({
+          name: row.member_name,
+          backNumber: row.back_number,
+        });
+      }
+    }
+    return [...teams.values()];
   }
 
   updateTeam(id: string, value: unknown, now: number): void {

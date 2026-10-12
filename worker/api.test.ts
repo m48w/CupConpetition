@@ -327,7 +327,7 @@ test("登録チームを公開一覧に表示し、メンバー一括登録とSu
     expect.objectContaining({ id: team.id, clubName: "Batch Club", teamName: "Batch Team" }),
   );
   expect(listed.teams[0]).not.toHaveProperty("email");
-  expect(listed.teams[0]).not.toHaveProperty("members");
+  expect(listed.teams[0]).toHaveProperty("members");
 
   const verified = await call(
     "/api/registration/verify",
@@ -350,6 +350,22 @@ test("登録チームを公開一覧に表示し、メンバー一括登録とSu
   );
   expect(added.status).toBe(201);
   expect(((await added.json()) as { members: unknown[] }).members).toHaveLength(2);
+  const publicRosterResponse = await call("/api/registration/teams");
+  const publicRoster = (await publicRosterResponse.json()) as {
+    teams: {
+      id: string;
+      members: { name: string; backNumber: number }[];
+      email?: string;
+      representativeName?: string;
+    }[];
+  };
+  const listedTeam = publicRoster.teams.find((item) => item.id === team.id)!;
+  expect(listedTeam.members).toEqual([
+    expect.objectContaining({ name: "Player A", backNumber: 1 }),
+    expect.objectContaining({ name: "Player B", backNumber: 2 }),
+  ]);
+  expect(listedTeam).not.toHaveProperty("email");
+  expect(listedTeam).not.toHaveProperty("representativeName");
 
   const duplicate = await call(
     "/api/registration/members",

@@ -811,6 +811,94 @@ label {
   height: 54px;
   object-fit: contain;
 }
+.registered-team-card {
+  width: 100%;
+  min-width: 0;
+  color: #e8edf6;
+  font: inherit;
+  cursor: pointer;
+}
+.team-roster-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(2 6 14 / 78%);
+}
+.team-roster-dialog {
+  width: min(100%, 760px);
+  max-height: min(90vh, 760px);
+  overflow: auto;
+  padding: clamp(18px, 4vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #101827;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 45%);
+}
+.team-roster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.team-roster-header h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(24px, 5vw, 34px);
+}
+.team-roster-header > div {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+.team-roster-close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #172338;
+  color: #f8fafc;
+  font-size: 26px;
+  cursor: pointer;
+}
+.team-roster-content {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.7fr) minmax(0, 1.3fr);
+  align-items: start;
+  gap: 24px;
+}
+.team-roster-logo {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+.team-roster-list h3 {
+  margin: 0 0 12px;
+}
+.team-roster-list ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.team-roster-list li {
+  display: flex;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.team-roster-list li span {
+  min-width: 36px;
+  color: var(--orange);
+  font-variant-numeric: tabular-nums;
+}
 .team-directory-card,
 .group-directory-card {
   display: flex;
@@ -1436,6 +1524,17 @@ footer span {
   }
 }
 @media (max-width: 560px) {
+  .team-roster-overlay {
+    padding: 10px;
+  }
+  .team-roster-content {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .team-roster-logo {
+    width: 140px;
+    justify-self: center;
+  }
   .registration-shell {
     width: min(100% - 24px, 720px);
     padding: 12px 0 28px;
