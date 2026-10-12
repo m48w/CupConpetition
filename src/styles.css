@@ -432,7 +432,7 @@ label {
 }
 .registration-member-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(105px, 0.38fr) 44px;
+  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.34fr);
   align-items: end;
   gap: 10px;
 }
@@ -441,9 +441,6 @@ label {
 }
 .registration-member-row input {
   min-width: 0;
-}
-.registration-member-row .registration-remove-team {
-  margin-bottom: 0;
 }
 .registration-form .registration-multiple-toggle {
   display: flex;

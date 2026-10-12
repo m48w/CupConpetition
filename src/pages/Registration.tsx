@@ -48,7 +48,7 @@ function RegistrationLayout({ children }: { children: ReactNode }) {
   return (
     <main className="registration-shell">
       <header className="registration-header">
-        <img src="/20261220/velocity-fc-logo.png" alt="Velocity FC" />
+        <img src="/velocity-fc-logo.png" alt="Velocity FC" />
         <div>
           <strong>VELOCITY CUP 2026</strong>
           <span>TEAM REGISTRATION</span>
@@ -470,7 +470,9 @@ function MemberRegistration() {
   const navigate = useNavigate();
   const teamId = sessionStorage.getItem(TEAM_KEY);
   const [registration, setRegistration] = useState<MemberRegistration | null>(null);
-  const [memberRows, setMemberRows] = useState<MemberDraft[]>([{ name: "", backNumber: "" }]);
+  const [memberRows, setMemberRows] = useState<MemberDraft[]>(() =>
+    Array.from({ length: 11 }, () => ({ name: "", backNumber: "" })),
+  );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -524,7 +526,7 @@ function MemberRegistration() {
         method: "POST",
         body: JSON.stringify({ teamId, members }),
       });
-      setMemberRows([{ name: "", backNumber: "" }]);
+      setMemberRows(Array.from({ length: 11 }, () => ({ name: "", backNumber: "" })));
       await load();
       sessionStorage.setItem(MEMBER_COMPLETE_KEY, teamId);
       navigate("/complete?member=1");
@@ -600,6 +602,7 @@ function MemberRegistration() {
                   <input
                     maxLength={120}
                     value={member.name}
+                    disabled={index >= remainingSlots}
                     onChange={(event) =>
                       setMemberRows((rows) =>
                         rows.map((row, rowIndex) =>
@@ -616,6 +619,7 @@ function MemberRegistration() {
                     min="0"
                     step="1"
                     value={member.backNumber}
+                    disabled={index >= remainingSlots}
                     onChange={(event) =>
                       setMemberRows((rows) =>
                         rows.map((row, rowIndex) =>
@@ -625,30 +629,11 @@ function MemberRegistration() {
                     }
                   />
                 </label>
-                {memberRows.length > 1 && (
-                  <button
-                    type="button"
-                    className="registration-remove-team"
-                    aria-label={`Remove player row ${index + 1}`}
-                    onClick={() => setMemberRows((rows) => rows.filter((_, i) => i !== index))}
-                  >
-                    −
-                  </button>
-                )}
               </div>
             ))}
           </div>
-          {memberRows.length < remainingSlots && (
-            <button
-              type="button"
-              className="outline-button registration-add-member"
-              onClick={() => setMemberRows((rows) => [...rows, { name: "", backNumber: "" }])}
-            >
-              + Add player row
-            </button>
-          )}
           <button className="primary-button" disabled={busy}>
-            {busy ? "Saving…" : `Register ${memberRows.length > 1 ? "players" : "player"}`}
+            {busy ? "Saving…" : "Register players"}
           </button>
         </form>
       )}
