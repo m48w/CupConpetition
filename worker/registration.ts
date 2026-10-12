@@ -45,6 +45,14 @@ export interface ClubRegistrationSummary {
   teams: RegistrationTeamSummary[];
 }
 
+export interface PublicRegistrationTeam {
+  id: string;
+  clubId: string;
+  clubName: string;
+  teamName: string;
+  logoId: string | null;
+}
+
 interface AdminRegisteredMember {
   id: string;
   name: string;
@@ -525,6 +533,16 @@ export class RegistrationStore {
   }
 
   async addMember(teamId: string, value: unknown, token: string | null, now: number) {
+    const [member] = await this.addMembers(teamId, [value], token, now);
+    return member;
+  }
+
+  async addMembers(
+    teamId: string,
+    values: unknown,
+    token: string | null,
+    now: number,
+  ): Promise<RegisteredMember[]> {
     await this.access(token, teamId, now);
     if (isRegistrationDeadlinePassed(now)) {
       throw new RegistrationError(
@@ -533,25 +551,37 @@ export class RegistrationStore {
         403,
       );
     }
-    if (!value || typeof value !== "object") {
-      throw new RegistrationError("Enter a name and shirt number.", "INVALID_INPUT", 400);
+    if (!Array.isArray(values) || values.length < 1 || values.length > 11) {
+      throw new RegistrationError("Enter between 1 and 11 members.", "INVALID_INPUT", 400);
     }
-    const input = value as Record<string, unknown>;
-    const name = typeof input.name === "string" ? normalizeName(input.name) : "";
-    const backNumber = input.backNumber;
-    if (
-      !name ||
-      name.length > 120 ||
-      !Number.isSafeInteger(backNumber) ||
-      (backNumber as number) < 0
-    ) {
+    const members = values.map((value) => {
+      if (!value || typeof value !== "object") {
+        throw new RegistrationError("Enter a name and shirt number.", "INVALID_INPUT", 400);
+      }
+      const input = value as Record<string, unknown>;
+      const name = typeof input.name === "string" ? normalizeName(input.name) : "";
+      const backNumber = input.backNumber;
+      if (
+        !name ||
+        name.length > 120 ||
+        !Number.isSafeInteger(backNumber) ||
+        (backNumber as number) < 0
+      ) {
+        throw new RegistrationError(
+          "Enter a valid name and non-negative shirt number.",
+          "INVALID_INPUT",
+          400,
+        );
+      }
+      return { name, backNumber: backNumber as number, id: crypto.randomUUID() };
+    });
+    if (new Set(members.map((member) => member.backNumber)).size !== members.length) {
       throw new RegistrationError(
-        "Enter a valid name and non-negative shirt number.",
-        "INVALID_INPUT",
-        400,
+        "Shirt numbers must be unique within the team.",
+        "DUPLICATE_BACK_NUMBER",
+        409,
       );
     }
-    const id = crypto.randomUUID();
     const createdAt = new Date(now).toISOString();
     try {
       return this.transactionSync(() => {
@@ -569,23 +599,25 @@ export class RegistrationStore {
             teamId,
           )
           .toArray()[0].count;
-        if (count >= 11) {
+        if (count + members.length > 11) {
           throw new RegistrationError(
-            "This team already has 11 registered members.",
+            "A team can have no more than 11 registered members.",
             "TEAM_FULL",
             409,
           );
         }
-        this.sql.exec(
-          `INSERT INTO registration_members (id, team_id, name, back_number, created_at)
-           VALUES (?, ?, ?, ?, ?)`,
-          id,
-          teamId,
-          name,
-          backNumber,
-          createdAt,
-        );
-        return { id, name, backNumber, createdAt };
+        return members.map((member) => {
+          this.sql.exec(
+            `INSERT INTO registration_members (id, team_id, name, back_number, created_at)
+             VALUES (?, ?, ?, ?, ?)`,
+            member.id,
+            teamId,
+            member.name,
+            member.backNumber,
+            createdAt,
+          );
+          return { ...member, createdAt };
+        });
       });
     } catch (error) {
       if (error instanceof RegistrationError) throw error;
@@ -676,6 +708,171 @@ export class RegistrationStore {
       deadlinePassed: isRegistrationDeadlinePassed(now),
       clubs: results,
     };
+  }
+
+  listPublicTeams(): PublicRegistrationTeam[] {
+    return this.sql
+      .exec<{
+        id: string;
+        club_id: string;
+        team_name: string;
+        club_name: string;
+        logo_id: string | null;
+      }>(
+        `SELECT t.id, c.id AS club_id, t.name AS team_name, c.name AS club_name, c.logo_id
+         FROM registration_teams t JOIN registration_clubs c ON c.id = t.club_id
+         ORDER BY c.name COLLATE NOCASE, t.name COLLATE NOCASE`,
+      )
+      .toArray()
+      .map((team) => ({
+        id: team.id,
+        clubId: team.club_id,
+        teamName: team.team_name,
+        clubName: team.club_name,
+        logoId: team.logo_id,
+      }));
+  }
+
+  updateTeam(id: string, value: unknown, now: number): void {
+    if (!value || typeof value !== "object") {
+      throw new RegistrationError("Invalid team details.", "INVALID_INPUT", 400);
+    }
+    const input = value as Record<string, unknown>;
+    const teamName = typeof input.teamName === "string" ? normalizeName(input.teamName) : "";
+    const representativeName =
+      typeof input.representativeName === "string" ? normalizeName(input.representativeName) : "";
+    const email = typeof input.email === "string" ? normalizeEmail(input.email) : "";
+    const rawPhone = typeof input.phone === "string" ? input.phone.trim() : "";
+    const phone = normalizePhone(rawPhone);
+    if (
+      !teamName ||
+      teamName.length > 120 ||
+      !representativeName ||
+      representativeName.length > 120 ||
+      email.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      rawPhone.length > 32 ||
+      !/^\+?[0-9\s().-]+$/.test(rawPhone) ||
+      phone.length < 10 ||
+      phone.length > 15
+    ) {
+      throw new RegistrationError("Enter valid team and contact details.", "INVALID_INPUT", 400);
+    }
+    try {
+      this.transactionSync(() => {
+        const exists = this.sql
+          .exec<{ id: string }>("SELECT id FROM registration_teams WHERE id = ?", id)
+          .toArray()[0];
+        if (!exists) throw new RegistrationError("Team not found.", "TEAM_NOT_FOUND", 404);
+        this.sql.exec(
+          `UPDATE registration_teams
+           SET name = ?, normalized_name = ?, representative_name = ?, email = ?, normalized_email = ?,
+               phone = ?, normalized_phone = ?, updated_at = ?
+           WHERE id = ?`,
+          teamName,
+          teamName.toLocaleLowerCase("en"),
+          representativeName,
+          email,
+          email,
+          phone,
+          phone,
+          new Date(now).toISOString(),
+          id,
+        );
+      });
+    } catch (error) {
+      if (error instanceof RegistrationError) throw error;
+      if (error instanceof Error && error.message.toLowerCase().includes("unique")) {
+        throw new RegistrationError(
+          "A team with this name is already registered.",
+          "DUPLICATE_TEAM",
+          409,
+        );
+      }
+      throw error;
+    }
+  }
+
+  updateClub(clubId: string, value: unknown, now: number): void {
+    const name =
+      value &&
+      typeof value === "object" &&
+      typeof (value as Record<string, unknown>).name === "string"
+        ? normalizeName((value as Record<string, string>).name)
+        : "";
+    if (!name || name.length > 120) {
+      throw new RegistrationError("Enter a valid club name.", "INVALID_INPUT", 400);
+    }
+    try {
+      this.transactionSync(() => {
+        const exists = this.sql
+          .exec<{ id: string }>("SELECT id FROM registration_clubs WHERE id = ?", clubId)
+          .toArray()[0];
+        if (!exists) throw new RegistrationError("Club not found.", "CLUB_NOT_FOUND", 404);
+        this.sql.exec(
+          `UPDATE registration_clubs SET name = ?, normalized_name = ?, updated_at = ? WHERE id = ?`,
+          name,
+          name.toLocaleLowerCase("en"),
+          new Date(now).toISOString(),
+          clubId,
+        );
+      });
+    } catch (error) {
+      if (error instanceof RegistrationError) throw error;
+      if (error instanceof Error && error.message.toLowerCase().includes("unique")) {
+        throw new RegistrationError(
+          "A club with this name is already registered.",
+          "DUPLICATE_CLUB",
+          409,
+        );
+      }
+      throw error;
+    }
+  }
+
+  deleteTeam(teamId: string): void {
+    this.transactionSync(() => {
+      const team = this.sql
+        .exec<{ club_id: string }>("SELECT club_id FROM registration_teams WHERE id = ?", teamId)
+        .toArray()[0];
+      if (!team) throw new RegistrationError("Team not found.", "TEAM_NOT_FOUND", 404);
+      const accessRows = this.sql
+        .exec<{ token_hash: string; team_ids_json: string }>(
+          "SELECT token_hash, team_ids_json FROM registration_access",
+        )
+        .toArray();
+      for (const access of accessRows) {
+        let teamIds: unknown;
+        try {
+          teamIds = JSON.parse(access.team_ids_json);
+        } catch {
+          this.sql.exec("DELETE FROM registration_access WHERE token_hash = ?", access.token_hash);
+          continue;
+        }
+        if (!Array.isArray(teamIds) || !teamIds.includes(teamId)) continue;
+        const remainingIds = teamIds.filter((id) => id !== teamId);
+        if (remainingIds.length === 0) {
+          this.sql.exec("DELETE FROM registration_access WHERE token_hash = ?", access.token_hash);
+        } else {
+          this.sql.exec(
+            "UPDATE registration_access SET team_ids_json = ? WHERE token_hash = ?",
+            JSON.stringify(remainingIds),
+            access.token_hash,
+          );
+        }
+      }
+      this.sql.exec("DELETE FROM registration_members WHERE team_id = ?", teamId);
+      this.sql.exec("DELETE FROM registration_teams WHERE id = ?", teamId);
+      const remainingTeams = this.sql
+        .exec<{ count: number }>(
+          "SELECT COUNT(*) AS count FROM registration_teams WHERE club_id = ?",
+          team.club_id,
+        )
+        .toArray()[0].count;
+      if (remainingTeams === 0) {
+        this.sql.exec("DELETE FROM registration_clubs WHERE id = ?", team.club_id);
+      }
+    });
   }
 
   setClubLogo(clubId: string, contentType: string, dataBase64: string, now: number) {

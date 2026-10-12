@@ -49,6 +49,16 @@ export function AdminRegistrations({ session }: { session: SessionInfo }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busyClub, setBusyClub] = useState<string | null>(null);
+  const [busyTeam, setBusyTeam] = useState<string | null>(null);
+  const [editingClubId, setEditingClubId] = useState<string | null>(null);
+  const [clubNameDraft, setClubNameDraft] = useState("");
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [teamDraft, setTeamDraft] = useState({
+    teamName: "",
+    representativeName: "",
+    email: "",
+    phone: "",
+  });
 
   const load = useCallback(async () => {
     const result = await requestJson<AdminRegistrationState>("/api/admin/registrations");
@@ -84,6 +94,65 @@ export function AdminRegistrations({ session }: { session: SessionInfo }) {
       setError(reason instanceof ApiError ? reason.message : "Logo could not be saved.");
     } finally {
       setBusyClub(null);
+    }
+  }
+
+  async function saveClubName(club: AdminClub) {
+    setError("");
+    setNotice("");
+    setBusyClub(club.id);
+    try {
+      await requestJson(`/api/admin/registrations/clubs/${encodeURIComponent(club.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name: clubNameDraft }),
+      });
+      setEditingClubId(null);
+      await load();
+      setNotice(`Club name saved for ${clubNameDraft.trim()}.`);
+    } catch (reason) {
+      setError(reason instanceof ApiError ? reason.message : "Club name could not be saved.");
+    } finally {
+      setBusyClub(null);
+    }
+  }
+
+  async function saveTeam(team: AdminTeam) {
+    setError("");
+    setNotice("");
+    setBusyTeam(team.id);
+    try {
+      await requestJson(`/api/admin/registrations/teams/${encodeURIComponent(team.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(teamDraft),
+      });
+      setEditingTeamId(null);
+      await load();
+      setNotice(`Team details saved for ${teamDraft.teamName.trim()}.`);
+    } catch (reason) {
+      setError(reason instanceof ApiError ? reason.message : "Team details could not be saved.");
+    } finally {
+      setBusyTeam(null);
+    }
+  }
+
+  async function deleteTeam(team: AdminTeam) {
+    if (!window.confirm(`Delete the registration for “${team.teamName}” and its members?`)) return;
+    setError("");
+    setNotice("");
+    setBusyTeam(team.id);
+    try {
+      await requestJson(`/api/admin/registrations/teams/${encodeURIComponent(team.id)}`, {
+        method: "DELETE",
+      });
+      if (editingTeamId === team.id) setEditingTeamId(null);
+      await load();
+      setNotice(`Registration deleted for ${team.teamName}.`);
+    } catch (reason) {
+      setError(
+        reason instanceof ApiError ? reason.message : "Team registration could not be deleted.",
+      );
+    } finally {
+      setBusyTeam(null);
     }
   }
 
@@ -134,7 +203,53 @@ export function AdminRegistrations({ session }: { session: SessionInfo }) {
                 <span className="team-crest">FC</span>
               )}
               <div>
-                <h2>{club.name}</h2>
+                {editingClubId === club.id ? (
+                  <form
+                    className="registration-admin-club-edit"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void saveClubName(club);
+                    }}
+                  >
+                    <label>
+                      Club name
+                      <input
+                        value={clubNameDraft}
+                        maxLength={120}
+                        required
+                        onChange={(event) => setClubNameDraft(event.target.value)}
+                      />
+                    </label>
+                    <button
+                      className="outline-button"
+                      type="submit"
+                      disabled={busyClub === club.id}
+                    >
+                      Save club
+                    </button>
+                    <button
+                      className="outline-button"
+                      type="button"
+                      onClick={() => setEditingClubId(null)}
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <h2>{club.name}</h2>
+                    <button
+                      className="outline-button registration-admin-edit-button"
+                      type="button"
+                      onClick={() => {
+                        setClubNameDraft(club.name);
+                        setEditingClubId(club.id);
+                      }}
+                    >
+                      Edit club name
+                    </button>
+                  </>
+                )}
                 <span>{club.teams.length} teams</span>
               </div>
             </header>
@@ -150,8 +265,114 @@ export function AdminRegistrations({ session }: { session: SessionInfo }) {
             {club.teams.map((team) => (
               <section className="registration-admin-team" key={team.id}>
                 <div className="registration-admin-team-title">
-                  <h3>{team.teamName}</h3>
-                  <span>{team.memberCount} / 11 members</span>
+                  <div>
+                    {editingTeamId === team.id ? (
+                      <form
+                        className="registration-admin-team-edit"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void saveTeam(team);
+                        }}
+                      >
+                        <label>
+                          Tournament team name
+                          <input
+                            value={teamDraft.teamName}
+                            maxLength={120}
+                            required
+                            onChange={(event) =>
+                              setTeamDraft((draft) => ({ ...draft, teamName: event.target.value }))
+                            }
+                          />
+                        </label>
+                        <label>
+                          Representative name
+                          <input
+                            value={teamDraft.representativeName}
+                            maxLength={120}
+                            required
+                            onChange={(event) =>
+                              setTeamDraft((draft) => ({
+                                ...draft,
+                                representativeName: event.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                        <label>
+                          Email
+                          <input
+                            type="email"
+                            value={teamDraft.email}
+                            maxLength={254}
+                            required
+                            onChange={(event) =>
+                              setTeamDraft((draft) => ({ ...draft, email: event.target.value }))
+                            }
+                          />
+                        </label>
+                        <label>
+                          Phone
+                          <input
+                            type="tel"
+                            value={teamDraft.phone}
+                            required
+                            onChange={(event) =>
+                              setTeamDraft((draft) => ({ ...draft, phone: event.target.value }))
+                            }
+                          />
+                        </label>
+                        <div className="registration-admin-actions">
+                          <button
+                            className="primary-button"
+                            type="submit"
+                            disabled={busyTeam === team.id}
+                          >
+                            Save changes
+                          </button>
+                          <button
+                            className="outline-button"
+                            type="button"
+                            onClick={() => setEditingTeamId(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <h3>{team.teamName}</h3>
+                        <span>{team.memberCount} / 11 members</span>
+                      </>
+                    )}
+                  </div>
+                  {editingTeamId !== team.id && (
+                    <div className="registration-admin-actions">
+                      <button
+                        className="outline-button"
+                        type="button"
+                        onClick={() => {
+                          setTeamDraft({
+                            teamName: team.teamName,
+                            representativeName: team.representativeName,
+                            email: team.email,
+                            phone: team.phone,
+                          });
+                          setEditingTeamId(team.id);
+                        }}
+                      >
+                        Edit team
+                      </button>
+                      <button
+                        className="danger-button"
+                        type="button"
+                        disabled={busyTeam === team.id}
+                        onClick={() => void deleteTeam(team)}
+                      >
+                        Delete team
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <dl>
                   <dt>Representative</dt>

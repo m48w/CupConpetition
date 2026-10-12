@@ -300,6 +300,126 @@ test("チーム・メンバーの個人情報はsuperadminのみが一覧でき�
   expect(await response.json()).toHaveProperty("clubs");
 });
 
+test("登録チームを公開一覧に表示し、メンバー一括登録とSuper Admin管理を提供する", async () => {
+  const registration = {
+    clubName: "Batch Club",
+    representativeName: "Representative",
+    email: "batch@example.com",
+    phone: "09012345678",
+    ...validLogo,
+  };
+  const created = await call(
+    "/api/registration/teams",
+    json("POST", { ...registration, teamName: "Batch Team" }),
+  );
+  expect(created.status).toBe(201);
+  const { registration: team } = (await created.json()) as {
+    registration: { id: string; clubId: string };
+  };
+
+  const publicList = await call("/api/registration/teams");
+  expect(publicList.status).toBe(200);
+  const listed = (await publicList.json()) as {
+    teams: Record<string, unknown>[];
+  };
+  const preexistingIds = listed.teams.map((listedTeam) => listedTeam.id);
+  expect(listed.teams).toContainEqual(
+    expect.objectContaining({ id: team.id, clubName: "Batch Club", teamName: "Batch Team" }),
+  );
+  expect(listed.teams[0]).not.toHaveProperty("email");
+  expect(listed.teams[0]).not.toHaveProperty("members");
+
+  const verified = await call(
+    "/api/registration/verify",
+    json("POST", { email: registration.email, phone: registration.phone }),
+  );
+  const registrationCookie = verified.headers.get("set-cookie")!.split(";")[0];
+  const added = await call(
+    "/api/registration/members",
+    json(
+      "POST",
+      {
+        teamId: team.id,
+        members: [
+          { name: "Player A", backNumber: 1 },
+          { name: "Player B", backNumber: 2 },
+        ],
+      },
+      registrationCookie,
+    ),
+  );
+  expect(added.status).toBe(201);
+  expect(((await added.json()) as { members: unknown[] }).members).toHaveLength(2);
+
+  const duplicate = await call(
+    "/api/registration/members",
+    json(
+      "POST",
+      {
+        teamId: team.id,
+        members: [
+          { name: "Player C", backNumber: 3 },
+          { name: "Player D", backNumber: 3 },
+        ],
+      },
+      registrationCookie,
+    ),
+  );
+  expect(duplicate.status).toBe(409);
+  const afterDuplicate = await call(`/api/registration/members?teamId=${team.id}`, {
+    headers: { cookie: registrationCookie },
+  });
+  expect(
+    ((await afterDuplicate.json()) as { registration: { memberCount: number } }).registration
+      .memberCount,
+  ).toBe(2);
+
+  expect(
+    (
+      await call(
+        `/api/admin/registrations/teams/${team.id}`,
+        json(
+          "PATCH",
+          {
+            teamName: "Updated Batch Team",
+            representativeName: "Updated Representative",
+            email: "updated@example.com",
+            phone: "09098765432",
+          },
+          superadmin,
+        ),
+      )
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await call(
+        `/api/admin/registrations/clubs/${team.clubId}`,
+        json("PATCH", { name: "Updated Batch Club" }, superadmin),
+      )
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await call(
+        `/api/admin/registrations/teams/${team.id}`,
+        json("PATCH", { teamName: "Forbidden", ...registration }, court1),
+      )
+    ).status,
+  ).toBe(403);
+
+  const deleted = await call(
+    `/api/admin/registrations/teams/${team.id}`,
+    json("DELETE", {}, superadmin),
+  );
+  expect(deleted.status).toBe(200);
+  const afterDelete = (await call("/api/registration/teams").then((response) =>
+    response.json(),
+  )) as { teams: unknown[] };
+  expect(afterDelete.teams).toHaveLength(preexistingIds.length - 1);
+  expect(afterDelete.teams).not.toContainEqual(expect.objectContaining({ id: team.id }));
+});
+
 test("メンバー登録締切はJSTの2026年12月12日23:59までで、サーバー側で拒否される", async () => {
   const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("test"));
   await runInDurableObject(room, async (_instance, state) => {

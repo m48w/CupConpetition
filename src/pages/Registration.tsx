@@ -26,6 +26,11 @@ interface Member {
   createdAt: string;
 }
 
+interface MemberDraft {
+  name: string;
+  backNumber: string;
+}
+
 interface MemberRegistration {
   teamId: string;
   clubId: string;
@@ -465,6 +470,7 @@ function MemberRegistration() {
   const navigate = useNavigate();
   const teamId = sessionStorage.getItem(TEAM_KEY);
   const [registration, setRegistration] = useState<MemberRegistration | null>(null);
+  const [memberRows, setMemberRows] = useState<MemberDraft[]>([{ name: "", backNumber: "" }]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -496,18 +502,29 @@ function MemberRegistration() {
     if (!teamId) return;
     setError("");
     setBusy(true);
-    const form = new FormData(event.currentTarget);
-    const currentForm = event.currentTarget;
+    const members: { name: string; backNumber: number }[] = [];
+    for (const row of memberRows) {
+      const name = row.name.trim();
+      const backNumber = row.backNumber.trim();
+      if (!name && !backNumber) continue;
+      if (!name || !backNumber || !Number.isSafeInteger(Number(backNumber))) {
+        setError("Enter both Player Name and Back Number for each player.");
+        setBusy(false);
+        return;
+      }
+      members.push({ name, backNumber: Number(backNumber) });
+    }
+    if (members.length === 0) {
+      setError("Enter at least one player before submitting.");
+      setBusy(false);
+      return;
+    }
     try {
       await requestJson("/api/registration/members", {
         method: "POST",
-        body: JSON.stringify({
-          teamId,
-          name: form.get("name"),
-          backNumber: Number(form.get("backNumber")),
-        }),
+        body: JSON.stringify({ teamId, members }),
       });
-      currentForm.reset();
+      setMemberRows([{ name: "", backNumber: "" }]);
       await load();
       sessionStorage.setItem(MEMBER_COMPLETE_KEY, teamId);
       navigate("/complete?member=1");
@@ -536,6 +553,10 @@ function MemberRegistration() {
 
   if (!teamId) return <Navigate to="/verify" replace />;
   if (!registration && !error) return <p className="muted">Loading team registration…</p>;
+  const remainingSlots = Math.max(
+    0,
+    (registration?.maxMembers ?? 0) - (registration?.memberCount ?? 0),
+  );
   return (
     <section className="registration-card">
       <div className="eyebrow">{registration?.clubName}</div>
@@ -570,17 +591,64 @@ function MemberRegistration() {
         <p className="registration-error">Member registration is closed.</p>
       )}
       {registration && !registration.deadlinePassed && registration.memberCount < 11 && (
-        <form className="registration-form" onSubmit={submit}>
-          <label>
-            Player name
-            <input name="name" maxLength={120} required />
-          </label>
-          <label>
-            Shirt number
-            <input name="backNumber" type="number" min="0" step="1" required />
-          </label>
+        <form className="registration-form" onSubmit={(event) => void submit(event)}>
+          <div className="registration-member-rows">
+            {memberRows.map((member, index) => (
+              <div className="registration-member-row" key={index}>
+                <label>
+                  Player Name
+                  <input
+                    maxLength={120}
+                    value={member.name}
+                    onChange={(event) =>
+                      setMemberRows((rows) =>
+                        rows.map((row, rowIndex) =>
+                          rowIndex === index ? { ...row, name: event.target.value } : row,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <label>
+                  Back Number
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={member.backNumber}
+                    onChange={(event) =>
+                      setMemberRows((rows) =>
+                        rows.map((row, rowIndex) =>
+                          rowIndex === index ? { ...row, backNumber: event.target.value } : row,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                {memberRows.length > 1 && (
+                  <button
+                    type="button"
+                    className="registration-remove-team"
+                    aria-label={`Remove player row ${index + 1}`}
+                    onClick={() => setMemberRows((rows) => rows.filter((_, i) => i !== index))}
+                  >
+                    −
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          {memberRows.length < remainingSlots && (
+            <button
+              type="button"
+              className="outline-button registration-add-member"
+              onClick={() => setMemberRows((rows) => [...rows, { name: "", backNumber: "" }])}
+            >
+              + Add player row
+            </button>
+          )}
           <button className="primary-button" disabled={busy}>
-            {busy ? "Saving…" : "Add member"}
+            {busy ? "Saving…" : `Register ${memberRows.length > 1 ? "players" : "player"}`}
           </button>
         </form>
       )}

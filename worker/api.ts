@@ -78,6 +78,10 @@ export async function handleApi(
   };
 
   try {
+    if (path === "/api/registration/teams" && request.method === "GET") {
+      return jsonResponse(200, { teams: registrations.listPublicTeams() });
+    }
+
     if (path === "/api/registration/teams" && request.method === "POST") {
       const registeredTeams = registrations.registerTeams(await readJsonBody(request), Date.now());
       return jsonResponse(
@@ -124,17 +128,52 @@ export async function handleApi(
     if (path === "/api/registration/members" && request.method === "POST") {
       const body = (await readJsonBody(request)) as Record<string, unknown>;
       if (typeof body.teamId !== "string") throw new BadRequestError("teamId is required");
-      const member = await registrations.addMember(
-        body.teamId,
-        body,
-        registrationAccessToken(request.headers.get("cookie")),
-        Date.now(),
-      );
+      const token = registrationAccessToken(request.headers.get("cookie"));
+      if (Array.isArray(body.members)) {
+        const members = await registrations.addMembers(
+          body.teamId,
+          body.members,
+          token,
+          Date.now(),
+        );
+        return jsonResponse(201, { members });
+      }
+      const member = await registrations.addMember(body.teamId, body, token, Date.now());
       return jsonResponse(201, { member });
     }
 
     if (path === "/api/admin/registrations" && request.method === "GET") {
       superadminOnly(identity);
+      return jsonResponse(200, registrations.listClubs(Date.now()));
+    }
+
+    const adminRegistrationTeam = path.match(/^\/api\/admin\/registrations\/teams\/([^/]+)$/);
+    if (adminRegistrationTeam && ["PATCH", "DELETE"].includes(request.method)) {
+      superadminOnly(identity);
+      let teamId: string;
+      try {
+        teamId = decodeURIComponent(adminRegistrationTeam[1]);
+      } catch {
+        throw new BadRequestError("team id must be URL encoded");
+      }
+      if (request.method === "PATCH") {
+        registrations.updateTeam(teamId, await readJsonBody(request), Date.now());
+      } else {
+        registrations.deleteTeam(teamId);
+      }
+      return jsonResponse(200, registrations.listClubs(Date.now()));
+    }
+
+    const adminRegistrationClub = path.match(/^\/api\/admin\/registrations\/clubs\/([^/]+)$/);
+    if (adminRegistrationClub && request.method === "PATCH") {
+      superadminOnly(identity);
+      let clubId: string;
+      try {
+        clubId = decodeURIComponent(adminRegistrationClub[1]);
+      } catch {
+        throw new BadRequestError("club id must be URL encoded");
+      }
+      registrations.updateClub(clubId, await readJsonBody(request), Date.now());
       return jsonResponse(200, registrations.listClubs(Date.now()));
     }
 

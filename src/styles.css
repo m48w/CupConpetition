@@ -426,6 +426,25 @@ label {
   outline: 2px solid var(--orange);
   outline-offset: 1px;
 }
+.registration-member-rows {
+  display: grid;
+  gap: 10px;
+}
+.registration-member-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(105px, 0.38fr) 44px;
+  align-items: end;
+  gap: 10px;
+}
+.registration-member-row label {
+  min-width: 0;
+}
+.registration-member-row input {
+  min-width: 0;
+}
+.registration-member-row .registration-remove-team {
+  margin-bottom: 0;
+}
 .registration-form .registration-multiple-toggle {
   display: flex;
   align-items: center;
@@ -720,6 +739,41 @@ label {
   padding: 14px 0 0;
   border-top: 1px solid var(--line);
 }
+.registration-admin-club-edit,
+.registration-admin-team-edit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  align-items: end;
+  gap: 12px;
+  margin: 8px 0 12px;
+}
+.registration-admin-club-edit label,
+.registration-admin-team-edit label {
+  display: grid;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 13px;
+}
+.registration-admin-club-edit input,
+.registration-admin-team-edit input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0b1220;
+  color: #f8fafc;
+  font: inherit;
+}
+.registration-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.registration-admin-edit-button {
+  margin: 4px 0;
+}
 .registration-admin-team-title {
   display: flex;
   flex-wrap: wrap;
@@ -751,6 +805,14 @@ label {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 14px;
+}
+.team-directory-section {
+  margin-top: 26px;
+}
+.registered-team-logo {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
 }
 .team-directory-card,
 .group-directory-card {
