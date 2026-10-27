@@ -4,8 +4,10 @@ import { beforeAll, beforeEach, expect, test } from "vitest";
 import type { Match, ServerMessage, TournamentState } from "../src/types";
 import worker from "./index";
 import { RegistrationStore } from "./registration";
+import { decryptRoute } from "./route-token";
 
 const BASE = "http://localhost";
+const ROUTE_SECRET = "test-route-secret";
 const validLogo = { logoContentType: "image/png", logoDataBase64: "iVBORw0KGgo=" };
 
 const call = async (path: string, init?: RequestInit) => {
@@ -71,36 +73,102 @@ beforeEach(async () => {
   expect((await reset()).status).toBe(200);
 });
 
-test("ルートURLには大会アプリを表示せず404を返す", async () => {
-  expect((await call("/")).status).toBe(404);
+test("サイトルートは暗号URLへ転送し、復号後に参加者トップを表示する", async () => {
+  let assetPath = "";
+  const env = {
+    SESSION_SECRET: ROUTE_SECRET,
+    ASSETS: {
+      fetch: async (request: Request) => {
+        assetPath = new URL(request.url).pathname;
+        return new Response("<!doctype html><head></head><body>app</body>", {
+          headers: { "content-type": "text/html" },
+        });
+      },
+    },
+  } as Env;
+  const response = await worker.fetch(new Request(`${BASE}/`), env);
+  expect(response.status).toBe(302);
+  const encryptedUrl = new URL(response.headers.get("location")!);
+  expect(encryptedUrl.pathname).toMatch(/^\/u\//);
+  const route = await decryptRoute(encryptedUrl.pathname.slice(3), ROUTE_SECRET);
+  expect(route).toBe("/");
+  const page = await worker.fetch(new Request(encryptedUrl), env);
+  expect(page.status).toBe(200);
+  expect(await page.text()).toContain('window.__APP_ROUTE__="/"');
+  expect(assetPath).toBe("/20261220/");
 });
 
-test("大会URLを正規の末尾スラッシュ付きURLに転送する", async () => {
-  const response = await worker.fetch(new Request(`${BASE}/20261220`), {} as Env);
-  expect(response.status).toBe(308);
-  expect(response.headers.get("location")).toBe(`${BASE}/20261220/`);
+test("有効でない暗号URLは404を返す", async () => {
+  const response = await worker.fetch(new Request(`${BASE}/u/not-a-valid-token`), {
+    SESSION_SECRET: ROUTE_SECRET,
+  } as Env);
+  expect(response.status).toBe(404);
 });
 
-test("旧管理URLを大会URL配下の管理ログインへ転送する", async () => {
+test("正規パスを暗号化するAPIは許可された画面URLだけを受け付ける", async () => {
+  const env = { SESSION_SECRET: ROUTE_SECRET } as Env;
+  const response = await worker.fetch(
+    new Request(`${BASE}/api/route-token`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ route: "/registration/20261220/verify" }),
+    }),
+    env,
+  );
+  expect(response.status).toBe(200);
+  const { url } = (await response.json()) as { url: string };
+  expect(url).toMatch(/^\/u\//);
+  expect(await decryptRoute(url.slice(3), ROUTE_SECRET)).toBe("/registration/20261220/verify");
+  const invalid = await worker.fetch(
+    new Request(`${BASE}/api/route-token`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ route: "/api/state" }),
+    }),
+    env,
+  );
+  expect(invalid.status).toBe(400);
+});
+
+test("大会URLは暗号化され、元のパスをWorkerだけが復号できる", async () => {
+  const response = await worker.fetch(new Request(`${BASE}/20261220/knockout`), {
+    SESSION_SECRET: ROUTE_SECRET,
+  } as Env);
+  expect(response.status).toBe(302);
+  const token = new URL(response.headers.get("location")!).pathname.slice(3);
+  expect(await decryptRoute(token, ROUTE_SECRET)).toBe("/20261220/knockout");
+});
+
+test("旧管理URLも同じ暗号URL形式へ転送する", async () => {
   for (const pathname of ["/superadmin", "/subadmin"]) {
-    const response = await worker.fetch(new Request(`${BASE}${pathname}`), {} as Env);
-    expect(response.status).toBe(308);
-    expect(response.headers.get("location")).toBe(`${BASE}/20261220/admin`);
+    const response = await worker.fetch(new Request(`${BASE}${pathname}`), {
+      SESSION_SECRET: ROUTE_SECRET,
+    } as Env);
+    expect(response.status).toBe(302);
+    const token = new URL(response.headers.get("location")!).pathname.slice(3);
+    expect(await decryptRoute(token, ROUTE_SECRET)).toBe(pathname);
   }
 });
 
 test("登録フォームの全URLをSPAへフォールバックする", async () => {
   let assetPath = "";
   const env = {
+    SESSION_SECRET: ROUTE_SECRET,
     ASSETS: {
       fetch: async (request: Request) => {
         assetPath = new URL(request.url).pathname;
-        return new Response("app");
+        return new Response("<!doctype html><head></head><body>app</body>", {
+          headers: { "content-type": "text/html" },
+        });
       },
     },
   } as Env;
   const response = await worker.fetch(new Request(`${BASE}/registration/20261220/members`), env);
-  expect(response.status).toBe(200);
+  expect(response.status).toBe(302);
+  const token = new URL(response.headers.get("location")!).pathname.slice(3);
+  const page = await worker.fetch(new Request(`${BASE}/u/${token}`), env);
+  expect(page.status).toBe(200);
+  expect(await page.text()).toContain('window.__APP_ROUTE__="/registration/20261220/members"');
   expect(assetPath).toBe("/20261220/");
 });
 

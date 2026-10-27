@@ -9,6 +9,7 @@ import {
 } from "./auth";
 import { jsonResponse } from "./http";
 import { TournamentRoom } from "./room";
+import { decryptRoute, encryptRoute, isEncryptedRoute, isPublicRoute } from "./route-token";
 
 export { TournamentRoom };
 
@@ -24,7 +25,47 @@ const isJson = (request: Request) =>
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === "/") return new Response(null, { status: 404 });
+    if (isEncryptedRoute(url.pathname)) {
+      const route = await decryptRoute(url.pathname.slice("/u/".length), env.SESSION_SECRET);
+      if (!route || !isPublicRoute(route)) return new Response(null, { status: 404 });
+      const routeUrl = new URL(route, url.origin);
+      const assetUrl = new URL(`${EVENT_BASE_PATH}/`, url.origin);
+      const shell = await env.ASSETS.fetch(new Request(assetUrl, request));
+      if (!shell.ok || !shell.headers.get("content-type")?.includes("text/html")) return shell;
+      const html = await shell.text();
+      const injectedRoute = JSON.stringify(
+        `${routeUrl.pathname}${routeUrl.search}${routeUrl.hash}`,
+      ).replace(/</g, "\\u003c");
+      const headers = new Headers(shell.headers);
+      headers.delete("content-length");
+      headers.delete("content-encoding");
+      headers.delete("etag");
+      headers.set("cache-control", "no-store");
+      return new Response(
+        html.replace("</head>", `<script>window.__APP_ROUTE__=${injectedRoute}</script></head>`),
+        {
+          status: shell.status,
+          statusText: shell.statusText,
+          headers,
+        },
+      );
+    }
+    const isAssetRequest =
+      url.pathname.startsWith("/assets/") ||
+      url.pathname.startsWith(`${EVENT_BASE_PATH}/assets/`) ||
+      /^\/[^/]+\.[^/]+$/.test(url.pathname);
+    if (!isAssetRequest && isPublicRoute(`${url.pathname}${url.search}${url.hash}`)) {
+      const encryptedPath = await encryptRoute(
+        `${url.pathname}${url.search}${url.hash}`,
+        env.SESSION_SECRET,
+      );
+      return Response.redirect(`${url.origin}${encryptedPath}`, 302);
+    }
+    if (url.pathname === "/") {
+      // Serve the participant portal shell while leaving `/` in the browser URL.
+      url.pathname = `${EVENT_BASE_PATH}/`;
+      return env.ASSETS.fetch(new Request(url, request));
+    }
     if (url.pathname === "/test") {
       return Response.redirect(`${url.origin}/test/${url.search}`, 308);
     }
@@ -74,6 +115,18 @@ export default {
       DEFAULT_TOURNAMENT_ID;
     if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(tournamentId)) {
       return jsonResponse(400, { error: "invalid tournament id", code: "INVALID_TOURNAMENT_ID" });
+    }
+    if (url.pathname === "/api/route-token" && request.method === "POST") {
+      let body: { route?: unknown };
+      try {
+        body = (await request.json()) as { route?: unknown };
+      } catch {
+        return jsonResponse(400, { error: "invalid route", code: "INVALID_ROUTE" });
+      }
+      if (typeof body.route !== "string" || !isPublicRoute(body.route)) {
+        return jsonResponse(400, { error: "invalid route", code: "INVALID_ROUTE" });
+      }
+      return jsonResponse(200, { url: await encryptRoute(body.route, env.SESSION_SECRET) });
     }
     const token = readSessionToken(request.headers.get("cookie"));
     const session = token ? await verifySession(token, env.SESSION_SECRET, Date.now()) : null;
