@@ -105,6 +105,21 @@ button {
   padding: 10px 14px;
   color: #cad3e1;
   font-size: 13px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+.admin-toggle.header-reg-btn {
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #fed7aa;
+}
+.admin-toggle.header-reg-btn:hover {
+  background: rgba(249, 115, 22, 0.22);
+  border-color: rgba(249, 115, 22, 0.85);
+  color: #fff;
 }
 .layout {
   display: flex;
@@ -347,17 +362,23 @@ label {
 .registration-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 14px;
   margin-bottom: 28px;
   padding: 14px 0 22px;
   border-bottom: 1px solid var(--line);
+}
+.registration-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 .registration-header img {
   width: 54px;
   height: 54px;
   object-fit: contain;
 }
-.registration-header div {
+.registration-header-left div {
   display: grid;
   gap: 4px;
 }
@@ -368,6 +389,12 @@ label {
   color: var(--muted);
   font-size: 11px;
   letter-spacing: 0.14em;
+}
+.registration-back-btn {
+  text-decoration: none;
+  font-size: 13px;
+  color: #cad3e1;
+  padding: 8px 14px;
 }
 .registration-shell > footer {
   margin-top: 32px;
@@ -1547,6 +1574,11 @@ footer span {
   .registration-header img {
     width: 44px;
     height: 44px;
+  }
+  .registration-back-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    white-space: nowrap;
   }
   .registration-card {
     gap: 14px;

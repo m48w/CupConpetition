@@ -19,7 +19,7 @@ import { Standings } from "./pages/Standings";
 import { SubAdmin } from "./pages/SubAdmin";
 import { SuperAdmin } from "./pages/SuperAdmin";
 import { TeamDetail, Teams } from "./pages/Teams";
-import { getTournamentId } from "./config";
+import { getTournamentId, REGISTRATION_BASE_PATH } from "./config";
 import type { Match, SessionInfo } from "./types";
 
 const navItems = [
@@ -125,13 +125,17 @@ function App() {
           <button className="brand" onClick={() => navigate("/")}>
             VELOCITY CUP 2026
           </button>
-          {import.meta.env.DEV && (
-            <div className="admin-links">
-              <NavLink to="/admin" className="admin-toggle">
-                Admin <span>↗</span>
-              </NavLink>
-            </div>
-          )}
+          <div className="admin-links">
+            <a href={`${REGISTRATION_BASE_PATH}/`} className="admin-toggle header-reg-btn">
+              チーム登録
+            </a>
+            <a href={`${REGISTRATION_BASE_PATH}/verify`} className="admin-toggle">
+              メンバー登録
+            </a>
+            <NavLink to="/admin" className="admin-toggle">
+              Admin <span>↗</span>
+            </NavLink>
+          </div>
         </header>
       </div>
       <div className="layout">

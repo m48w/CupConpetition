@@ -48,11 +48,16 @@ function RegistrationLayout({ children }: { children: ReactNode }) {
   return (
     <main className="registration-shell">
       <header className="registration-header">
-        <img src="/velocity-fc-logo.png" alt="Velocity FC" />
-        <div>
-          <strong>VELOCITY CUP 2026</strong>
-          <span>TEAM REGISTRATION</span>
+        <div className="registration-header-left">
+          <img src="/velocity-fc-logo.png" alt="Velocity FC" />
+          <div>
+            <strong>VELOCITY CUP 2026</strong>
+            <span>TEAM REGISTRATION</span>
+          </div>
         </div>
+        <a href="/" className="admin-toggle registration-back-btn">
+          ← 大会アプリに戻る
+        </a>
       </header>
       {children}
       <footer>VELOCITY CUP 2026 · 20 DECEMBER 2026</footer>
