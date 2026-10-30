@@ -19,7 +19,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   if (method !== "GET" || typeof window !== "undefined") {
     const mergedHeaders = new Headers(init?.headers);
     if (typeof window !== "undefined") {
-      mergedHeaders.set("x-tournament-id", getTournamentId(window.location.pathname));
+      mergedHeaders.set("x-tournament-id", getTournamentId());
     }
     if (method !== "GET") mergedHeaders.set("content-type", "application/json");
     headers = mergedHeaders;

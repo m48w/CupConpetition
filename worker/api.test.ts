@@ -839,3 +839,22 @@ test("Durable Object が退避されても更新済みのスコアを返し、�
 test("未定義のルートには 404 を返す", async () => {
   expect((await call("/api/nope")).status).toBe(404);
 });
+
+test("許可されていない大会IDには 400 を返す（新しい部屋を作らせない）", async () => {
+  for (const id of ["u", "other-room"]) {
+    const response = await call("/api/registration/teams", { headers: { "x-tournament-id": id } });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ code: "INVALID_TOURNAMENT_ID" });
+  }
+});
+
+test("大会IDを変えても、ログインの回数制限はすり抜けられない", async () => {
+  const wrong = (id: string) =>
+    call("/api/login", {
+      ...json("POST", { username: "subadmin2", password: "wrong" }),
+      headers: { "content-type": "application/json", "x-tournament-id": id },
+    });
+  for (let i = 0; i < 5; i += 1) await wrong(i % 2 === 0 ? "test" : "20261220");
+  const locked = await wrong("20261220");
+  expect(locked.status).toBe(429);
+});

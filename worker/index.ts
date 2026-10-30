@@ -16,6 +16,13 @@ export { TournamentRoom };
 const EVENT_BASE_PATH = "/20261220";
 const REGISTRATION_BASE_PATH = "/registration/20261220";
 const DEFAULT_TOURNAMENT_ID = "20261220";
+/** 使ってよい大会ID。ほかのIDで新しい部屋（Durable Object）を作らせない。 */
+const ALLOWED_TOURNAMENT_IDS = new Set([DEFAULT_TOURNAMENT_ID, "test"]);
+/**
+ * ログインの失敗回数を数える部屋。大会IDごとに分けると、
+ * x-tournament-id を変えるだけで回数制限をすり抜けられるので、1つに固定する。
+ */
+const AUTH_ROOM_NAME = "auth";
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /** HTML フォームは application/json を送れないので、これが他サイトからの書き込み（CSRF）を防ぐ。 */
@@ -113,7 +120,7 @@ export default {
       request.headers.get("x-tournament-id") ??
       url.searchParams.get("tournamentId") ??
       DEFAULT_TOURNAMENT_ID;
-    if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(tournamentId)) {
+    if (!ALLOWED_TOURNAMENT_IDS.has(tournamentId)) {
       return jsonResponse(400, { error: "invalid tournament id", code: "INVALID_TOURNAMENT_ID" });
     }
     if (url.pathname === "/api/route-token" && request.method === "POST") {
@@ -138,7 +145,9 @@ export default {
       return jsonResponse(200, { session: null }, { "set-cookie": CLEARED_SESSION_COOKIE });
     }
 
-    const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName(tournamentId));
+    const roomName =
+      url.pathname === "/api/login" && request.method === "POST" ? AUTH_ROOM_NAME : tournamentId;
+    const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName(roomName));
     const headers = new Headers(request.headers);
     headers.set("x-tournament-id", tournamentId);
     return room.fetch(withIdentity(new Request(request, { headers }), session));
