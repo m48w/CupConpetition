@@ -858,3 +858,82 @@ test("大会IDを変えても、ログインの回数制限はすり抜けられ
   const locked = await wrong("20261220");
   expect(locked.status).toBe(429);
 });
+
+const productionEnv = () => ({ ...env, APP_ENV: "production" }) as Env;
+const fetchAs = (environment: Env, path: string, init?: RequestInit) =>
+  worker.fetch(
+    new Request(`${BASE}${path}`, init) as Request<unknown, IncomingRequestCfProperties>,
+    environment,
+  );
+
+test("本番では /test/ のページを公開しない", async () => {
+  for (const path of ["/test", "/test/", "/test/matches"]) {
+    expect((await fetchAs(productionEnv(), path)).status).toBe(404);
+  }
+});
+
+test("本番では test 大会のAPIを使えない", async () => {
+  const response = await fetchAs(productionEnv(), "/api/state", {
+    headers: { "x-tournament-id": "test" },
+  });
+  expect(response.status).toBe(400);
+  expect(await response.json()).toMatchObject({ code: "INVALID_TOURNAMENT_ID" });
+});
+
+test("本番では /test のルートを暗号化URLにしない", async () => {
+  const response = await fetchAs(productionEnv(), "/api/route-token", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ route: "/test/" }),
+  });
+  expect(response.status).toBe(400);
+});
+
+test("GET /api/env は本番かテスト環境かを返す", async () => {
+  const production = await fetchAs(productionEnv(), "/api/env");
+  expect(await production.json()).toEqual({ environment: "production" });
+  const staging = await call("/api/env");
+  expect(await staging.json()).toEqual({ environment: "staging" });
+});
+
+test("APP_ENV が無いときは本番として扱う", async () => {
+  const withoutEnv = { ...env, APP_ENV: undefined } as unknown as Env;
+  expect((await fetchAs(withoutEnv, "/test/")).status).toBe(404);
+});
+
+test("テスト環境（limitsEnabled: false）では締め切り後もメンバーを登録できる", async () => {
+  const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("test"));
+  await runInDurableObject(room, async (_instance, state) => {
+    const registrations = new RegistrationStore(
+      state.storage.sql,
+      (callback) => state.storage.transactionSync(callback),
+      { limitsEnabled: false },
+    );
+    const afterDeadline = Date.parse("2026-12-13T00:00:00.000Z");
+    const email = `staging-${crypto.randomUUID()}@example.com`;
+    const team = registrations.registerTeam(
+      {
+        clubName: "Staging FC",
+        teamName: `Staging ${crypto.randomUUID()}`,
+        representativeName: "Rep",
+        email,
+        phone: "09087654321",
+        ...validLogo,
+      },
+      afterDeadline,
+    );
+    const verified = await registrations.verifyContact(
+      { email, phone: "09087654321" },
+      `staging-ip-${crypto.randomUUID()}`,
+      afterDeadline,
+    );
+    expect(
+      await registrations.addMember(
+        team.id,
+        { name: "Tester", backNumber: 1 },
+        verified.token,
+        afterDeadline,
+      ),
+    ).toMatchObject({ name: "Tester", backNumber: 1 });
+  });
+});

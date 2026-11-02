@@ -3,6 +3,8 @@
   "name": "velocity-cup",
   "main": "./worker/index.ts",
   "compatibility_date": "2026-09-01",
+  // 本番。テスト環境は下の env.staging（別の Worker・別のデータ）。
+  "vars": { "APP_ENV": "production", "REGISTRATION_LIMITS": "on" },
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
@@ -12,8 +14,9 @@
       "/api/*",
       "/superadmin",
       "/subadmin",
-      "!/test",
-      "!/test/*",
+      // 本番で /test/ を 404 にするため、Worker が先に処理する。
+      "/test",
+      "/test/*",
       "!/20261220",
       "!/20261220/*",
       "!/registration/20261220",
@@ -24,4 +27,15 @@
     "bindings": [{ "name": "TOURNAMENT", "class_name": "TournamentRoom" }],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TournamentRoom"] }],
+  "env": {
+    // テスト環境: npm run deploy:staging でデプロイする。
+    // Secret は `npx wrangler secret put <NAME> --env staging` で本番と別に登録する。
+    "staging": {
+      "name": "velocity-cup-staging",
+      "vars": { "APP_ENV": "staging", "REGISTRATION_LIMITS": "off" },
+      "durable_objects": {
+        "bindings": [{ "name": "TOURNAMENT", "class_name": "TournamentRoom" }],
+      },
+    },
+  },
 }

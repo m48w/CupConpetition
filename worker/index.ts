@@ -16,8 +16,25 @@ export { TournamentRoom };
 const EVENT_BASE_PATH = "/20261220";
 const REGISTRATION_BASE_PATH = "/registration/20261220";
 const DEFAULT_TOURNAMENT_ID = "20261220";
-/** 使ってよい大会ID。ほかのIDで新しい部屋（Durable Object）を作らせない。 */
-const ALLOWED_TOURNAMENT_IDS = new Set([DEFAULT_TOURNAMENT_ID, "test"]);
+const TEST_TOURNAMENT_ID = "test";
+
+/** 本番か。`APP_ENV` が無い・不明なときも本番として扱う（安全な方に倒す）。 */
+const isProduction = (env: Env) => env.APP_ENV !== "staging";
+
+/**
+ * 使ってよい大会ID。ほかのIDで新しい部屋（Durable Object）を作らせない。
+ * 確認用の `test` 大会はテスト環境だけで使える。
+ */
+/** 確認用のサンプル大会のパスか。 */
+function isTestRoute(route: string): boolean {
+  const path = route.split(/[?#]/, 1)[0];
+  return path === "/test" || path.startsWith("/test/");
+}
+
+function isAllowedTournamentId(id: string, env: Env): boolean {
+  if (id === DEFAULT_TOURNAMENT_ID) return true;
+  return id === TEST_TOURNAMENT_ID && !isProduction(env);
+}
 /**
  * ログインの失敗回数を数える部屋。大会IDごとに分けると、
  * x-tournament-id を変えるだけで回数制限をすり抜けられるので、1つに固定する。
@@ -32,9 +49,12 @@ const isJson = (request: Request) =>
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
+    // 確認用のサンプル大会は本番では公開しない。テスト環境で確認する。
+    if (isProduction(env) && isTestRoute(url.pathname)) return new Response(null, { status: 404 });
     if (isEncryptedRoute(url.pathname)) {
       const route = await decryptRoute(url.pathname.slice("/u/".length), env.SESSION_SECRET);
       if (!route || !isPublicRoute(route)) return new Response(null, { status: 404 });
+      if (isProduction(env) && isTestRoute(route)) return new Response(null, { status: 404 });
       const routeUrl = new URL(route, url.origin);
       const assetUrl = new URL(`${EVENT_BASE_PATH}/`, url.origin);
       const shell = await env.ASSETS.fetch(new Request(assetUrl, request));
@@ -120,7 +140,10 @@ export default {
       request.headers.get("x-tournament-id") ??
       url.searchParams.get("tournamentId") ??
       DEFAULT_TOURNAMENT_ID;
-    if (!ALLOWED_TOURNAMENT_IDS.has(tournamentId)) {
+    if (url.pathname === "/api/env" && request.method === "GET") {
+      return jsonResponse(200, { environment: isProduction(env) ? "production" : "staging" });
+    }
+    if (!isAllowedTournamentId(tournamentId, env)) {
       return jsonResponse(400, { error: "invalid tournament id", code: "INVALID_TOURNAMENT_ID" });
     }
     if (url.pathname === "/api/route-token" && request.method === "POST") {
@@ -130,7 +153,11 @@ export default {
       } catch {
         return jsonResponse(400, { error: "invalid route", code: "INVALID_ROUTE" });
       }
-      if (typeof body.route !== "string" || !isPublicRoute(body.route)) {
+      if (
+        typeof body.route !== "string" ||
+        !isPublicRoute(body.route) ||
+        (isProduction(env) && isTestRoute(body.route))
+      ) {
         return jsonResponse(400, { error: "invalid route", code: "INVALID_ROUTE" });
       }
       return jsonResponse(200, { url: await encryptRoute(body.route, env.SESSION_SECRET) });

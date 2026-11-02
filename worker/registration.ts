@@ -180,10 +180,16 @@ export function validateTeamRegistration(value: unknown): TeamRegistrationInput 
   };
 }
 
+export interface RegistrationOptions {
+  /** false にすると締め切りなどの制限をしない（テスト環境用）。 */
+  limitsEnabled: boolean;
+}
+
 export class RegistrationStore {
   constructor(
     private readonly sql: SqlStorage,
     private readonly transactionSync: <T>(callback: () => T) => T,
+    private readonly options: RegistrationOptions = { limitsEnabled: true },
   ) {
     sql.exec(`CREATE TABLE IF NOT EXISTS registration_clubs (
       id TEXT PRIMARY KEY,
@@ -529,8 +535,13 @@ export class RegistrationStore {
       memberCount: team.member_count,
       maxMembers: 11,
       deadline: "2026-12-12T23:59:59+09:00",
-      deadlinePassed: isRegistrationDeadlinePassed(now),
+      deadlinePassed: this.memberDeadlinePassed(now),
     };
+  }
+
+  /** メンバー登録の締め切りを過ぎたか。テスト環境（limitsEnabled: false）では常に false。 */
+  private memberDeadlinePassed(now: number): boolean {
+    return this.options.limitsEnabled && isRegistrationDeadlinePassed(now);
   }
 
   async addMember(teamId: string, value: unknown, token: string | null, now: number) {
@@ -545,7 +556,7 @@ export class RegistrationStore {
     now: number,
   ): Promise<RegisteredMember[]> {
     await this.access(token, teamId, now);
-    if (isRegistrationDeadlinePassed(now)) {
+    if (this.memberDeadlinePassed(now)) {
       throw new RegistrationError(
         "Member registration closed on 12 December 2026 at 23:59 JST.",
         "MEMBER_REGISTRATION_CLOSED",
@@ -706,7 +717,7 @@ export class RegistrationStore {
     });
     return {
       deadline: "2026-12-12T23:59:59+09:00",
-      deadlinePassed: isRegistrationDeadlinePassed(now),
+      deadlinePassed: this.memberDeadlinePassed(now),
       clubs: results,
     };
   }

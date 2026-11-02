@@ -14,6 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "deploy": "npm run build && node scripts/clean-appledouble.mjs && wrangler deploy",
+    "deploy:staging": "node scripts/deploy-staging.mjs",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {

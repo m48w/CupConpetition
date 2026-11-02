@@ -20,8 +20,10 @@ export class TournamentRoom extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.store = createSqlStore(ctx.storage);
-    this.registrations = new RegistrationStore(ctx.storage.sql, (callback) =>
-      ctx.storage.transactionSync(callback),
+    this.registrations = new RegistrationStore(
+      ctx.storage.sql,
+      (callback) => ctx.storage.transactionSync(callback),
+      { limitsEnabled: env.REGISTRATION_LIMITS !== "off" },
     );
     this.registrationVerification = new ContactPairRegistrationVerification(this.registrations);
     this.attempts = createLoginAttempts(ctx.storage.sql);

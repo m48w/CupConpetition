@@ -2,3 +2,6 @@
 SUPERADMIN_PASSWORD=superadmin1234
 SUBADMIN_PASSWORD=subadmin1234
 SESSION_SECRET=dev-only-session-secret
+# ローカル開発はテスト環境として動かす（/test/ のサンプル大会を使うため）。
+APP_ENV=staging
+REGISTRATION_LIMITS=on

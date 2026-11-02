@@ -10,6 +10,7 @@ import {
 } from "./config";
 import { RegistrationApp } from "./pages/Registration";
 import { EncryptedAddressBar } from "./components/ui/EncryptedAddressBar";
+import { TestSiteBanner } from "./components/ui/TestSiteBanner";
 import "./styles.css";
 
 const appRoute = (window as Window & { __APP_ROUTE__?: string }).__APP_ROUTE__;
@@ -44,6 +45,7 @@ createRoot(document.getElementById("root")!).render(
       }}
     >
       <EncryptedAddressBar basePath={currentBase} />
+      <TestSiteBanner />
       {isRegistrationPage ? <RegistrationApp /> : <App />}
     </MemoryRouter>
   </StrictMode>,

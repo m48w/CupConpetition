@@ -21,6 +21,10 @@ export default defineConfig({
                 SUPERADMIN_PASSWORD: "superadmin1234",
                 SUBADMIN_PASSWORD: "subadmin1234",
                 SESSION_SECRET: "test-session-secret",
+                // テストはサンプル大会（test）を使うので、テスト環境として動かす。
+                // 本番の動きは api.test.ts で env を上書きして確認する。
+                APP_ENV: "staging",
+                REGISTRATION_LIMITS: "on",
               },
             },
           }),

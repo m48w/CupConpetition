@@ -34,6 +34,18 @@ npx wrangler secret put SESSION_SECRET      # a long random string, e.g. `openss
 npm run deploy
 ```
 
+### Test site (staging)
+
+A separate Worker, `velocity-cup-staging`, has its own data and passwords. Use it to test with
+everyone before deploying to production. Production returns 404 for `/test/`.
+
+```bash
+npx wrangler secret put SUPERADMIN_PASSWORD --env staging
+npx wrangler secret put SUBADMIN_PASSWORD --env staging
+npx wrangler secret put SESSION_SECRET --env staging
+npm run deploy:staging
+```
+
 The tournament app is served under `/20261220/`; the site root `/` returns 404. Staff sign in at
 `/20261220/admin`. The previous `/superadmin` and `/subadmin` URLs redirect to the admin sign-in
 page. The admin dashboard assigns `subadmin1`–`2` to Court 1, `3`–`4` to Court 2, and `5`–`6` to
