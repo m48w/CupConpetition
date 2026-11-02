@@ -2219,3 +2219,94 @@ footer span {
     grid-template-columns: 44px minmax(0, 1fr);
   }
 }
+
+/* ===== 段階3: 大会情報・登録状況 ===== */
+.registration-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: baseline;
+  margin: 12px 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(17, 29, 45, 0.6);
+  font-size: 13px;
+  color: #b9c4d6;
+}
+.registration-status strong {
+  color: #edf4ff;
+  font-size: 15px;
+}
+.registration-status-closed {
+  color: #fca5a5;
+  font-weight: 600;
+}
+.info-section {
+  margin-bottom: 18px;
+}
+.info-section h2 {
+  margin-top: 0;
+}
+.info-section ul,
+.info-section ol {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.8;
+}
+.info-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 10px 18px;
+  margin: 0 0 18px;
+}
+.info-facts > div {
+  display: contents;
+}
+.info-facts dt {
+  color: #8a99b3;
+  font-size: 13px;
+}
+.info-facts dd {
+  margin: 0;
+  color: #edf4ff;
+}
+.info-map {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  text-decoration: none;
+}
+.info-schedule {
+  margin: 0;
+}
+.info-schedule > div {
+  display: flex;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid #1c2940;
+}
+.info-schedule dt {
+  min-width: 64px;
+  color: var(--orange);
+}
+.info-schedule dd {
+  margin: 0;
+}
+.info-faq summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+}
+.rules-placeholder .outline-button {
+  margin-top: 12px;
+}
+@media (max-width: 560px) {
+  .info-facts {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .info-facts dd {
+    margin-bottom: 10px;
+  }
+}

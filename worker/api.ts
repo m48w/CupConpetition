@@ -78,6 +78,10 @@ export async function handleApi(
   };
 
   try {
+    if (path === "/api/registration/status" && request.method === "GET") {
+      return jsonResponse(200, registrations.status(Date.now()));
+    }
+
     if (path === "/api/registration/teams" && request.method === "GET") {
       return jsonResponse(200, { teams: registrations.listPublicTeams() });
     }

@@ -73,6 +73,22 @@ export class RegistrationError extends Error {
 }
 
 const DEADLINE_MS = Date.parse("2026-12-12T15:00:00.000Z");
+/** チーム登録の定員。 */
+export const TEAM_CAPACITY = 40;
+/** チーム登録の締め切り: 2026-12-06 23:59:59 JST まで受け付ける（この時刻から受け付けない）。 */
+const TEAM_DEADLINE_MS = Date.parse("2026-12-06T15:00:00.000Z");
+const TEAM_DEADLINE_LABEL = "2026-12-06T23:59:59+09:00";
+const MEMBER_DEADLINE_LABEL = "2026-12-12T23:59:59+09:00";
+
+export interface RegistrationStatus {
+  registeredTeams: number;
+  capacity: number;
+  isFull: boolean;
+  teamDeadline: string;
+  teamRegistrationClosed: boolean;
+  memberDeadline: string;
+  memberRegistrationClosed: boolean;
+}
 const ACCESS_TTL_MS = 60 * 60 * 1000;
 const VERIFY_WINDOW_MS = 15 * 60 * 1000;
 const VERIFY_MAX_ATTEMPTS = 5;
@@ -238,7 +254,40 @@ export class RegistrationStore {
     return this.registerTeams(value, now)[0];
   }
 
+  private teamCount(): number {
+    return (
+      this.sql
+        .exec<{ count: number }>("SELECT COUNT(*) AS count FROM registration_teams")
+        .toArray()[0]?.count ?? 0
+    );
+  }
+
+  private teamRegistrationClosed(now: number): boolean {
+    return this.options.limitsEnabled && now >= TEAM_DEADLINE_MS;
+  }
+
+  /** `GET /api/registration/status`。登録数・定員・締め切り。 */
+  status(now: number): RegistrationStatus {
+    const registeredTeams = this.teamCount();
+    return {
+      registeredTeams,
+      capacity: TEAM_CAPACITY,
+      isFull: this.options.limitsEnabled && registeredTeams >= TEAM_CAPACITY,
+      teamDeadline: TEAM_DEADLINE_LABEL,
+      teamRegistrationClosed: this.teamRegistrationClosed(now),
+      memberDeadline: MEMBER_DEADLINE_LABEL,
+      memberRegistrationClosed: this.memberDeadlinePassed(now),
+    };
+  }
+
   registerTeams(value: unknown, now: number): RegistrationTeamSummary[] {
+    if (this.teamRegistrationClosed(now)) {
+      throw new RegistrationError(
+        "Team registration closed on 6 December 2026 at 23:59 JST.",
+        "REGISTRATION_CLOSED",
+        409,
+      );
+    }
     if (!value || typeof value !== "object") {
       throw new RegistrationError("Invalid registration details.", "INVALID_INPUT", 400);
     }
@@ -262,6 +311,14 @@ export class RegistrationStore {
     const ids = inputs.map(() => crypto.randomUUID());
     try {
       this.transactionSync(() => {
+        // 定員は書き込みと同じトランザクションで確かめる。申請の全チームが入らなければ全部断る。
+        if (this.options.limitsEnabled && this.teamCount() + inputs.length > TEAM_CAPACITY) {
+          throw new RegistrationError(
+            `Registration is full (${TEAM_CAPACITY} teams).`,
+            "REGISTRATION_FULL",
+            409,
+          );
+        }
         let club = this.sql
           .exec<{ id: string; logo_id: string | null }>(
             "SELECT id, logo_id FROM registration_clubs WHERE normalized_name = ?",

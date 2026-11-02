@@ -470,6 +470,7 @@ test("メンバー登録締切はJSTの2026年12月12日23:59までで、サー�
       state.storage.transactionSync(callback),
     );
     const beforeDeadline = Date.parse("2026-12-12T14:59:59.999Z");
+    // チーム登録は 12月6日までなので、その前に登録しておく。
     const team = registrations.registerTeam(
       {
         clubName: "Deadline FC",
@@ -479,7 +480,7 @@ test("メンバー登録締切はJSTの2026年12月12日23:59までで、サー�
         phone: "09012345678",
         ...validLogo,
       },
-      beforeDeadline,
+      Date.parse("2026-12-01T00:00:00.000Z"),
     );
     const verified = await registrations.verifyContact(
       { email: "deadline@example.com", phone: "09012345678" },
@@ -900,4 +901,92 @@ test("APIの応答にセキュリティ用のヘッダーが付く", async () =>
     expect(response.headers.get("x-frame-options")).toBe("DENY");
     expect(response.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
   }
+});
+
+const teamInput = (overrides: Record<string, unknown> = {}) => ({
+  clubName: `Club ${crypto.randomUUID()}`,
+  teamName: `Team ${crypto.randomUUID()}`,
+  representativeName: "Rep",
+  email: `rep-${crypto.randomUUID()}@example.com`,
+  phone: "09011112222",
+  ...validLogo,
+  ...overrides,
+});
+
+/** 空の部屋（毎回新しい Durable Object）でチーム登録を試す。 */
+async function inFreshRoom(
+  run: (registrations: RegistrationStore) => void | Promise<void>,
+  limitsEnabled = true,
+) {
+  const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName(`fresh-${crypto.randomUUID()}`));
+  await runInDurableObject(room, async (_instance, state) => {
+    await run(
+      new RegistrationStore(
+        state.storage.sql,
+        (callback) => state.storage.transactionSync(callback),
+        { limitsEnabled },
+      ),
+    );
+  });
+}
+
+test("チーム登録は 2026年12月6日 23:59:59 JST まで受け付け、そのあとは 409 REGISTRATION_CLOSED", async () => {
+  await inFreshRoom((registrations) => {
+    const lastMoment = Date.parse("2026-12-06T14:59:59.999Z");
+    expect(registrations.registerTeam(teamInput(), lastMoment).teamName).toMatch(/^Team /);
+    expect(() =>
+      registrations.registerTeam(teamInput(), Date.parse("2026-12-06T15:00:00.000Z")),
+    ).toThrow(expect.objectContaining({ code: "REGISTRATION_CLOSED", status: 409 }));
+    expect(registrations.status(Date.parse("2026-12-06T15:00:00.000Z"))).toMatchObject({
+      teamRegistrationClosed: true,
+      teamDeadline: "2026-12-06T23:59:59+09:00",
+    });
+  });
+});
+
+test("40チームを超える申請は全部断る（一部だけ登録しない）", async () => {
+  await inFreshRoom((registrations) => {
+    const now = Date.parse("2026-11-10T00:00:00.000Z");
+    const names = (count: number) =>
+      Array.from({ length: count }, () => `Team ${crypto.randomUUID()}`);
+    registrations.registerTeams(teamInput({ teamNames: names(38) }), now);
+    expect(registrations.status(now)).toMatchObject({ registeredTeams: 38, isFull: false });
+    expect(() => registrations.registerTeams(teamInput({ teamNames: names(3) }), now)).toThrow(
+      expect.objectContaining({ code: "REGISTRATION_FULL", status: 409 }),
+    );
+    expect(registrations.status(now).registeredTeams).toBe(38);
+    registrations.registerTeams(teamInput({ teamNames: names(2) }), now);
+    expect(registrations.status(now)).toMatchObject({
+      registeredTeams: 40,
+      capacity: 40,
+      isFull: true,
+    });
+    expect(() => registrations.registerTeam(teamInput(), now)).toThrow(
+      expect.objectContaining({ code: "REGISTRATION_FULL" }),
+    );
+  });
+});
+
+test("テスト環境（limitsEnabled: false）では締め切り・定員をチェックしない", async () => {
+  await inFreshRoom((registrations) => {
+    const afterDeadline = Date.parse("2026-12-20T00:00:00.000Z");
+    const names = Array.from({ length: 40 }, () => `Team ${crypto.randomUUID()}`);
+    registrations.registerTeams(teamInput({ teamNames: names }), afterDeadline);
+    registrations.registerTeam(teamInput(), afterDeadline);
+    expect(registrations.status(afterDeadline)).toMatchObject({
+      registeredTeams: 41,
+      isFull: false,
+      teamRegistrationClosed: false,
+    });
+  }, false);
+});
+
+test("GET /api/registration/status は登録数と締め切りを返す", async () => {
+  const response = await call("/api/registration/status");
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({
+    capacity: 40,
+    teamDeadline: "2026-12-06T23:59:59+09:00",
+    memberDeadline: "2026-12-12T23:59:59+09:00",
+  });
 });

@@ -32,7 +32,7 @@ export const messages = {
   "nav.knockout": { en: "Knockout", my: "အပိုင်းထွက်" },
   "nav.teams": { en: "Teams", my: "အသင်းများ" },
   "nav.live": { en: "Live", my: "တိုက်ရိုက်" },
-  "nav.info": { en: "Info", my: "သတင်းအချက်အလက်" },
+  "nav.info": { en: "Info", my: "အချက်အလက်" },
 
   // ===== 接続 =====
   "conn.connecting": {
@@ -200,6 +200,47 @@ export const messages = {
   "bracket.round.FINAL": { en: "Final", my: "ဗိုလ်လုပွဲ" },
   "bracket.winner": { en: "Winner {match}", my: "{match} နိုင်သူ" },
   "bracket.when": { en: "{time} · Court {court}", my: "{time} · ကွင်း {court}" },
+
+  // ===== Info =====
+  "info.eyebrow": { en: "TOURNAMENT INFO", my: "ပြိုင်ပွဲ အချက်အလက်" },
+  "info.title": { en: "Tournament information", my: "ပြိုင်ပွဲ သတင်းအချက်အလက်" },
+  "info.date": { en: "Date", my: "ရက်စွဲ" },
+  "info.time": { en: "Time", my: "အချိန်" },
+  "info.venue": { en: "Venue", my: "ပြိုင်ပွဲ နေရာ" },
+  "info.address": { en: "Address", my: "လိပ်စာ" },
+  "info.addressJa": { en: "Address in Japanese", my: "ဂျပန်ဘာသာ လိပ်စာ" },
+  "info.map": { en: "Open in Google Maps", my: "Google Maps တွင် ဖွင့်ရန်" },
+  "info.gettingThere": { en: "Getting there", my: "သွားရောက်ပုံ" },
+  "info.schedule": { en: "Schedule of the day", my: "ပြိုင်ပွဲနေ့ အချိန်ဇယား" },
+  "info.rules": { en: "Rules", my: "စည်းမျဉ်းများ" },
+  "info.bring": { en: "What to bring", my: "ယူဆောင်ရမည့် ပစ္စည်းများ" },
+  "info.contact": { en: "Contact", my: "ဆက်သွယ်ရန်" },
+  "info.faq": { en: "Questions and answers", my: "မေးလေ့ရှိသော မေးခွန်းများ" },
+  "info.tba": { en: "To be announced", my: "နောက်မှ ကြေညာပါမည်" },
+  "home.rules.link": { en: "See tournament information", my: "ပြိုင်ပွဲ အချက်အလက် ကြည့်ရန်" },
+
+  // ===== 登録状況 =====
+  "status.count": {
+    en: "{count} / {capacity} teams registered",
+    my: "အသင်း {capacity} သင်းအနက် {count} သင်း စာရင်းသွင်းပြီး",
+  },
+  "status.deadline": {
+    en: "Team registration closes on 6 December 2026 at 23:59 (Japan time).",
+    my: "အသင်း စာရင်းသွင်းချိန် 2026 ဒီဇင်ဘာ 6 · 23:59 (ဂျပန်စံတော်ချိန်) တွင် ပိတ်ပါမည်။",
+  },
+  "status.memberDeadline": {
+    en: "Player registration closes on 12 December 2026 at 23:59 (Japan time).",
+    my: "ကစားသမား စာရင်းသွင်းချိန် 2026 ဒီဇင်ဘာ 12 · 23:59 (ဂျပန်စံတော်ချိန်) တွင် ပိတ်ပါမည်။",
+  },
+  "status.full": {
+    en: "Registration is full. We cannot accept more teams.",
+    my: "စာရင်းသွင်းမှု ပြည့်သွားပါပြီ။ အသင်းများ ထပ်မံ လက်မခံနိုင်ပါ။",
+  },
+  "status.closed": {
+    en: "Team registration is closed.",
+    my: "အသင်း စာရင်းသွင်းချိန် ပြီးဆုံးပါပြီ။",
+  },
+  "status.remaining": { en: "{count} places left", my: "နေရာ {count} ခု ကျန်သည်" },
 
   // ===== 404 =====
   "notFound.title": { en: "Page not found", my: "စာမျက်နှာ မတွေ့ပါ" },
@@ -427,6 +468,14 @@ export const messages = {
   "err.DUPLICATE_BACK_NUMBER": {
     en: "Each player needs a different shirt number.",
     my: "ကစားသမားတိုင်း အင်္ကျီနံပါတ် မတူညီရပါ။",
+  },
+  "err.REGISTRATION_FULL": {
+    en: "Registration is full, or there are not enough places for all your teams.",
+    my: "စာရင်းသွင်းမှု ပြည့်နေပါသည် သို့မဟုတ် သင့်အသင်းအားလုံးအတွက် နေရာ မလောက်ပါ။",
+  },
+  "err.REGISTRATION_CLOSED": {
+    en: "Team registration closed on 6 December 2026 at 23:59 (Japan time).",
+    my: "အသင်း စာရင်းသွင်းချိန် 2026 ဒီဇင်ဘာ 6 · 23:59 (ဂျပန်စံတော်ချိန်) တွင် ပြီးဆုံးခဲ့သည်။",
   },
   "err.MEMBER_REGISTRATION_CLOSED": {
     en: "Player registration closed on 12 December 2026 at 23:59 (Japan time).",

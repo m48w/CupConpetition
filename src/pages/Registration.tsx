@@ -7,6 +7,11 @@ import { LanguageSwitch } from "../components/ui/LanguageSwitch";
 import { errorKey } from "../i18n/errors";
 import type { MessageKey } from "../i18n/messages";
 import { useI18n } from "../i18n/useI18n";
+import { RegistrationStatusNote } from "../features/registration/RegistrationStatusNote";
+import {
+  isAcceptingTeams,
+  useRegistrationStatus,
+} from "../features/registration/useRegistrationStatus";
 import { ApiError, requestJson } from "../utils/http";
 
 const TEAM_KEY = "velocity-registration-team";
@@ -77,6 +82,8 @@ function RegistrationLayout({ children }: { children: ReactNode }) {
 
 function RegistrationForm() {
   const { t } = useI18n();
+  const registrationStatus = useRegistrationStatus();
+  const accepting = isAcceptingTeams(registrationStatus);
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -159,156 +166,161 @@ function RegistrationForm() {
       <div className="eyebrow">{t("reg.form.eyebrow")}</div>
       <h1>{t("reg.form.title")}</h1>
       <p>{t("reg.form.intro")}</p>
-      <form className="registration-form" onSubmit={submit}>
-        <label>
-          {t("reg.clubName")}
-          <input
-            name="clubName"
-            autoComplete="organization"
-            maxLength={120}
-            defaultValue={sessionStorage.getItem(CLUB_KEY) ?? ""}
-            required
-          />
-        </label>
-        <label className="registration-multiple-toggle">
-          <input
-            name="multipleTeams"
-            type="checkbox"
-            checked={multipleTeams}
-            onChange={(event) => {
-              setMultipleTeams(event.target.checked);
-              if (!event.target.checked) setTeamNames((current) => current.slice(0, 1));
-            }}
-          />
-          <span>{t("reg.multiple")}</span>
-        </label>
-        <div className="registration-team-names">
-          {teamNames.map((teamName, index) => (
-            <label className="registration-team-name" key={index}>
-              <span>{index === 0 ? t("reg.teamName") : t("reg.teamNameN", { n: index + 1 })}</span>
-              <div className="registration-team-name-control">
-                <input
-                  name="teamNames"
-                  autoComplete="organization-title"
-                  maxLength={120}
-                  value={teamName}
-                  onChange={(event) =>
-                    setTeamNames((current) =>
-                      current.map((name, nameIndex) =>
-                        nameIndex === index ? event.target.value : name,
-                      ),
-                    )
-                  }
-                  required
-                />
-                {multipleTeams && index === teamNames.length - 1 && teamNames.length < 40 && (
-                  <button
-                    className="registration-add-team"
-                    type="button"
-                    aria-label={t("reg.addTeam")}
-                    onClick={() => setTeamNames((current) => [...current, ""])}
-                  >
-                    +
-                  </button>
-                )}
-                {multipleTeams && teamNames.length > 1 && (
-                  <button
-                    className="registration-remove-team"
-                    type="button"
-                    aria-label={t("reg.removeTeam", { n: index + 1 })}
-                    onClick={() =>
+      <RegistrationStatusNote status={registrationStatus} />
+      {accepting && (
+        <form className="registration-form" onSubmit={submit}>
+          <label>
+            {t("reg.clubName")}
+            <input
+              name="clubName"
+              autoComplete="organization"
+              maxLength={120}
+              defaultValue={sessionStorage.getItem(CLUB_KEY) ?? ""}
+              required
+            />
+          </label>
+          <label className="registration-multiple-toggle">
+            <input
+              name="multipleTeams"
+              type="checkbox"
+              checked={multipleTeams}
+              onChange={(event) => {
+                setMultipleTeams(event.target.checked);
+                if (!event.target.checked) setTeamNames((current) => current.slice(0, 1));
+              }}
+            />
+            <span>{t("reg.multiple")}</span>
+          </label>
+          <div className="registration-team-names">
+            {teamNames.map((teamName, index) => (
+              <label className="registration-team-name" key={index}>
+                <span>
+                  {index === 0 ? t("reg.teamName") : t("reg.teamNameN", { n: index + 1 })}
+                </span>
+                <div className="registration-team-name-control">
+                  <input
+                    name="teamNames"
+                    autoComplete="organization-title"
+                    maxLength={120}
+                    value={teamName}
+                    onChange={(event) =>
                       setTeamNames((current) =>
-                        current.filter((_, nameIndex) => nameIndex !== index),
+                        current.map((name, nameIndex) =>
+                          nameIndex === index ? event.target.value : name,
+                        ),
                       )
                     }
-                  >
-                    −
-                  </button>
-                )}
-              </div>
-            </label>
-          ))}
-        </div>
-        <label>
-          {t("reg.repName")}
-          <input name="representativeName" autoComplete="name" maxLength={120} required />
-        </label>
-        <label>
-          {t("reg.email")}
-          <input name="email" type="email" autoComplete="email" maxLength={254} required />
-        </label>
-        <label>
-          {t("reg.phone")}
-          <input name="phone" type="tel" autoComplete="tel" required />
-        </label>
-        <div className="registration-logo-field">
-          <div className="registration-logo-heading">
-            <span>{t("reg.logo")}</span>
-            <small>{t("reg.required")}</small>
+                    required
+                  />
+                  {multipleTeams && index === teamNames.length - 1 && teamNames.length < 40 && (
+                    <button
+                      className="registration-add-team"
+                      type="button"
+                      aria-label={t("reg.addTeam")}
+                      onClick={() => setTeamNames((current) => [...current, ""])}
+                    >
+                      +
+                    </button>
+                  )}
+                  {multipleTeams && teamNames.length > 1 && (
+                    <button
+                      className="registration-remove-team"
+                      type="button"
+                      aria-label={t("reg.removeTeam", { n: index + 1 })}
+                      onClick={() =>
+                        setTeamNames((current) =>
+                          current.filter((_, nameIndex) => nameIndex !== index),
+                        )
+                      }
+                    >
+                      −
+                    </button>
+                  )}
+                </div>
+              </label>
+            ))}
           </div>
-          <input
-            ref={logoInput}
-            className="registration-logo-input"
-            name="clubLogo"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            aria-required="true"
-            tabIndex={-1}
-            aria-hidden="true"
-            onChange={(event) => selectLogo(event.target.files?.[0] ?? null)}
-          />
-          <div className={`registration-logo-picker${logoFile ? " has-logo" : ""}`}>
-            {logoPreview ? (
-              <img src={logoPreview} alt={t("reg.logo.previewAlt")} />
-            ) : (
-              <div className="registration-logo-placeholder" aria-hidden="true">
-                <span>＋</span>
-              </div>
-            )}
-            <div className="registration-logo-copy">
-              <strong>{logoFile?.name ?? t("reg.logo.add")}</strong>
-              <span>
-                {logoFile
-                  ? t("reg.logo.size", { size: (logoFile.size / 1024).toFixed(0) })
-                  : t("reg.logo.hint")}
-              </span>
+          <label>
+            {t("reg.repName")}
+            <input name="representativeName" autoComplete="name" maxLength={120} required />
+          </label>
+          <label>
+            {t("reg.email")}
+            <input name="email" type="email" autoComplete="email" maxLength={254} required />
+          </label>
+          <label>
+            {t("reg.phone")}
+            <input name="phone" type="tel" autoComplete="tel" required />
+          </label>
+          <div className="registration-logo-field">
+            <div className="registration-logo-heading">
+              <span>{t("reg.logo")}</span>
+              <small>{t("reg.required")}</small>
             </div>
-            <button
-              className="outline-button registration-logo-action"
-              type="button"
-              onClick={() => logoInput.current?.click()}
-            >
-              {logoFile ? t("reg.logo.change") : t("reg.logo.choose")}
-            </button>
-            {logoFile && (
+            <input
+              ref={logoInput}
+              className="registration-logo-input"
+              name="clubLogo"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              aria-required="true"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(event) => selectLogo(event.target.files?.[0] ?? null)}
+            />
+            <div className={`registration-logo-picker${logoFile ? " has-logo" : ""}`}>
+              {logoPreview ? (
+                <img src={logoPreview} alt={t("reg.logo.previewAlt")} />
+              ) : (
+                <div className="registration-logo-placeholder" aria-hidden="true">
+                  <span>＋</span>
+                </div>
+              )}
+              <div className="registration-logo-copy">
+                <strong>{logoFile?.name ?? t("reg.logo.add")}</strong>
+                <span>
+                  {logoFile
+                    ? t("reg.logo.size", { size: (logoFile.size / 1024).toFixed(0) })
+                    : t("reg.logo.hint")}
+                </span>
+              </div>
               <button
-                className="registration-logo-clear"
+                className="outline-button registration-logo-action"
                 type="button"
-                aria-label={t("reg.logo.remove")}
-                onClick={() => {
-                  selectLogo(null);
-                  if (logoInput.current) logoInput.current.value = "";
-                }}
+                onClick={() => logoInput.current?.click()}
               >
-                ×
+                {logoFile ? t("reg.logo.change") : t("reg.logo.choose")}
               </button>
-            )}
+              {logoFile && (
+                <button
+                  className="registration-logo-clear"
+                  type="button"
+                  aria-label={t("reg.logo.remove")}
+                  onClick={() => {
+                    selectLogo(null);
+                    if (logoInput.current) logoInput.current.value = "";
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <small>{t("reg.logo.note")}</small>
           </div>
-          <small>{t("reg.logo.note")}</small>
-        </div>
-        {error && (
-          <p className="registration-error" role="alert">
-            {error}
-          </p>
-        )}
-        <button className="primary-button" disabled={busy}>
-          {busy
-            ? t("reg.submitting")
-            : multipleTeams && teamNames.length > 1
-              ? t("reg.submitMany")
-              : t("reg.submitOne")}
-        </button>
-      </form>
+          {error && (
+            <p className="registration-error" role="alert">
+              {error}
+            </p>
+          )}
+          <button className="primary-button" disabled={busy}>
+            {busy
+              ? t("reg.submitting")
+              : multipleTeams && teamNames.length > 1
+                ? t("reg.submitMany")
+                : t("reg.submitOne")}
+          </button>
+        </form>
+      )}
       <small>
         {t("reg.already")} <Link to="/verify">{t("reg.goMembers")}</Link>
       </small>

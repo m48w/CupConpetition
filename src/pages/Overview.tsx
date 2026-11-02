@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { isOnPitch, MatchCard, TeamBadge, useTeams } from "../features/tournament";
 import { useI18n } from "../i18n/useI18n";
+import { RegistrationStatusNote } from "../features/registration/RegistrationStatusNote";
+import { useRegistrationStatus } from "../features/registration/useRegistrationStatus";
 import type { Match } from "../types";
 
 const EVENT_DATE = new Date("2026-12-19T15:00:00.000Z");
@@ -28,6 +30,7 @@ export function Overview({ matches }: { matches: Match[] }) {
   const { t } = useI18n();
   const teams = useTeams();
   const live = matches.filter(isOnPitch);
+  const registrationStatus = useRegistrationStatus();
   const [now, setNow] = useState(() => Date.now());
   const countdown = getCountdown(now);
 
@@ -86,6 +89,7 @@ export function Overview({ matches }: { matches: Match[] }) {
             {t("home.teams.viewAll")}
           </Link>
         </div>
+        <RegistrationStatusNote status={registrationStatus} />
         {teams.length === 0 && <p className="muted">{t("home.teams.empty")}</p>}
         <div className="team-logo-strip" aria-label={t("home.teams.title")}>
           {teams.map((team) => (
@@ -106,6 +110,9 @@ export function Overview({ matches }: { matches: Match[] }) {
         </div>
         <div className="rules-placeholder">
           <p>{t("home.rules.soon")}</p>
+          <Link className="outline-button" to="/info">
+            {t("home.rules.link")}
+          </Link>
         </div>
       </section>
     </>

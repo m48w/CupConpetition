@@ -10,6 +10,7 @@ import { Bracket } from "./pages/Bracket";
 import { AdminDashboard, AdminEntry, ProtectedAdminNotFound } from "./pages/AdminRoutes";
 import { AdminRegistrations } from "./pages/AdminRegistrations";
 import { Groups, GroupDetail } from "./pages/Groups";
+import { Info } from "./pages/Info";
 import { Live } from "./pages/Live";
 import { MatchDetail } from "./pages/MatchDetail";
 import { Matches } from "./pages/Matches";
@@ -31,7 +32,8 @@ const navItems: { to: string; label: MessageKey; icon: string; mobile: boolean }
   { to: "/matches", label: "nav.matches", icon: "▦", mobile: true },
   { to: "/groups", label: "nav.groups", icon: "☷", mobile: true },
   { to: "/knockout", label: "nav.knockout", icon: "⌘", mobile: true },
-  { to: "/teams", label: "nav.teams", icon: "♟", mobile: true },
+  { to: "/info", label: "nav.info", icon: "ⓘ", mobile: true },
+  { to: "/teams", label: "nav.teams", icon: "♟", mobile: false },
   { to: "/live", label: "nav.live", icon: "◉", mobile: false },
 ];
 
@@ -182,6 +184,7 @@ function App() {
           <main className="main-content">
             <Routes>
               <Route path="/" element={<Overview matches={matches} />} />
+              <Route path="/info" element={<Info />} />
               <Route path="/teams" element={<Teams />} />
               <Route path="/teams/:teamId" element={<TeamDetail matches={matches} />} />
               <Route path="/matches" element={<Matches matches={matches} />} />
