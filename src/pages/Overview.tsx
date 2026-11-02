@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { isOnPitch, MatchCard, TeamBadge, useTeams } from "../features/tournament";
+import { useI18n } from "../i18n/useI18n";
 import type { Match } from "../types";
 
 const EVENT_DATE = new Date("2026-12-19T15:00:00.000Z");
@@ -16,7 +17,15 @@ function getCountdown(now: number) {
   };
 }
 
+const UNITS = [
+  ["days", "home.countdown.days"],
+  ["hours", "home.countdown.hours"],
+  ["minutes", "home.countdown.minutes"],
+  ["seconds", "home.countdown.seconds"],
+] as const;
+
 export function Overview({ matches }: { matches: Match[] }) {
+  const { t } = useI18n();
   const teams = useTeams();
   const live = matches.filter(isOnPitch);
   const [now, setNow] = useState(() => Date.now());
@@ -34,12 +43,12 @@ export function Overview({ matches }: { matches: Match[] }) {
           <div className="section-heading">
             <div>
               <div className="eyebrow">
-                <i className="live-dot" /> LIVE NOW
+                <i className="live-dot" /> {t("home.live.eyebrow")}
               </div>
-              <h2>Matches on the pitch</h2>
+              <h2>{t("home.live.title")}</h2>
             </div>
             <Link className="outline-button" to="/live">
-              All live matches
+              {t("home.live.all")}
             </Link>
           </div>
           <div className="list-grid">
@@ -50,24 +59,17 @@ export function Overview({ matches }: { matches: Match[] }) {
         </section>
       )}
       <section className="overview-countdown">
-        <div className="eyebrow">NEXT MATCH DAY</div>
-        <h1>Countdown to kick-off</h1>
-        <p className="countdown-date">Sunday, December 20, 2026</p>
+        <div className="eyebrow">{t("home.countdown.eyebrow")}</div>
+        <h1>{t("home.countdown.title")}</h1>
+        <p className="countdown-date">{t("home.countdown.date")}</p>
         {countdown.started ? (
-          <p className="countdown-started">Tournament day is here!</p>
+          <p className="countdown-started">{t("home.countdown.started")}</p>
         ) : (
-          <div className="countdown-clock" aria-label="Time until tournament day">
-            {(
-              [
-                ["days", "Days"],
-                ["hours", "Hours"],
-                ["minutes", "Minutes"],
-                ["seconds", "Seconds"],
-              ] as const
-            ).map(([unit, label]) => (
+          <div className="countdown-clock" aria-label={t("home.countdown.aria")}>
+            {UNITS.map(([unit, label]) => (
               <div className="countdown-unit" key={unit}>
                 <strong>{String(countdown[unit]).padStart(2, "0")}</strong>
-                <span>{label}</span>
+                <span>{t(label)}</span>
               </div>
             ))}
           </div>
@@ -77,17 +79,15 @@ export function Overview({ matches }: { matches: Match[] }) {
       <section className="overview-section">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">THE CLUBS</div>
-            <h2>Participating teams</h2>
+            <div className="eyebrow">{t("home.teams.eyebrow")}</div>
+            <h2>{t("home.teams.title")}</h2>
           </div>
           <Link className="outline-button" to="/teams">
-            View all teams
+            {t("home.teams.viewAll")}
           </Link>
         </div>
-        {teams.length === 0 && (
-          <p className="muted">Teams will appear here after the groups are decided.</p>
-        )}
-        <div className="team-logo-strip" aria-label="Participating teams">
+        {teams.length === 0 && <p className="muted">{t("home.teams.empty")}</p>}
+        <div className="team-logo-strip" aria-label={t("home.teams.title")}>
           {teams.map((team) => (
             <div className="team-logo-tile" key={team.id}>
               <TeamBadge id={team.id} showName={false} />
@@ -100,12 +100,12 @@ export function Overview({ matches }: { matches: Match[] }) {
       <section className="overview-section rules-section">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">PLAY FAIR</div>
-            <h2>Tournament rules</h2>
+            <div className="eyebrow">{t("home.rules.eyebrow")}</div>
+            <h2>{t("home.rules.title")}</h2>
           </div>
         </div>
         <div className="rules-placeholder">
-          <p>The tournament rules will be announced soon.</p>
+          <p>{t("home.rules.soon")}</p>
         </div>
       </section>
     </>

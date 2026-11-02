@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { tournamentScopedUrl } from "../../../config";
+import { useI18n } from "../../../i18n/useI18n";
 import { useTeams } from "../teamContext";
 
 export function TeamBadge({ id, showName = true }: { id: string; showName?: boolean }) {
+  const { t } = useI18n();
   const teams = useTeams();
   const team = teams.find((candidate) => candidate.id === id);
   const [failedLogoId, setFailedLogoId] = useState<string | null>(null);
@@ -23,7 +25,7 @@ export function TeamBadge({ id, showName = true }: { id: string; showName?: bool
             : "?"}
         </i>
       )}
-      {showName && <span>{team?.name ?? "TBD"}</span>}
+      {showName && <span>{team?.name ?? t("match.tbd")}</span>}
     </span>
   );
 }

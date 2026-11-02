@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
-import { MatchCard, stageLabel, useTeams } from "../features/tournament";
+import { MatchCard, useTeams } from "../features/tournament";
+import { useI18n } from "../i18n/useI18n";
 import type { Match } from "../types";
 
+const STAGES = ["GROUP", "R16", "QF", "SF", "FINAL"] as const;
+
 export function Matches({ matches }: { matches: Match[] }) {
+  const { t } = useI18n();
   const [stage, setStage] = useState("ALL");
   const [teamId, setTeamId] = useState("ALL");
   const [groupId, setGroupId] = useState("ALL");
@@ -19,21 +23,21 @@ export function Matches({ matches }: { matches: Match[] }) {
   );
   return (
     <>
-      <PageTitle eyebrow="FULL TOURNAMENT SCHEDULE" title="All matches">
-        <span className="bracket-note">{filtered.length} shown</span>
+      <PageTitle eyebrow={t("matches.eyebrow")} title={t("matches.title")}>
+        <span className="bracket-note">{t("matches.shown", { count: filtered.length })}</span>
       </PageTitle>
-      {matches.length === 0 && <Empty text="The match schedule will be published soon." />}
+      {matches.length === 0 && <Empty text={t("matches.empty")} />}
       <div className="filter-bar">
         <select value={stage} onChange={(event) => setStage(event.target.value)}>
-          <option value="ALL">Round · All</option>
-          {(["GROUP", "R16", "QF", "SF", "FINAL"] as const).map((option) => (
+          <option value="ALL">{t("filter.round")}</option>
+          {STAGES.map((option) => (
             <option value={option} key={option}>
-              {stageLabel[option]}
+              {t(`stage.${option}`)}
             </option>
           ))}
         </select>
         <select value={teamId} onChange={(event) => setTeamId(event.target.value)}>
-          <option value="ALL">Team · All</option>
+          <option value="ALL">{t("filter.team")}</option>
           {teams.map((team) => (
             <option value={team.id} key={team.id}>
               {team.name}
@@ -41,18 +45,18 @@ export function Matches({ matches }: { matches: Match[] }) {
           ))}
         </select>
         <select value={groupId} onChange={(event) => setGroupId(event.target.value)}>
-          <option value="ALL">Group · All</option>
+          <option value="ALL">{t("filter.group")}</option>
           {["A", "B", "C", "D", "E", "F", "G", "H"].map((value) => (
             <option value={value} key={value}>
-              Group {value}
+              {t("common.group", { id: value })}
             </option>
           ))}
         </select>
         <select value={court} onChange={(event) => setCourt(event.target.value)}>
-          <option value="ALL">Court · All</option>
+          <option value="ALL">{t("filter.court")}</option>
           {[1, 2, 3].map((value) => (
             <option value={value} key={value}>
-              Court {value}
+              {t("common.court", { court: value })}
             </option>
           ))}
         </select>
@@ -66,7 +70,7 @@ export function Matches({ matches }: { matches: Match[] }) {
             setCourt("ALL");
           }}
         >
-          Reset
+          {t("filter.reset")}
         </button>
       </div>
       <div className="list-grid">
@@ -75,7 +79,7 @@ export function Matches({ matches }: { matches: Match[] }) {
         ))}
       </div>
       <p className="muted centered">
-        Showing {filtered.length} of {matches.length} matches
+        {t("matches.showing", { shown: filtered.length, total: matches.length })}
       </p>
     </>
   );

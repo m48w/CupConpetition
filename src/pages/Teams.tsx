@@ -6,6 +6,7 @@ import { MatchCard } from "../features/tournament";
 import { tournamentScopedUrl } from "../config";
 import type { Match } from "../types";
 import { requestJson } from "../utils/http";
+import { useI18n } from "../i18n/useI18n";
 import { NotFound } from "./NotFound";
 
 interface RegisteredTeam {
@@ -18,15 +19,16 @@ interface RegisteredTeam {
 }
 
 export function Teams() {
+  const { t } = useI18n();
   const teams = useTeams();
   const [registeredTeams, setRegisteredTeams] = useState<RegisteredTeam[]>([]);
-  const [registrationError, setRegistrationError] = useState("");
+  const [registrationError, setRegistrationError] = useState<"teams.loadError" | "">("");
   const [selectedTeam, setSelectedTeam] = useState<RegisteredTeam | null>(null);
 
   useEffect(() => {
     void requestJson<{ teams: RegisteredTeam[] }>("/api/registration/teams")
       .then(({ teams: registrations }) => setRegisteredTeams(registrations))
-      .catch(() => setRegistrationError("Could not load registered teams."));
+      .catch(() => setRegistrationError("teams.loadError"));
   }, []);
 
   useEffect(() => {
@@ -40,19 +42,19 @@ export function Teams() {
 
   return (
     <>
-      <PageTitle eyebrow="THE CLUBS" title="Participating teams">
+      <PageTitle eyebrow={t("teams.eyebrow")} title={t("teams.title")}>
         <span className="muted">
-          {teams.length} competing · {registeredTeams.length} registered
+          {t("teams.summary", { competing: teams.length, registered: registeredTeams.length })}
         </span>
       </PageTitle>
       <section className="team-directory-section">
         <div className="section-heading">
-          <h2>Registered teams</h2>
-          <span className="muted">{registeredTeams.length} teams</span>
+          <h2>{t("teams.registered.title")}</h2>
+          <span className="muted">{t("common.teams", { count: registeredTeams.length })}</span>
         </div>
         {registrationError ? (
           <p className="registration-error" role="alert">
-            {registrationError}
+            {t(registrationError)}
           </p>
         ) : registeredTeams.length ? (
           <div className="team-directory">
@@ -61,7 +63,7 @@ export function Teams() {
                 className="team-directory-card registered-team-card"
                 key={team.id}
                 type="button"
-                aria-label={`View ${team.teamName} and registered members`}
+                aria-label={t("teams.view", { team: team.teamName })}
                 onClick={() => setSelectedTeam(team)}
               >
                 {team.logoId ? (
@@ -70,7 +72,7 @@ export function Teams() {
                     src={tournamentScopedUrl(
                       `/api/registration/clubs/${encodeURIComponent(team.clubId)}/logo`,
                     )}
-                    alt={`${team.clubName} logo`}
+                    alt={t("common.logoAlt", { name: team.clubName })}
                   />
                 ) : (
                   <span className="team-crest">FC</span>
@@ -80,21 +82,21 @@ export function Teams() {
             ))}
           </div>
         ) : (
-          <p className="empty-state">No team registrations yet.</p>
+          <p className="empty-state">{t("teams.none")}</p>
         )}
       </section>
       {teams.length > 0 && (
         <section className="team-directory-section">
           <div className="section-heading">
-            <h2>Competition teams</h2>
-            <span className="muted">{teams.length} teams</span>
+            <h2>{t("teams.competition.title")}</h2>
+            <span className="muted">{t("common.teams", { count: teams.length })}</span>
           </div>
           <div className="team-directory">
             {teams.map((team) => (
               <Link className="team-directory-card" key={team.id} to={`/teams/${team.id}`}>
                 <TeamBadge id={team.id} showName={false} />
                 <strong>{team.name}</strong>
-                <span>Group {team.groupId}</span>
+                <span>{t("common.group", { id: team.groupId })}</span>
               </Link>
             ))}
           </div>
@@ -116,12 +118,12 @@ export function Teams() {
                   type="button"
                   onClick={() => setSelectedTeam(null)}
                 >
-                  Back
+                  {t("common.back")}
                 </button>
                 <button
                   className="team-roster-close"
                   type="button"
-                  aria-label="Close team details"
+                  aria-label={t("teams.closeDetails")}
                   onClick={() => setSelectedTeam(null)}
                 >
                   ×
@@ -135,13 +137,13 @@ export function Teams() {
                   src={tournamentScopedUrl(
                     `/api/registration/clubs/${encodeURIComponent(selectedTeam.clubId)}/logo`,
                   )}
-                  alt={`${selectedTeam.teamName} logo`}
+                  alt={t("common.logoAlt", { name: selectedTeam.teamName })}
                 />
               ) : (
                 <span className="team-crest team-roster-logo">FC</span>
               )}
               <section className="team-roster-list">
-                <h3>Registered members</h3>
+                <h3>{t("teams.members.title")}</h3>
                 {selectedTeam.members.length ? (
                   <ol>
                     {selectedTeam.members.map((member) => (
@@ -152,7 +154,7 @@ export function Teams() {
                     ))}
                   </ol>
                 ) : (
-                  <p className="muted">No members registered yet.</p>
+                  <p className="muted">{t("teams.members.none")}</p>
                 )}
               </section>
             </div>
@@ -164,6 +166,7 @@ export function Teams() {
 }
 
 export function TeamDetail({ matches }: { matches: Match[] }) {
+  const { t } = useI18n();
   const { teamId } = useParams();
   const team = useTeams().find((item) => item.id === teamId);
   if (!team) return <NotFound />;
@@ -173,21 +176,21 @@ export function TeamDetail({ matches }: { matches: Match[] }) {
   );
   return (
     <>
-      <PageTitle eyebrow={`GROUP ${team.groupId}`} title={team.name}>
+      <PageTitle eyebrow={t("common.group", { id: team.groupId })} title={team.name}>
         <Link className="outline-button" to="/teams">
-          All teams
+          {t("teams.all")}
         </Link>
       </PageTitle>
       <section className="team-profile">
         <TeamBadge id={team.id} showName={false} />
         <div>
           <h2>{team.name}</h2>
-          <p>Group {team.groupId}</p>
+          <p>{t("common.group", { id: team.groupId })}</p>
         </div>
       </section>
       <section className="section-block">
         <div className="section-heading">
-          <h2>Matches</h2>
+          <h2>{t("teams.matches")}</h2>
         </div>
         <div className="list-grid">
           {teamMatches.map((match) => (

@@ -10,6 +10,7 @@ import {
 } from "./config";
 import { RegistrationApp } from "./pages/Registration";
 import { TestSiteBanner } from "./components/ui/TestSiteBanner";
+import { I18nProvider } from "./i18n/I18nProvider";
 import "./styles.css";
 
 // サイトルートは大会トップを開く（本番は Worker が 302 で転送する。これは開発サーバー用）。
@@ -33,8 +34,10 @@ createRoot(document.getElementById("root")!).render(
         v7_relativeSplatPath: true,
       }}
     >
-      <TestSiteBanner />
-      {isRegistrationPage ? <RegistrationApp /> : <App />}
+      <I18nProvider>
+        <TestSiteBanner />
+        {isRegistrationPage ? <RegistrationApp /> : <App />}
+      </I18nProvider>
     </BrowserRouter>
   </StrictMode>,
 );

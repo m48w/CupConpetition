@@ -3,6 +3,10 @@ import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { EVENT_BASE_PATH, tournamentScopedUrl } from "../config";
 import { shrinkLogo } from "../utils/image";
 import { EVENT_LOGO_SRC } from "../components/ui/brand";
+import { LanguageSwitch } from "../components/ui/LanguageSwitch";
+import { errorKey } from "../i18n/errors";
+import type { MessageKey } from "../i18n/messages";
+import { useI18n } from "../i18n/useI18n";
 import { ApiError, requestJson } from "../utils/http";
 
 const TEAM_KEY = "velocity-registration-team";
@@ -47,6 +51,7 @@ interface MemberRegistration {
 }
 
 function RegistrationLayout({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <main className="registration-shell">
       <header className="registration-header">
@@ -54,20 +59,24 @@ function RegistrationLayout({ children }: { children: ReactNode }) {
           <img src={EVENT_LOGO_SRC} alt="Velocity FC" width="48" height="48" />
           <div>
             <strong>VELOCITY CUP 2026</strong>
-            <span>TEAM REGISTRATION</span>
+            <span>{t("reg.header.sub")}</span>
           </div>
         </div>
-        <a href={`${EVENT_BASE_PATH}/`} className="admin-toggle registration-back-btn">
-          ← Back to tournament
-        </a>
+        <div className="registration-header-actions">
+          <LanguageSwitch />
+          <a href={`${EVENT_BASE_PATH}/`} className="admin-toggle registration-back-btn">
+            {t("reg.back")}
+          </a>
+        </div>
       </header>
       {children}
-      <footer>VELOCITY CUP 2026 · 20 DECEMBER 2026</footer>
+      <footer>{t("reg.footer")}</footer>
     </main>
   );
 }
 
 function RegistrationForm() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -107,15 +116,21 @@ function RegistrationForm() {
         ([name]) => name !== "clubLogo" && name !== "teamNames" && name !== "multipleTeams",
       ),
     ) as Record<string, unknown>;
+    const logoProblem =
+      !(logo instanceof File) || logo.size === 0
+        ? "reg.err.noLogo"
+        : !["image/png", "image/jpeg", "image/webp"].includes(logo.type)
+          ? "reg.err.logoType"
+          : logo.size > 1_000_000
+            ? "reg.err.logoSize"
+            : null;
+    if (logoProblem || !(logo instanceof File)) {
+      setError(t(logoProblem ?? "reg.err.noLogo"));
+      setBusy(false);
+      return;
+    }
     try {
       body.teamNames = multipleTeams ? submittedTeamNames : submittedTeamNames.slice(0, 1);
-      if (!(logo instanceof File) || logo.size === 0) {
-        throw new Error("Please choose a club logo before submitting.");
-      }
-      if (!["image/png", "image/jpeg", "image/webp"].includes(logo.type)) {
-        throw new Error("Choose a PNG, JPEG, or WebP logo.");
-      }
-      if (logo.size > 1_000_000) throw new Error("Logo file must be 1 MB or smaller.");
       const shrunk = await shrinkLogo(logo);
       body.logoContentType = shrunk.contentType;
       body.logoDataBase64 = shrunk.dataBase64;
@@ -125,16 +140,15 @@ function RegistrationForm() {
       }>("/api/registration/teams", { method: "POST", body: JSON.stringify(body) });
       const registrations =
         result.registrations ?? (result.registration ? [result.registration] : []);
-      if (!registrations.length) throw new Error("No teams were returned. Please try again.");
+      if (!registrations.length) {
+        setError(t("reg.err.noTeams"));
+        return;
+      }
       sessionStorage.setItem(SUMMARY_KEY, JSON.stringify(registrations));
       sessionStorage.setItem(CLUB_KEY, registrations[0].clubName);
       navigate("/complete");
     } catch (reason) {
-      setError(
-        reason instanceof ApiError || reason instanceof Error
-          ? reason.message
-          : "Registration could not be saved. Try again.",
-      );
+      setError(t(errorKey(reason, "reg.err.save")));
     } finally {
       setBusy(false);
     }
@@ -142,15 +156,12 @@ function RegistrationForm() {
 
   return (
     <section className="registration-card">
-      <div className="eyebrow">JOIN THE TOURNAMENT</div>
-      <h1>Team registration</h1>
-      <p>
-        Register your club and the team or teams that will compete in Velocity Cup 2026. Use one
-        application to enter multiple teams from the same club.
-      </p>
+      <div className="eyebrow">{t("reg.form.eyebrow")}</div>
+      <h1>{t("reg.form.title")}</h1>
+      <p>{t("reg.form.intro")}</p>
       <form className="registration-form" onSubmit={submit}>
         <label>
-          Club name
+          {t("reg.clubName")}
           <input
             name="clubName"
             autoComplete="organization"
@@ -169,14 +180,12 @@ function RegistrationForm() {
               if (!event.target.checked) setTeamNames((current) => current.slice(0, 1));
             }}
           />
-          <span>This club is entering multiple teams</span>
+          <span>{t("reg.multiple")}</span>
         </label>
         <div className="registration-team-names">
           {teamNames.map((teamName, index) => (
             <label className="registration-team-name" key={index}>
-              <span>
-                {index === 0 ? "Tournament team name" : `Tournament team name ${index + 1}`}
-              </span>
+              <span>{index === 0 ? t("reg.teamName") : t("reg.teamNameN", { n: index + 1 })}</span>
               <div className="registration-team-name-control">
                 <input
                   name="teamNames"
@@ -196,7 +205,7 @@ function RegistrationForm() {
                   <button
                     className="registration-add-team"
                     type="button"
-                    aria-label="Add another team name"
+                    aria-label={t("reg.addTeam")}
                     onClick={() => setTeamNames((current) => [...current, ""])}
                   >
                     +
@@ -206,7 +215,7 @@ function RegistrationForm() {
                   <button
                     className="registration-remove-team"
                     type="button"
-                    aria-label={`Remove team name ${index + 1}`}
+                    aria-label={t("reg.removeTeam", { n: index + 1 })}
                     onClick={() =>
                       setTeamNames((current) =>
                         current.filter((_, nameIndex) => nameIndex !== index),
@@ -221,21 +230,21 @@ function RegistrationForm() {
           ))}
         </div>
         <label>
-          Representative name
+          {t("reg.repName")}
           <input name="representativeName" autoComplete="name" maxLength={120} required />
         </label>
         <label>
-          Email address
+          {t("reg.email")}
           <input name="email" type="email" autoComplete="email" maxLength={254} required />
         </label>
         <label>
-          Phone number
+          {t("reg.phone")}
           <input name="phone" type="tel" autoComplete="tel" required />
         </label>
         <div className="registration-logo-field">
           <div className="registration-logo-heading">
-            <span>Club logo</span>
-            <small>REQUIRED</small>
+            <span>{t("reg.logo")}</span>
+            <small>{t("reg.required")}</small>
           </div>
           <input
             ref={logoInput}
@@ -250,18 +259,18 @@ function RegistrationForm() {
           />
           <div className={`registration-logo-picker${logoFile ? " has-logo" : ""}`}>
             {logoPreview ? (
-              <img src={logoPreview} alt="Selected club logo preview" />
+              <img src={logoPreview} alt={t("reg.logo.previewAlt")} />
             ) : (
               <div className="registration-logo-placeholder" aria-hidden="true">
                 <span>＋</span>
               </div>
             )}
             <div className="registration-logo-copy">
-              <strong>{logoFile?.name ?? "Add your club logo"}</strong>
+              <strong>{logoFile?.name ?? t("reg.logo.add")}</strong>
               <span>
                 {logoFile
-                  ? `${(logoFile.size / 1024).toFixed(0)} KB · shared by this club’s teams`
-                  : "Required · PNG, JPEG or WebP · up to 1 MB · shared by this club’s teams"}
+                  ? t("reg.logo.size", { size: (logoFile.size / 1024).toFixed(0) })
+                  : t("reg.logo.hint")}
               </span>
             </div>
             <button
@@ -269,13 +278,13 @@ function RegistrationForm() {
               type="button"
               onClick={() => logoInput.current?.click()}
             >
-              {logoFile ? "Change logo" : "Choose file"}
+              {logoFile ? t("reg.logo.change") : t("reg.logo.choose")}
             </button>
             {logoFile && (
               <button
                 className="registration-logo-clear"
                 type="button"
-                aria-label="Remove selected logo"
+                aria-label={t("reg.logo.remove")}
                 onClick={() => {
                   selectLogo(null);
                   if (logoInput.current) logoInput.current.value = "";
@@ -285,10 +294,7 @@ function RegistrationForm() {
               </button>
             )}
           </div>
-          <small>
-            A logo is required for each application. Existing club logos are not replaced by later
-            submissions; organisers can update them.
-          </small>
+          <small>{t("reg.logo.note")}</small>
         </div>
         {error && (
           <p className="registration-error" role="alert">
@@ -297,20 +303,21 @@ function RegistrationForm() {
         )}
         <button className="primary-button" disabled={busy}>
           {busy
-            ? "Submitting…"
+            ? t("reg.submitting")
             : multipleTeams && teamNames.length > 1
-              ? "Submit team registrations"
-              : "Register team"}
+              ? t("reg.submitMany")
+              : t("reg.submitOne")}
         </button>
       </form>
       <small>
-        Already registered? <Link to="/verify">Register your team members</Link>
+        {t("reg.already")} <Link to="/verify">{t("reg.goMembers")}</Link>
       </small>
     </section>
   );
 }
 
 function RegistrationComplete() {
+  const { t } = useI18n();
   const memberComplete = new URLSearchParams(window.location.search).get("member") === "1";
   const summary = (() => {
     try {
@@ -331,15 +338,15 @@ function RegistrationComplete() {
         <div className="complete-mark" aria-hidden="true">
           ✓
         </div>
-        <div className="eyebrow">MEMBER ADDED</div>
-        <h1>Registration complete</h1>
-        <p>Your member was added to the team roster.</p>
+        <div className="eyebrow">{t("reg.done.memberEyebrow")}</div>
+        <h1>{t("reg.done.title")}</h1>
+        <p>{t("reg.done.memberText")}</p>
         <Link
           className="primary-button"
           to="/members"
           onClick={() => sessionStorage.removeItem(MEMBER_COMPLETE_KEY)}
         >
-          Return to team members
+          {t("reg.done.backMembers")}
         </Link>
       </section>
     );
@@ -351,40 +358,41 @@ function RegistrationComplete() {
       <div className="complete-mark" aria-hidden="true">
         ✓
       </div>
-      <div className="eyebrow">REGISTRATION RECEIVED</div>
-      <h1>You’re registered</h1>
+      <div className="eyebrow">{t("reg.done.eyebrow")}</div>
+      <h1>{t("reg.done.teamTitle")}</h1>
       <dl>
-        <dt>Club</dt>
+        <dt>{t("reg.done.club")}</dt>
         <dd>{firstTeam.clubName}</dd>
-        <dt>{summary.length > 1 ? "Tournament teams" : "Tournament team"}</dt>
+        <dt>{summary.length > 1 ? t("reg.done.teams") : t("reg.done.team")}</dt>
         <dd>{summary.map((team) => team.teamName).join(", ")}</dd>
-        <dt>Representative</dt>
+        <dt>{t("reg.done.rep")}</dt>
         <dd>{firstTeam.representativeName}</dd>
-        <dt>Member registration deadline</dt>
-        <dd>12 December 2026 · 23:59 JST</dd>
+        <dt>{t("reg.done.deadline")}</dt>
+        <dd>{t("reg.deadline.value")}</dd>
       </dl>
       {firstTeam.logoId && (
         <img
           className="registration-club-logo"
           src={tournamentScopedUrl(`/api/logos/${encodeURIComponent(firstTeam.logoId)}`)}
-          alt={`${firstTeam.clubName} club logo`}
+          alt={t("common.logoAlt", { name: firstTeam.clubName })}
         />
       )}
       <Link className="primary-button" to="/verify">
-        Register team members
+        {t("reg.done.registerMembers")}
       </Link>
       <Link
         className="outline-button"
         to="/"
         onClick={() => sessionStorage.setItem(CLUB_KEY, firstTeam.clubName)}
       >
-        Register another team for this club
+        {t("reg.done.another")}
       </Link>
     </section>
   );
 }
 
 function VerifyContacts() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [teams, setTeams] = useState<TeamSummary[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
@@ -404,9 +412,7 @@ function VerifyContacts() {
       setTeams(result.teams);
       setSelectedTeamId(result.teams[0]?.id ?? "");
     } catch (reason) {
-      setError(
-        reason instanceof ApiError ? reason.message : "Verification failed. Please try again.",
-      );
+      setError(t(errorKey(reason, "reg.verify.failed")));
     } finally {
       setBusy(false);
     }
@@ -420,16 +426,16 @@ function VerifyContacts() {
 
   return (
     <section className="registration-card">
-      <div className="eyebrow">TEAM MEMBER PORTAL</div>
-      <h1>Verify your team</h1>
-      <p>Enter the email address and phone number used when your team was registered.</p>
+      <div className="eyebrow">{t("reg.verify.eyebrow")}</div>
+      <h1>{t("reg.verify.title")}</h1>
+      <p>{t("reg.verify.intro")}</p>
       <form className="registration-form" onSubmit={submit}>
         <label>
-          Email address
+          {t("reg.email")}
           <input name="email" type="email" autoComplete="email" required />
         </label>
         <label>
-          Phone number
+          {t("reg.phone")}
           <input name="phone" type="tel" autoComplete="tel" required />
         </label>
         {error && (
@@ -438,13 +444,13 @@ function VerifyContacts() {
           </p>
         )}
         <button className="primary-button" disabled={busy}>
-          {busy ? "Checking…" : "Verify details"}
+          {busy ? t("reg.verify.checking") : t("reg.verify.submit")}
         </button>
       </form>
       {teams.length > 0 && (
         <div className="registration-team-choice">
           <label>
-            Select your team
+            {t("reg.verify.select")}
             <select
               value={selectedTeamId}
               onChange={(event) => setSelectedTeamId(event.target.value)}
@@ -457,7 +463,7 @@ function VerifyContacts() {
             </select>
           </label>
           <button className="primary-button" onClick={continueToMembers}>
-            Continue to members
+            {t("reg.verify.continue")}
           </button>
         </div>
       )}
@@ -466,12 +472,14 @@ function VerifyContacts() {
 }
 
 function MemberRegistration() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const teamId = sessionStorage.getItem(TEAM_KEY);
   const [registration, setRegistration] = useState<MemberRegistration | null>(null);
   const [memberRows, setMemberRows] = useState<MemberDraft[]>(() =>
     Array.from({ length: 11 }, () => ({ name: "", backNumber: "" })),
   );
+  const [loadError, setLoadError] = useState<MessageKey | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -488,12 +496,11 @@ function MemberRegistration() {
     // The state update occurs after the API request resolves; this effect only starts synchronization.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load().catch((reason: unknown) => {
-      setError(
+      // 文ではなくキーを持つ（言語を切り替えたら、その言語で表示するため）。
+      setLoadError(
         reason instanceof ApiError && reason.status === 401
-          ? "Your verification session expired. Verify your team again."
-          : reason instanceof Error
-            ? reason.message
-            : "Could not load members.",
+          ? "reg.members.expired"
+          : errorKey(reason, "reg.members.loadError"),
       );
     });
   }, [load, teamId]);
@@ -509,14 +516,14 @@ function MemberRegistration() {
       const backNumber = row.backNumber.trim();
       if (!name && !backNumber) continue;
       if (!name || !backNumber || !Number.isSafeInteger(Number(backNumber))) {
-        setError("Enter both Player Name and Back Number for each player.");
+        setError(t("reg.members.bothFields"));
         setBusy(false);
         return;
       }
       members.push({ name, backNumber: Number(backNumber) });
     }
     if (members.length === 0) {
-      setError("Enter at least one player before submitting.");
+      setError(t("reg.members.atLeastOne"));
       setBusy(false);
       return;
     }
@@ -530,7 +537,7 @@ function MemberRegistration() {
       sessionStorage.setItem(MEMBER_COMPLETE_KEY, teamId);
       navigate("/complete?member=1");
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : "Member could not be registered.");
+      setError(t(errorKey(reason, "reg.members.saveError")));
     } finally {
       setBusy(false);
     }
@@ -544,16 +551,13 @@ function MemberRegistration() {
       sessionStorage.removeItem(MEMBER_COMPLETE_KEY);
       navigate("/verify");
     } catch (reason) {
-      setError(
-        reason instanceof ApiError
-          ? reason.message
-          : "Could not end this verification session. Try again.",
-      );
+      setError(t(errorKey(reason, "reg.members.endError")));
     }
   }
 
   if (!teamId) return <Navigate to="/verify" replace />;
-  if (!registration && !error) return <p className="muted">Loading team registration…</p>;
+  if (!registration && !error && !loadError)
+    return <p className="muted">{t("reg.members.loading")}</p>;
   const remainingSlots = Math.max(
     0,
     (registration?.maxMembers ?? 0) - (registration?.memberCount ?? 0),
@@ -563,21 +567,21 @@ function MemberRegistration() {
       <div className="eyebrow">{registration?.clubName}</div>
       <h1>{registration?.teamName}</h1>
       <p>
-        Registered members: <strong>{registration?.memberCount} / 11</strong>
+        {t("reg.members.countLabel")} <strong>{registration?.memberCount} / 11</strong>
       </p>
-      <p>Registration deadline: 12 December 2026 · 23:59 JST</p>
+      <p>{t("reg.members.deadline", { date: t("reg.deadline.value") })}</p>
       {registration?.logoId && (
         <img
           className="registration-club-logo"
           src={tournamentScopedUrl(
             `/api/registration/clubs/${encodeURIComponent(registration.clubId)}/logo`,
           )}
-          alt={`${registration.clubName} logo`}
+          alt={t("common.logoAlt", { name: registration.clubName })}
         />
       )}
-      {error && (
+      {(error || loadError) && (
         <p className="registration-error" role="alert">
-          {error}
+          {error || (loadError && t(loadError))}
         </p>
       )}
       <div className="registration-members">
@@ -589,7 +593,7 @@ function MemberRegistration() {
         ))}
       </div>
       {registration?.deadlinePassed && (
-        <p className="registration-error">Member registration is closed.</p>
+        <p className="registration-error">{t("reg.members.closed")}</p>
       )}
       {registration && !registration.deadlinePassed && registration.memberCount < 11 && (
         <form className="registration-form" onSubmit={(event) => void submit(event)}>
@@ -597,7 +601,7 @@ function MemberRegistration() {
             {memberRows.map((member, index) => (
               <div className="registration-member-row" key={index}>
                 <label>
-                  Player Name
+                  {t("reg.members.playerName")}
                   <input
                     maxLength={120}
                     value={member.name}
@@ -612,7 +616,7 @@ function MemberRegistration() {
                   />
                 </label>
                 <label>
-                  Back Number
+                  {t("reg.members.backNumber")}
                   <input
                     type="number"
                     min="0"
@@ -632,13 +636,13 @@ function MemberRegistration() {
             ))}
           </div>
           <button className="primary-button" disabled={busy}>
-            {busy ? "Saving…" : "Register players"}
+            {busy ? t("reg.members.saving") : t("reg.members.submit")}
           </button>
         </form>
       )}
-      {registration && registration.memberCount >= 11 && <p>Maximum team size reached.</p>}
+      {registration && registration.memberCount >= 11 && <p>{t("reg.members.full")}</p>}
       <button className="registration-link-button" onClick={() => void switchTeam()}>
-        Verify a different team
+        {t("reg.members.switch")}
       </button>
     </section>
   );

@@ -1,3 +1,4 @@
+import { useI18n } from "../../../i18n/useI18n";
 import type { Match, Team } from "../../../types";
 import { calculateStandings } from "../logic";
 import { TeamBadge } from "./TeamBadge";
@@ -19,24 +20,25 @@ export function StandingsTable({
   matches: Match[];
   title?: string;
 }) {
+  const { t } = useI18n();
   const standings = calculateStandings(groupId, teams, matches);
   return (
     <section className="table-card standings-table">
       {title && (
         <div className="table-title">
           <h3>{title}</h3>
-          <span>{standings.length} teams</span>
+          <span>{t("common.teams", { count: standings.length })}</span>
         </div>
       )}
       <div className="standings-row standings-head">
         <span>#</span>
-        <span>Team</span>
-        <span title="Matches played">Played</span>
-        <span className="standings-wide">Won</span>
-        <span className="standings-wide">Drawn</span>
-        <span className="standings-wide">Lost</span>
-        <span title="Goals scored minus goals conceded">Goal diff.</span>
-        <span>Points</span>
+        <span>{t("standings.team")}</span>
+        <span title={t("standings.playedHint")}>{t("standings.played")}</span>
+        <span className="standings-wide">{t("standings.won")}</span>
+        <span className="standings-wide">{t("standings.drawn")}</span>
+        <span className="standings-wide">{t("standings.lost")}</span>
+        <span title={t("standings.goalDiffHint")}>{t("standings.goalDiff")}</span>
+        <span>{t("standings.points")}</span>
       </div>
       {standings.map((row, index) => (
         <div className="standings-row" key={row.team.id}>

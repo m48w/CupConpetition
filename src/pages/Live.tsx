@@ -1,10 +1,12 @@
 import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
-import { isOnPitch, MatchCard, stageLabel, TeamBadge } from "../features/tournament";
+import { isOnPitch, MatchCard, TeamBadge } from "../features/tournament";
+import { useI18n } from "../i18n/useI18n";
 import type { Match } from "../types";
 import { formatTime } from "../utils/format";
 
 export function Live({ matches }: { matches: Match[] }) {
+  const { t } = useI18n();
   const live = matches.filter(isOnPitch);
   const nextByCourt = [
     ...matches
@@ -18,36 +20,38 @@ export function Live({ matches }: { matches: Match[] }) {
   ];
   return (
     <>
-      <PageTitle eyebrow="REAL-TIME CENTRE" title="Live matches">
+      <PageTitle eyebrow={t("live.eyebrow")} title={t("live.title")}>
         <span className="refresh-label">
-          <i className="live-dot" /> Updates in real time
+          <i className="live-dot" /> {t("live.realtime")}
         </span>
       </PageTitle>
       <div className="live-layout">
         <section>
           <div className="section-heading">
-            <h2>On the pitch</h2>
-            <span className="muted">{live.length} active</span>
+            <h2>{t("live.onPitch")}</h2>
+            <span className="muted">{t("live.active", { count: live.length })}</span>
           </div>
           {live.map((match) => (
             <MatchCard match={match} key={match.id} />
           ))}
-          {!live.length && <Empty text="No matches are being played right now." />}
+          {!live.length && <Empty text={t("live.empty")} />}
         </section>
         <aside className="next-panel">
-          <div className="eyebrow">NEXT MATCHES · ONE PER COURT</div>
-          <h3>Coming up</h3>
-          {!nextByCourt.length && <p className="muted">The next matches will appear here.</p>}
+          <div className="eyebrow">{t("live.next.eyebrow")}</div>
+          <h3>{t("live.next.title")}</h3>
+          {!nextByCourt.length && <p className="muted">{t("live.next.empty")}</p>}
           {nextByCourt.map((match) => (
             <div className="next-row" key={match.id}>
-              <strong>Court {match.court}</strong>
+              <strong>{t("common.court", { court: match.court })}</strong>
               <div>
                 <TeamBadge id={match.homeTeamId} />
                 <TeamBadge id={match.awayTeamId} />
               </div>
               <small>
                 {formatTime(match.scheduledStart)} ·{" "}
-                {match.groupId ? `Group ${match.groupId}` : stageLabel[match.stage]}
+                {match.groupId
+                  ? t("common.group", { id: match.groupId })
+                  : t(`stage.${match.stage}`)}
               </small>
             </div>
           ))}

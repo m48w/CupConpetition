@@ -1,10 +1,11 @@
+import { useI18n } from "../../../i18n/useI18n";
 import type { Match } from "../../../types";
 import { formatTime } from "../../../utils/format";
 import { useMatchClock } from "../hooks/useMatchClock";
-import { stageLabel } from "../logic";
 import { TeamBadge } from "./TeamBadge";
 
 export function MatchCard({ match, compact = false }: { match: Match; compact?: boolean }) {
+  const { t } = useI18n();
   const clock = useMatchClock(match);
   const live = match.status === "LIVE";
   const onPitch = live || match.status === "PAUSED";
@@ -12,15 +13,16 @@ export function MatchCard({ match, compact = false }: { match: Match; compact?: 
     <div className={`match-card ${live ? "match-live" : ""} ${compact ? "compact" : ""}`}>
       <div className="match-card-top">
         <span>
-          {stageLabel[match.stage]} {match.groupId && `· Group ${match.groupId}`}
+          {t(`stage.${match.stage}`)}{" "}
+          {match.groupId && `· ${t("common.group", { id: match.groupId })}`}
         </span>
         <span className={live ? "status live" : `status ${match.status.toLowerCase()}`}>
           {live
-            ? "LIVE"
+            ? t("match.live")
             : match.status === "PAUSED"
-              ? "PAUSED"
+              ? t("match.paused")
               : match.status === "FINISHED"
-                ? "FT"
+                ? t("match.finished")
                 : formatTime(match.scheduledStart)}
         </span>
       </div>
@@ -35,9 +37,7 @@ export function MatchCard({ match, compact = false }: { match: Match; compact?: 
         </div>
       </div>
       <div className="match-card-foot">
-        <span>
-          Match {match.id} · Court {match.court}
-        </span>
+        <span>{t("match.footer", { id: match.id, court: match.court })}</span>
         {onPitch && <span className={live ? "timer" : "timer paused"}>{clock}</span>}
       </div>
     </div>

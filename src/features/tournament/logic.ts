@@ -63,9 +63,9 @@ export function calculateStandings(groupId: string, teams: Team[], matches: Matc
 
 export const stageLabel: Record<Match["stage"], string> = {
   GROUP: "Group stage",
-  R16: "Best 16",
-  QF: "Best 8",
-  SF: "Best 4",
+  R16: "Round of 16",
+  QF: "Quarter-final",
+  SF: "Semi-final",
   FINAL: "Final",
 };
 

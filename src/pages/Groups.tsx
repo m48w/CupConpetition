@@ -5,18 +5,20 @@ import { MatchCard, useTeams } from "../features/tournament";
 import { StandingsTable } from "../features/tournament/components/StandingsTable";
 import { GROUP_IDS } from "../features/tournament/schedule";
 import type { Match } from "../types";
+import { useI18n } from "../i18n/useI18n";
 import { NotFound } from "./NotFound";
 
 /** 全グループの順位表（以前の Standings ページもここにまとめた）。 */
 export function Groups({ matches }: { matches: Match[] }) {
+  const { t } = useI18n();
   const teams = useTeams();
   return (
     <>
-      <PageTitle eyebrow="GROUP STAGE" title="Groups">
-        <span className="muted">Top teams go to the knockout stage</span>
+      <PageTitle eyebrow={t("groups.eyebrow")} title={t("groups.title")}>
+        <span className="muted">{t("groups.note")}</span>
       </PageTitle>
       {teams.length === 0 ? (
-        <Empty text="Groups will be announced after registration closes." />
+        <Empty text={t("groups.empty")} />
       ) : (
         <div className="standings-grid">
           {GROUP_IDS.map((groupId) => (
@@ -25,7 +27,7 @@ export function Groups({ matches }: { matches: Match[] }) {
                 groupId={groupId}
                 teams={teams}
                 matches={matches}
-                title={`Group ${groupId}`}
+                title={t("common.group", { id: groupId })}
               />
             </Link>
           ))}
@@ -36,6 +38,7 @@ export function Groups({ matches }: { matches: Match[] }) {
 }
 
 export function GroupDetail({ matches }: { matches: Match[] }) {
+  const { t } = useI18n();
   const { groupId } = useParams();
   const teams = useTeams();
   const selectedGroupId = GROUP_IDS.find((id) => id === groupId);
@@ -43,22 +46,22 @@ export function GroupDetail({ matches }: { matches: Match[] }) {
   const fixtures = matches.filter((match) => match.groupId === selectedGroupId);
   return (
     <>
-      <PageTitle eyebrow="GROUP STAGE" title={`Group ${selectedGroupId}`}>
+      <PageTitle eyebrow={t("groups.eyebrow")} title={t("common.group", { id: selectedGroupId })}>
         <Link className="outline-button" to="/groups">
-          All groups
+          {t("groups.all")}
         </Link>
       </PageTitle>
       {teams.length === 0 ? (
-        <Empty text="Groups will be announced after registration closes." />
+        <Empty text={t("groups.empty")} />
       ) : (
         <StandingsTable groupId={selectedGroupId} teams={teams} matches={matches} />
       )}
       <section className="section-block">
         <div className="section-heading">
-          <h2>Group {selectedGroupId} matches</h2>
+          <h2>{t("groups.matches", { id: selectedGroupId })}</h2>
         </div>
         {fixtures.length === 0 ? (
-          <Empty text="The match schedule will be published soon." />
+          <Empty text={t("matches.empty")} />
         ) : (
           <div className="list-grid">
             {fixtures.map((match) => (

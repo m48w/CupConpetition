@@ -20,16 +20,19 @@ import { SuperAdmin } from "./pages/SuperAdmin";
 import { TeamDetail, Teams } from "./pages/Teams";
 import { getTournamentId, REGISTRATION_BASE_PATH } from "./config";
 import { EVENT_LOGO_SRC } from "./components/ui/brand";
+import { LanguageSwitch } from "./components/ui/LanguageSwitch";
+import type { MessageKey } from "./i18n/messages";
+import { useI18n } from "./i18n/useI18n";
 import type { Match, SessionInfo } from "./types";
 
 /** `mobile: true` の5つだけをスマホの下メニューに出す。PCの左メニューには全部出す。 */
-const navItems = [
-  { to: "/", label: "Home", icon: "⌂", mobile: true },
-  { to: "/matches", label: "Matches", icon: "▦", mobile: true },
-  { to: "/groups", label: "Groups", icon: "☷", mobile: true },
-  { to: "/knockout", label: "Knockout", icon: "⌘", mobile: true },
-  { to: "/teams", label: "Teams", icon: "♟", mobile: true },
-  { to: "/live", label: "Live", icon: "◉", mobile: false },
+const navItems: { to: string; label: MessageKey; icon: string; mobile: boolean }[] = [
+  { to: "/", label: "nav.home", icon: "⌂", mobile: true },
+  { to: "/matches", label: "nav.matches", icon: "▦", mobile: true },
+  { to: "/groups", label: "nav.groups", icon: "☷", mobile: true },
+  { to: "/knockout", label: "nav.knockout", icon: "⌘", mobile: true },
+  { to: "/teams", label: "nav.teams", icon: "♟", mobile: true },
+  { to: "/live", label: "nav.live", icon: "◉", mobile: false },
 ];
 
 function AdminConsole({
@@ -65,6 +68,7 @@ function AdminConsole({
 }
 
 function App() {
+  const { t } = useI18n();
   const { session, loading, refresh, signIn, signOut } = useSession();
   const {
     matches,
@@ -128,15 +132,16 @@ function App() {
             VELOCITY CUP 2026
           </button>
           <div className="admin-links">
+            <LanguageSwitch />
             <a href={`${REGISTRATION_BASE_PATH}/`} className="admin-toggle header-reg-btn">
-              Register
+              {t("app.register")}
             </a>
           </div>
         </header>
       </div>
       <div className="layout">
         <aside className="sidebar">
-          <div className="side-caption">TOURNAMENT HUB</div>
+          <div className="side-caption">{t("app.hub")}</div>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -145,7 +150,7 @@ function App() {
               className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}
             >
               <span>{item.icon}</span>
-              {item.label}
+              {t(item.label)}
             </NavLink>
           ))}
           <div className="sidebar-bottom">
@@ -154,7 +159,8 @@ function App() {
               <div>
                 <strong>Velocity Cup 2026</strong>
                 <small>
-                  {teams.length} teams · {matches.length} matches
+                  {t("common.teams", { count: teams.length })} ·{" "}
+                  {t("app.matchCount", { count: matches.length })}
                 </small>
               </div>
             </div>
@@ -253,12 +259,12 @@ function App() {
               className={({ isActive }) => (isActive ? "active" : "")}
             >
               <span>{item.icon}</span>
-              {item.label}
+              {t(item.label)}
             </NavLink>
           ))}
       </nav>
       <footer>
-        © 2026 VELOCITY CUP <span>•</span> Tournament operations platform
+        © 2026 VELOCITY CUP <span>•</span> {t("app.footer")}
       </footer>
     </div>
   );
