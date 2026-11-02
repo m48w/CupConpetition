@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { PageTitle } from "../components/ui/PageTitle";
-import { MatchStateBanner, ResetButton, ScheduleCheck } from "../features/admin";
+import {
+  AnnouncementsPanel,
+  MatchStateBanner,
+  ResetButton,
+  ScheduleCheck,
+} from "../features/admin";
 import { SIGN_OUT_FAILED } from "../features/auth";
 import {
   isOnPitch,
@@ -91,6 +96,7 @@ export function AdminSetup({
           onDeleteTeam={setup.deleteTeam}
         />
       )}
+      {setup && <AnnouncementsPanel disabled={offline} />}
       <div className="admin-grid">
         <section className="admin-panel">
           <label>SELECT MATCH</label>

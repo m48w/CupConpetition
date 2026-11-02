@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
 import { MatchCard, useTeams } from "../features/tournament";
+import { useMyTeam } from "../features/tournament/hooks/useMyTeam";
 import { useI18n } from "../i18n/useI18n";
 import type { Match } from "../types";
 
@@ -14,6 +15,7 @@ export function Matches({ matches }: { matches: Match[] }) {
   const [groupId, setGroupId] = useState("ALL");
   const [court, setCourt] = useState("ALL");
   const teams = useTeams();
+  const { myTeam } = useMyTeam(teams);
   const filtered = matches.filter(
     (match) =>
       (stage === "ALL" || match.stage === stage) &&
@@ -60,6 +62,16 @@ export function Matches({ matches }: { matches: Match[] }) {
             </option>
           ))}
         </select>
+        {myTeam && (
+          <button
+            className={`outline-button${teamId === myTeam.id ? " active" : ""}`}
+            type="button"
+            aria-pressed={teamId === myTeam.id}
+            onClick={() => setTeamId(teamId === myTeam.id ? "ALL" : myTeam.id)}
+          >
+            {t("myTeam.filter")}
+          </button>
+        )}
         <button
           className="outline-button"
           type="button"

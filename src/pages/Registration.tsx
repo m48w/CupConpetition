@@ -3,7 +3,9 @@ import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { EVENT_BASE_PATH, tournamentScopedUrl } from "../config";
 import { shrinkLogo } from "../utils/image";
 import { EVENT_LOGO_SRC } from "../components/ui/brand";
+import { AnnouncementBar } from "../components/ui/AnnouncementBar";
 import { LanguageSwitch } from "../components/ui/LanguageSwitch";
+import { useAnnouncements } from "../components/ui/useAnnouncements";
 import { errorKey } from "../i18n/errors";
 import type { MessageKey } from "../i18n/messages";
 import { useI18n } from "../i18n/useI18n";
@@ -57,6 +59,7 @@ interface MemberRegistration {
 
 function RegistrationLayout({ children }: { children: ReactNode }) {
   const { t } = useI18n();
+  const announcements = useAnnouncements();
   return (
     <main className="registration-shell">
       <header className="registration-header">
@@ -74,6 +77,7 @@ function RegistrationLayout({ children }: { children: ReactNode }) {
           </a>
         </div>
       </header>
+      <AnnouncementBar announcements={announcements} />
       {children}
       <footer>{t("reg.footer")}</footer>
     </main>

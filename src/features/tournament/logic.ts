@@ -97,3 +97,19 @@ export function applyMatchPatch(matches: Match[], id: string, patch: Partial<Mat
 
 /** Live 画面に残す試合。一時停止中も残し、終了したら外す。 */
 export const isOnPitch = (match: Match) => match.status === "LIVE" || match.status === "PAUSED";
+
+/**
+ * マイチームの「次の試合」。試合中（一時停止を含む）ならその試合、
+ * なければ開始予定が一番早い未開始の試合。無ければ undefined。
+ */
+export function nextMatchFor(teamId: string, matches: Match[]): Match | undefined {
+  const mine = matches.filter(
+    (match) => match.homeTeamId === teamId || match.awayTeamId === teamId,
+  );
+  return (
+    mine.find(isOnPitch) ??
+    mine
+      .filter((match) => match.status === "SCHEDULED")
+      .sort((a, b) => Date.parse(a.scheduledStart) - Date.parse(b.scheduledStart))[0]
+  );
+}

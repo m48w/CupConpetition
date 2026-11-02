@@ -990,3 +990,80 @@ test("GET /api/registration/status は登録数と締め切りを返す", async 
     memberDeadline: "2026-12-12T23:59:59+09:00",
   });
 });
+
+test("お知らせ: Super Admin だけが作成・変更・削除でき、state で配信される", async () => {
+  const body = { bodyEn: "Kick-off is 30 minutes late.", bodyMy: "", level: "warning" };
+  expect((await call("/api/admin/announcements", json("POST", body))).status).toBe(401);
+  expect((await call("/api/admin/announcements", json("POST", body, court1))).status).toBe(403);
+
+  const created = await call("/api/admin/announcements", json("POST", body, superadmin));
+  expect(created.status).toBe(201);
+  const state = (await created.json()) as TournamentState;
+  const announcement = state.announcements?.find((item) => item.bodyEn === body.bodyEn);
+  expect(announcement).toMatchObject({ level: "warning", active: true, bodyMy: "" });
+
+  const publicList = (await (await call("/api/announcements")).json()) as {
+    announcements: { id: string }[];
+  };
+  expect(publicList.announcements.map((item) => item.id)).toContain(announcement!.id);
+
+  const hidden = await call(
+    `/api/admin/announcements/${announcement!.id}`,
+    json("PATCH", { active: false }, superadmin),
+  );
+  expect(hidden.status).toBe(200);
+  expect(
+    ((await hidden.json()) as TournamentState).announcements?.some(
+      (item) => item.id === announcement!.id,
+    ),
+  ).toBe(false);
+  const all = (await (
+    await call("/api/admin/announcements", { headers: { cookie: superadmin } })
+  ).json()) as { announcements: { id: string; active: boolean }[] };
+  expect(all.announcements.find((item) => item.id === announcement!.id)?.active).toBe(false);
+
+  const removed = await call(
+    `/api/admin/announcements/${announcement!.id}`,
+    json("DELETE", {}, superadmin),
+  );
+  expect(removed.status).toBe(200);
+  const missing = await call(
+    `/api/admin/announcements/${announcement!.id}`,
+    json("DELETE", {}, superadmin),
+  );
+  expect(missing.status).toBe(404);
+});
+
+test("お知らせ: 英語の本文は必須、300文字まで", async () => {
+  for (const body of [
+    { bodyEn: "" },
+    { bodyEn: "x".repeat(301) },
+    { bodyEn: "ok", level: "red" },
+  ]) {
+    const response = await call("/api/admin/announcements", json("POST", body, superadmin));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ code: "INVALID_ANNOUNCEMENT" });
+  }
+});
+
+test("お知らせ: 公開するのは表示中の新しい3件まで", async () => {
+  for (let index = 0; index < 4; index += 1) {
+    await call("/api/admin/announcements", json("POST", { bodyEn: `Notice ${index}` }, superadmin));
+  }
+  const state = await readState();
+  expect(state.announcements?.length).toBeLessThanOrEqual(3);
+});
+
+test("登録データのCSVは Super Admin だけがダウンロードでき、BOM付き", async () => {
+  expect((await call("/api/admin/registrations.csv")).status).toBe(401);
+  expect((await call("/api/admin/registrations.csv", { headers: { cookie: court1 } })).status).toBe(
+    403,
+  );
+  const response = await call("/api/admin/registrations.csv", { headers: { cookie: superadmin } });
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toBe("text/csv; charset=utf-8");
+  expect(response.headers.get("content-disposition")).toContain("attachment");
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+  expect(new TextDecoder().decode(bytes)).toContain("Club,Team,Representative,Email,Phone");
+});

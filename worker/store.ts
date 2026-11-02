@@ -1,6 +1,13 @@
 import { teams } from "../src/features/tournament/data";
 import { buildTournamentSchedule, GROUP_IDS } from "../src/features/tournament/schedule";
-import type { Match, MatchStatus, Team, TournamentState } from "../src/types";
+import type {
+  Announcement,
+  AnnouncementLevel,
+  Match,
+  MatchStatus,
+  Team,
+  TournamentState,
+} from "../src/types";
 
 const MATCH_STATUSES: readonly MatchStatus[] = ["SCHEDULED", "LIVE", "PAUSED", "FINISHED"];
 
@@ -34,7 +41,21 @@ export type StoreErrorCode =
   | "INVALID_TEAM"
   | "DUPLICATE_TEAM"
   | "UNKNOWN_TEAM"
-  | "TEAM_IN_USE";
+  | "TEAM_IN_USE"
+  | "INVALID_ANNOUNCEMENT"
+  | "UNKNOWN_ANNOUNCEMENT";
+
+/** 公開するお知らせの最大件数。 */
+export const MAX_PUBLIC_ANNOUNCEMENTS = 3;
+const MAX_ANNOUNCEMENT_LENGTH = 300;
+const ANNOUNCEMENT_LEVELS: readonly AnnouncementLevel[] = ["info", "warning"];
+
+export interface AnnouncementInput {
+  bodyEn?: unknown;
+  bodyMy?: unknown;
+  level?: unknown;
+  active?: unknown;
+}
 
 export class StoreError extends Error {
   constructor(
@@ -58,6 +79,11 @@ export interface Store {
   deleteTeam(id: string, sampleData?: boolean): TournamentState;
   initialize(sampleData?: boolean): TournamentState;
   generateSchedule(sampleData?: boolean): TournamentState;
+  /** 非表示も含めた全部のお知らせ（管理画面用）。 */
+  listAnnouncements(): Announcement[];
+  createAnnouncement(input: AnnouncementInput, sampleData?: boolean): TournamentState;
+  updateAnnouncement(id: string, input: AnnouncementInput, sampleData?: boolean): TournamentState;
+  deleteAnnouncement(id: string, sampleData?: boolean): TournamentState;
 }
 
 const SCHEMA = [
@@ -93,7 +119,74 @@ const SCHEMA = [
      id TEXT NOT NULL UNIQUE,
      data TEXT NOT NULL
    )`,
+  `CREATE TABLE IF NOT EXISTS announcements (
+     id TEXT PRIMARY KEY,
+     body_en TEXT NOT NULL,
+     body_my TEXT NOT NULL DEFAULT '',
+     level TEXT NOT NULL CHECK (level IN ('info', 'warning')),
+     active INTEGER NOT NULL DEFAULT 1,
+     created_at TEXT NOT NULL,
+     updated_at TEXT NOT NULL
+   )`,
 ];
+
+type AnnouncementRow = {
+  id: string;
+  body_en: string;
+  body_my: string;
+  level: AnnouncementLevel;
+  active: number;
+  created_at: string;
+  updated_at: string;
+};
+
+const toAnnouncement = (row: AnnouncementRow): Announcement => ({
+  id: row.id,
+  bodyEn: row.body_en,
+  bodyMy: row.body_my,
+  level: row.level,
+  active: row.active === 1,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+/** お知らせの入力を確かめる。`partial` なら送られた項目だけ確かめる（PATCH 用）。 */
+function validateAnnouncement(input: AnnouncementInput, partial: boolean) {
+  const invalid = (message: string) => new StoreError(message, "INVALID_ANNOUNCEMENT");
+  const result: { bodyEn?: string; bodyMy?: string; level?: AnnouncementLevel; active?: boolean } =
+    {};
+  if (!partial || input.bodyEn !== undefined) {
+    const bodyEn = typeof input.bodyEn === "string" ? input.bodyEn.trim() : "";
+    if (!bodyEn || bodyEn.length > MAX_ANNOUNCEMENT_LENGTH) {
+      throw invalid(`the English text is required (1–${MAX_ANNOUNCEMENT_LENGTH} characters)`);
+    }
+    result.bodyEn = bodyEn;
+  }
+  if (!partial || input.bodyMy !== undefined) {
+    if (input.bodyMy !== undefined && typeof input.bodyMy !== "string") {
+      throw invalid("the Myanmar text must be text");
+    }
+    const bodyMy = typeof input.bodyMy === "string" ? input.bodyMy.trim() : "";
+    if (bodyMy.length > MAX_ANNOUNCEMENT_LENGTH) {
+      throw invalid(`the Myanmar text must be ${MAX_ANNOUNCEMENT_LENGTH} characters or fewer`);
+    }
+    result.bodyMy = bodyMy;
+  }
+  if (!partial || input.level !== undefined) {
+    const level = input.level ?? "info";
+    if (!ANNOUNCEMENT_LEVELS.includes(level as AnnouncementLevel)) {
+      throw invalid("level must be info or warning");
+    }
+    result.level = level as AnnouncementLevel;
+  }
+  if (input.active !== undefined) {
+    if (typeof input.active !== "boolean") throw invalid("active must be true or false");
+    result.active = input.active;
+  } else if (!partial) {
+    result.active = true;
+  }
+  return result;
+}
 
 const SCHEDULE_DATE_MIGRATION = "schedule-date-2026-12-20";
 const SCHEDULE_DATE_SHIFT_MS = 85 * 24 * 60 * 60 * 1_000;
@@ -240,6 +333,17 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
     return snapshot();
   };
 
+  const readAnnouncements = (activeOnly: boolean) =>
+    sql
+      .exec<AnnouncementRow>(
+        `SELECT id, body_en, body_my, level, active, created_at, updated_at
+         FROM announcements ${activeOnly ? "WHERE active = 1" : ""}
+         ORDER BY created_at DESC, id DESC
+         ${activeOnly ? `LIMIT ${MAX_PUBLIC_ANNOUNCEMENTS}` : ""}`,
+      )
+      .toArray()
+      .map(toAnnouncement);
+
   const snapshot = (): TournamentState => {
     const meta = readMeta();
     return {
@@ -247,6 +351,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       updatedAt: meta.updated_at,
       teams: readTeams(),
       matches: readMatches(),
+      announcements: readAnnouncements(true),
     };
   };
 
@@ -419,6 +524,68 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         );
       }
       return writeAll(buildTournamentSchedule(currentTeams), sampleData);
+    },
+
+    listAnnouncements() {
+      return readAnnouncements(false);
+    },
+
+    createAnnouncement(input, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const value = validateAnnouncement(input, false);
+      const now = new Date().toISOString();
+      storage.transactionSync(() => {
+        sql.exec(
+          `INSERT INTO announcements (id, body_en, body_my, level, active, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          crypto.randomUUID(),
+          value.bodyEn!,
+          value.bodyMy ?? "",
+          value.level ?? "info",
+          value.active === false ? 0 : 1,
+          now,
+          now,
+        );
+        bumpVersion();
+      });
+      return snapshot();
+    },
+
+    updateAnnouncement(id, input, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const row = sql
+        .exec<AnnouncementRow>("SELECT * FROM announcements WHERE id = ?", id)
+        .toArray()[0];
+      if (!row) throw new StoreError(`unknown announcement: ${id}`, "UNKNOWN_ANNOUNCEMENT");
+      const value = validateAnnouncement(input, true);
+      storage.transactionSync(() => {
+        sql.exec(
+          `UPDATE announcements
+           SET body_en = ?, body_my = ?, level = ?, active = ?, updated_at = ?
+           WHERE id = ?`,
+          value.bodyEn ?? row.body_en,
+          value.bodyMy ?? row.body_my,
+          value.level ?? row.level,
+          value.active === undefined ? row.active : value.active ? 1 : 0,
+          new Date().toISOString(),
+          id,
+        );
+        bumpVersion();
+      });
+      return snapshot();
+    },
+
+    deleteAnnouncement(id, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const exists = sql
+        .exec<{ id: string }>("SELECT id FROM announcements WHERE id = ?", id)
+        .toArray()[0];
+      if (!exists) throw new StoreError(`unknown announcement: ${id}`, "UNKNOWN_ANNOUNCEMENT");
+      storage.transactionSync(() => {
+        sql.exec("DELETE FROM announcements WHERE id = ?", id);
+        bumpVersion();
+      });
+      return snapshot();
     },
   };
 }

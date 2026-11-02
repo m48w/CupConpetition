@@ -21,6 +21,7 @@ import { SuperAdmin } from "./pages/SuperAdmin";
 import { TeamDetail, Teams } from "./pages/Teams";
 import { getTournamentId, REGISTRATION_BASE_PATH } from "./config";
 import { EVENT_LOGO_SRC } from "./components/ui/brand";
+import { AnnouncementBar } from "./components/ui/AnnouncementBar";
 import { LanguageSwitch } from "./components/ui/LanguageSwitch";
 import type { MessageKey } from "./i18n/messages";
 import { useI18n } from "./i18n/useI18n";
@@ -75,6 +76,7 @@ function App() {
   const {
     matches,
     teams,
+    announcements,
     connection,
     error,
     patchMatch,
@@ -182,6 +184,7 @@ function App() {
         </aside>
         <TeamsProvider teams={teams}>
           <main className="main-content">
+            <AnnouncementBar announcements={announcements} />
             <Routes>
               <Route path="/" element={<Overview matches={matches} />} />
               <Route path="/info" element={<Info />} />

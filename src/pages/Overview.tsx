@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { isOnPitch, MatchCard, TeamBadge, useTeams } from "../features/tournament";
 import { useI18n } from "../i18n/useI18n";
+import { MyTeamCard } from "../features/tournament/components/MyTeamCard";
+import { useMyTeam } from "../features/tournament/hooks/useMyTeam";
 import { RegistrationStatusNote } from "../features/registration/RegistrationStatusNote";
 import { useRegistrationStatus } from "../features/registration/useRegistrationStatus";
 import type { Match } from "../types";
@@ -31,6 +33,7 @@ export function Overview({ matches }: { matches: Match[] }) {
   const teams = useTeams();
   const live = matches.filter(isOnPitch);
   const registrationStatus = useRegistrationStatus();
+  const { myTeam, chooseMyTeam } = useMyTeam(teams);
   const [now, setNow] = useState(() => Date.now());
   const countdown = getCountdown(now);
 
@@ -61,6 +64,7 @@ export function Overview({ matches }: { matches: Match[] }) {
           </div>
         </section>
       )}
+      <MyTeamCard teams={teams} matches={matches} myTeam={myTeam} onChoose={chooseMyTeam} />
       <section className="overview-countdown">
         <div className="eyebrow">{t("home.countdown.eyebrow")}</div>
         <h1>{t("home.countdown.title")}</h1>

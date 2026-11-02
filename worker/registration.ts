@@ -38,11 +38,19 @@ export interface RegisteredMember {
   createdAt: string;
 }
 
+/** 管理画面用のチーム（連絡先と選手を含む）。 */
+export interface AdminRegistrationTeam extends RegistrationTeamSummary {
+  representativeName: string;
+  email: string;
+  phone: string;
+  members: AdminRegisteredMember[];
+}
+
 export interface ClubRegistrationSummary {
   id: string;
   name: string;
   logoId: string | null;
-  teams: RegistrationTeamSummary[];
+  teams: AdminRegistrationTeam[];
 }
 
 export interface PublicRegistrationTeam {

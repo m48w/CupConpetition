@@ -163,7 +163,17 @@ export function AdminRegistrations({ session }: { session: SessionInfo }) {
           <div className="eyebrow">TOURNAMENT ADMIN</div>
           <h1>Team registrations</h1>
         </div>
-        <span className="muted">{registrations?.clubs.length ?? 0} clubs</span>
+        <div className="console-account">
+          <span className="muted">{registrations?.clubs.length ?? 0} clubs</span>
+          {/* Cookie で認証されるので、普通のリンクでダウンロードできる。 */}
+          <a
+            className="outline-button"
+            href={tournamentScopedUrl("/api/admin/registrations.csv")}
+            download
+          >
+            Download CSV
+          </a>
+        </div>
       </div>
       <p className="muted">
         Member registration deadline: 12 December 2026 · 23:59 JST

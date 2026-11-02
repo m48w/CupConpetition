@@ -11,6 +11,7 @@ export {
   applyMatchPatch,
   calculateStandings,
   isOnPitch,
+  nextMatchFor,
   seedKnockoutTeams,
   stageLabel,
   type Standing,

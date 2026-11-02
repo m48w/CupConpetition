@@ -242,6 +242,32 @@ export const messages = {
   },
   "status.remaining": { en: "{count} places left", my: "နေရာ {count} ခု ကျန်သည်" },
 
+  // ===== お知らせ =====
+  "announce.close": { en: "Close this notice", my: "ဤကြေညာချက်ကို ပိတ်ရန်" },
+  "announce.label": { en: "Notice", my: "ကြေညာချက်" },
+
+  // ===== マイチーム =====
+  "myTeam.eyebrow": { en: "MY TEAM", my: "ကျွန်ုပ်၏ အသင်း" },
+  "myTeam.choose": { en: "Choose my team", my: "ကျွန်ုပ်၏ အသင်းကို ရွေးရန်" },
+  "myTeam.change": { en: "Change", my: "ပြောင်းရန်" },
+  "myTeam.clear": { en: "Remove my team", my: "ကျွန်ုပ်၏ အသင်းကို ဖယ်ရှားရန်" },
+  "myTeam.hint": {
+    en: "Choose your team to see its next match, court and group position here.",
+    my: "သင့်အသင်းကို ရွေးပါက နောက်ပွဲ၊ ကွင်းနှင့် အုပ်စုအဆင့်ကို ဤနေရာတွင် ပြသပါမည်။",
+  },
+  "myTeam.pickerTitle": { en: "Choose your team", my: "သင့်အသင်းကို ရွေးပါ" },
+  "myTeam.next": { en: "Next match", my: "နောက်ပွဲ" },
+  "myTeam.now": { en: "Playing now", my: "ယခု ကစားနေသည်" },
+  "myTeam.noNext": { en: "No more matches scheduled.", my: "စီစဉ်ထားသော ပွဲ မရှိတော့ပါ။" },
+  "myTeam.vs": { en: "vs {team}", my: "{team} နှင့်" },
+  "myTeam.when": { en: "{time} · Court {court}", my: "{time} · ကွင်း {court}" },
+  "myTeam.position": {
+    en: "Group {group} · Position {position} of {total}",
+    my: "အုပ်စု {group} · {total} သင်းအနက် အဆင့် {position}",
+  },
+  "myTeam.points": { en: "{points} points", my: "{points} မှတ်" },
+  "myTeam.filter": { en: "My team only", my: "ကျွန်ုပ်၏ အသင်းသာ" },
+
   // ===== 404 =====
   "notFound.title": { en: "Page not found", my: "စာမျက်နှာ မတွေ့ပါ" },
 

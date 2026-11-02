@@ -3,7 +3,7 @@ import * as client from "../api/client";
 import { parseServerMessage, reconnectDelay, socketUrl } from "../api/socket";
 import { shouldApply } from "../api/version";
 import { applyMatchPatch } from "../logic";
-import type { Match, Team, TournamentState } from "../../../types";
+import type { Announcement, Match, Team, TournamentState } from "../../../types";
 import { ApiError } from "../../../utils/http";
 import { getTournamentId } from "../../../config";
 
@@ -26,6 +26,7 @@ function dropLegacyStorage(): void {
 export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => void } = {}) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [error, setError] = useState<string | null>(null);
   const versionRef = useRef(0);
@@ -37,6 +38,7 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
     versionRef.current = state.version;
     setMatches(state.matches);
     setTeams(state.teams);
+    setAnnouncements(state.announcements ?? []);
   }, []);
 
   /** A mutating call's response, which may land after a newer SSE push. */
@@ -130,6 +132,7 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
   return {
     matches,
     teams,
+    announcements,
     connection,
     error,
     /** Drops the error banner, e.g. after signing back in makes it stale. */

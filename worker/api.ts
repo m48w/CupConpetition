@@ -1,5 +1,6 @@
 import type { Match, TournamentState } from "../src/types";
 import type { Identity } from "./auth";
+import { registrationRows, toCsv } from "./csv";
 import { jsonResponse } from "./http";
 import {
   clearRegistrationAccessCookie,
@@ -8,7 +9,7 @@ import {
   RegistrationError,
   type RegistrationStore,
 } from "./registration";
-import { StoreError, type Store } from "./store";
+import { StoreError, type AnnouncementInput, type Store } from "./store";
 
 /** JSON リクエストボディが壊れている場合に投げる。400 にマップされる。 */
 class BadRequestError extends Error {}
@@ -144,6 +145,20 @@ export async function handleApi(
       }
       const member = await registrations.addMember(body.teamId, body, token, Date.now());
       return jsonResponse(201, { member });
+    }
+
+    if (path === "/api/admin/registrations.csv" && request.method === "GET") {
+      superadminOnly(identity);
+      const teams = registrations.listClubs(Date.now()).clubs.flatMap((club) => club.teams);
+      const tournamentId = request.headers.get("x-tournament-id") ?? "20261220";
+      return new Response(toCsv(registrationRows(teams)), {
+        status: 200,
+        headers: {
+          "content-type": "text/csv; charset=utf-8",
+          "content-disposition": `attachment; filename="velocity-cup-registrations-${tournamentId}.csv"`,
+          "cache-control": "no-store",
+        },
+      });
     }
 
     if (path === "/api/admin/registrations" && request.method === "GET") {
@@ -307,6 +322,30 @@ export async function handleApi(
       return mutated(store.generateSchedule(sampleData));
     }
 
+    if (path === "/api/announcements" && request.method === "GET") {
+      return jsonResponse(200, { announcements: store.read(sampleData).announcements ?? [] });
+    }
+
+    if (path === "/api/admin/announcements" && request.method === "GET") {
+      superadminOnly(identity);
+      return jsonResponse(200, { announcements: store.listAnnouncements() });
+    }
+
+    if (path === "/api/admin/announcements" && request.method === "POST") {
+      superadminOnly(identity);
+      const body = (await readJsonBody(request)) as AnnouncementInput;
+      return mutated(store.createAnnouncement(body, sampleData), 201);
+    }
+
+    const announcementTarget = path.match(/^\/api\/admin\/announcements\/([^/]+)$/);
+    if (announcementTarget && (request.method === "PATCH" || request.method === "DELETE")) {
+      superadminOnly(identity);
+      const id = decodeURIComponent(announcementTarget[1]);
+      if (request.method === "DELETE") return mutated(store.deleteAnnouncement(id, sampleData));
+      const body = (await readJsonBody(request)) as AnnouncementInput;
+      return mutated(store.updateAnnouncement(id, body, sampleData));
+    }
+
     if (path === "/api/state" && request.method === "GET") {
       return jsonResponse(200, store.read(sampleData));
     }
@@ -341,7 +380,9 @@ export async function handleApi(
     }
     if (error instanceof StoreError) {
       const status =
-        error.code === "UNKNOWN_MATCH" || error.code === "UNKNOWN_TEAM"
+        error.code === "UNKNOWN_MATCH" ||
+        error.code === "UNKNOWN_TEAM" ||
+        error.code === "UNKNOWN_ANNOUNCEMENT"
           ? 404
           : error.code === "DUPLICATE_TEAM" || error.code === "TEAM_IN_USE"
             ? 409

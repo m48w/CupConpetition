@@ -29,11 +29,26 @@ export interface Match {
   sourceMatchIds?: string[];
 }
 
+export type AnnouncementLevel = "info" | "warning";
+
+/** 管理者が出すお知らせ。英語は必須、ミャンマー語は無ければ英語を表示する。 */
+export interface Announcement {
+  id: string;
+  bodyEn: string;
+  bodyMy: string;
+  level: AnnouncementLevel;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TournamentState {
   version: number;
   updatedAt: string;
   teams: Team[];
   matches: Match[];
+  /** 表示中のお知らせ（新しい順、最大3件）。古いサーバーからは来ないことがある。 */
+  announcements?: Announcement[];
 }
 
 /** WebSocket でサーバーが送るメッセージ。 */

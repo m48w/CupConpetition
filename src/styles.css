@@ -2310,3 +2310,132 @@ footer span {
     margin-bottom: 10px;
   }
 }
+
+/* ===== 段階4: お知らせ・マイチーム ===== */
+.announcement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.announcement {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(96, 165, 250, 0.45);
+  background: rgba(30, 58, 95, 0.55);
+  color: #e6efff;
+}
+.announcement p {
+  margin: 0;
+  flex: 1;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+.announcement-warning {
+  border-color: rgba(245, 179, 1, 0.7);
+  background: rgba(92, 64, 0, 0.55);
+  color: #fff3cd;
+}
+.announcement button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: 22px;
+  line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -10px -10px -10px 0;
+  cursor: pointer;
+}
+.registration-shell .announcement-list {
+  margin: 16px 0 0;
+}
+.my-team {
+  border-color: rgba(249, 115, 22, 0.4);
+}
+.my-team h2 {
+  margin: 4px 0;
+}
+.my-team-select {
+  min-height: 44px;
+  max-width: 100%;
+  background: #111d2d;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #edf4ff;
+  padding: 0 10px;
+}
+.my-team-next {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.my-team-next > strong {
+  color: var(--orange);
+}
+.filter-bar .outline-button.active {
+  border-color: var(--orange);
+  color: #fed7aa;
+}
+.announcements-panel {
+  margin-bottom: 18px;
+}
+.announcement-form {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+.announcement-form textarea,
+.announcement-form select {
+  background: #111d2d;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #edf4ff;
+  padding: 10px;
+  font: inherit;
+}
+.announcement-admin-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.announcement-admin-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #1c2940;
+}
+.announcement-admin-list li.inactive {
+  opacity: 0.6;
+}
+.announcement-admin-list p {
+  margin: 4px 0 0;
+}
+.announcement-admin-actions {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+@media (max-width: 560px) {
+  .my-team .section-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+.announcement-form .login-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.announcement-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
