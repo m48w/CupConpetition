@@ -1,4 +1,5 @@
 import { PageTitle } from "../components/ui/PageTitle";
+import { Empty } from "../components/ui/Empty";
 import { bracketRounds, TeamBadge, type BracketGame, useTeams } from "../features/tournament";
 import type { Match } from "../types";
 import { formatTime } from "../utils/format";
@@ -37,13 +38,17 @@ function BracketCard({ game }: { game: BracketGame }) {
 
 export function Bracket({ matches }: { matches: Match[] }) {
   const teams = useTeams();
+  const groupMatches = matches.filter((match) => match.stage === "GROUP");
+  const groupStageFinished =
+    groupMatches.length > 0 && groupMatches.every((match) => match.status === "FINISHED");
   return (
     <>
-      <PageTitle eyebrow="WORLD CUP KNOCKOUT" title="Velocity Cup 2026">
+      <PageTitle eyebrow="KNOCKOUT STAGE" title="Road to the final">
         <span className="bracket-note">
-          {matches.length === 0 ? "15 slots · Schedule pending" : "15 matches · One champion"}
+          {matches.length === 0 ? "15 matches · Schedule coming soon" : "15 matches · One champion"}
         </span>
       </PageTitle>
+      {!groupStageFinished && <Empty text="Knockout teams are decided after the group stage." />}
       <div className="tournament-banner">
         <span>VELOCITY CUP 2026</span>
         <b>ROAD TO THE FINAL</b>

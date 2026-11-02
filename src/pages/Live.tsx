@@ -32,11 +32,12 @@ export function Live({ matches }: { matches: Match[] }) {
           {live.map((match) => (
             <MatchCard match={match} key={match.id} />
           ))}
-          {!live.length && <Empty text="No matches are live right now" />}
+          {!live.length && <Empty text="No matches are being played right now." />}
         </section>
         <aside className="next-panel">
           <div className="eyebrow">NEXT MATCHES · ONE PER COURT</div>
           <h3>Coming up</h3>
+          {!nextByCourt.length && <p className="muted">The next matches will appear here.</p>}
           {nextByCourt.map((match) => (
             <div className="next-row" key={match.id}>
               <strong>Court {match.court}</strong>

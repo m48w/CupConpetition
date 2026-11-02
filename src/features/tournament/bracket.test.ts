@@ -33,17 +33,20 @@ test("対戦相手が未定の間は、R16 はシード、以降は勝者の枠�
   const [r16, qf, sf, final] = bracketRounds(initialMatches);
   expect([r16.games[0].home, r16.games[0].away]).toEqual(["A1", "H2"]);
   expect([r16.games[7].home, r16.games[7].away]).toEqual(["E1", "D2"]);
-  expect([qf.games[0].home, qf.games[0].away]).toEqual(["Winner M1", "Winner M2"]);
-  expect([sf.games[1].home, sf.games[1].away]).toEqual(["Winner QF3", "Winner QF4"]);
-  expect([final.games[0].home, final.games[0].away]).toEqual(["Winner SF1", "Winner SF2"]);
+  expect([qf.games[0].home, qf.games[0].away]).toEqual(["Winner R16-1", "Winner R16-2"]);
+  expect([sf.games[1].home, sf.games[1].away]).toEqual(["Winner QF-3", "Winner QF-4"]);
+  expect([final.games[0].home, final.games[0].away]).toEqual(["Winner SF-1", "Winner SF-2"]);
 });
 
 test("本番の試合データが空でも、全ラウンドのプレースホルダーを返す", () => {
   const rounds = bracketRounds([]);
   expect(rounds.map((round) => round.games.length)).toEqual([8, 4, 2, 1]);
   expect([rounds[0].games[0].home, rounds[0].games[0].away]).toEqual(["A1", "H2"]);
-  expect([rounds[1].games[0].home, rounds[1].games[0].away]).toEqual(["Winner M1", "Winner M2"]);
-  expect(rounds[3].games[0].home).toBe("Winner SF1");
+  expect([rounds[1].games[0].home, rounds[1].games[0].away]).toEqual([
+    "Winner R16-1",
+    "Winner R16-2",
+  ]);
+  expect(rounds[3].games[0].home).toBe("Winner SF-1");
 });
 
 test("未開始の試合はスコアを出さず、始まった試合はチーム名とスコアを出す", () => {

@@ -2018,3 +2018,107 @@ footer span {
   font-size: 14px;
   text-align: center;
 }
+
+/* ===== 2026-11 サイト改善（段階1） ===== */
+
+/* ヘッダー: スマホでもタイトルとボタンが重ならない */
+.brand {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-links .admin-toggle {
+  min-height: 44px;
+  white-space: nowrap;
+  justify-content: center;
+}
+@media (max-width: 560px) {
+  .brand {
+    justify-self: start;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+  .admin-links .admin-toggle {
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+
+/* 下メニュー: 5つにしたので文字を大きく */
+@media (max-width: 900px) {
+  .bottom-nav {
+    overflow-x: visible;
+  }
+  .bottom-nav a {
+    font-size: 11px;
+  }
+}
+
+/* 順位表（Groups） */
+.standings-link {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+.standings-link:hover .standings-table {
+  border-color: #33486b;
+}
+.standings-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) repeat(6, 52px);
+  gap: 6px;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid #1c2940;
+  font-size: 13px;
+}
+.standings-row > span:not(.team-badge),
+.standings-row > strong {
+  text-align: right;
+}
+.standings-row .team-badge {
+  min-width: 0;
+  font-size: 13px;
+}
+.standings-head {
+  color: #8a99b3;
+  font-size: 11px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+.standings-head > span:nth-child(2) {
+  text-align: left !important;
+}
+@media (max-width: 1200px) {
+  .standings-row {
+    grid-template-columns: 24px minmax(0, 1fr) repeat(3, 64px);
+  }
+  .standings-wide {
+    display: none;
+  }
+}
+
+/* Home: 試合中の試合 */
+.live-now {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+/* Admin ログイン: 入力欄の見出し */
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #cad3e1;
+}
+
+/* 小さすぎる文字を読みやすく */
+.eyebrow,
+.table-title span,
+.empty-state {
+  font-size: 12px;
+}
+.section-heading .outline-button,
+.page-title .outline-button {
+  white-space: nowrap;
+}

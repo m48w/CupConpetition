@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { TeamBadge, useTeams } from "../features/tournament";
+import { Link } from "react-router-dom";
+import { isOnPitch, MatchCard, TeamBadge, useTeams } from "../features/tournament";
+import type { Match } from "../types";
 
 const EVENT_DATE = new Date("2026-12-19T15:00:00.000Z");
 
@@ -14,8 +16,9 @@ function getCountdown(now: number) {
   };
 }
 
-export function Overview() {
+export function Overview({ matches }: { matches: Match[] }) {
   const teams = useTeams();
+  const live = matches.filter(isOnPitch);
   const [now, setNow] = useState(() => Date.now());
   const countdown = getCountdown(now);
 
@@ -26,6 +29,26 @@ export function Overview() {
 
   return (
     <>
+      {live.length > 0 && (
+        <section className="overview-section live-now">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">
+                <i className="live-dot" /> LIVE NOW
+              </div>
+              <h2>Matches on the pitch</h2>
+            </div>
+            <Link className="outline-button" to="/live">
+              All live matches
+            </Link>
+          </div>
+          <div className="list-grid">
+            {live.map((match) => (
+              <MatchCard match={match} key={match.id} />
+            ))}
+          </div>
+        </section>
+      )}
       <section className="overview-countdown">
         <div className="eyebrow">NEXT MATCH DAY</div>
         <h1>Countdown to kick-off</h1>
@@ -57,8 +80,13 @@ export function Overview() {
             <div className="eyebrow">THE CLUBS</div>
             <h2>Participating teams</h2>
           </div>
-          <span className="muted">{teams.length} teams</span>
+          <Link className="outline-button" to="/teams">
+            View all teams
+          </Link>
         </div>
+        {teams.length === 0 && (
+          <p className="muted">Teams will appear here after the groups are decided.</p>
+        )}
         <div className="team-logo-strip" aria-label="Participating teams">
           {teams.map((team) => (
             <div className="team-logo-tile" key={team.id}>

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
-import { tournamentScopedUrl } from "../config";
+import { EVENT_BASE_PATH, tournamentScopedUrl } from "../config";
+import { shrinkLogo } from "../utils/image";
+import { EVENT_LOGO_SRC } from "../components/ui/brand";
 import { ApiError, requestJson } from "../utils/http";
 
 const TEAM_KEY = "velocity-registration-team";
@@ -49,14 +51,14 @@ function RegistrationLayout({ children }: { children: ReactNode }) {
     <main className="registration-shell">
       <header className="registration-header">
         <div className="registration-header-left">
-          <img src="/velocity-fc-logo.png" alt="Velocity FC" />
+          <img src={EVENT_LOGO_SRC} alt="Velocity FC" width="48" height="48" />
           <div>
             <strong>VELOCITY CUP 2026</strong>
             <span>TEAM REGISTRATION</span>
           </div>
         </div>
-        <a href="/" className="admin-toggle registration-back-btn">
-          ← 大会アプリに戻る
+        <a href={`${EVENT_BASE_PATH}/`} className="admin-toggle registration-back-btn">
+          ← Back to tournament
         </a>
       </header>
       {children}
@@ -89,15 +91,6 @@ function RegistrationForm() {
     setLogoPreview(logoPreviewUrl.current);
   }
 
-  async function fileAsBase64(file: File) {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    let binary = "";
-    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-      binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
-    }
-    return btoa(binary);
-  }
-
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -123,8 +116,9 @@ function RegistrationForm() {
         throw new Error("Choose a PNG, JPEG, or WebP logo.");
       }
       if (logo.size > 1_000_000) throw new Error("Logo file must be 1 MB or smaller.");
-      body.logoContentType = logo.type;
-      body.logoDataBase64 = await fileAsBase64(logo);
+      const shrunk = await shrinkLogo(logo);
+      body.logoContentType = shrunk.contentType;
+      body.logoDataBase64 = shrunk.dataBase64;
       const result = await requestJson<{
         registration?: TeamSummary;
         registrations?: TeamSummary[];

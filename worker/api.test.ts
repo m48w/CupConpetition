@@ -4,7 +4,7 @@ import { beforeAll, beforeEach, expect, test } from "vitest";
 import type { Match, ServerMessage, TournamentState } from "../src/types";
 import worker from "./index";
 import { RegistrationStore } from "./registration";
-import { decryptRoute } from "./route-token";
+import { encryptRoute } from "./route-token";
 
 const BASE = "http://localhost";
 const ROUTE_SECRET = "test-route-secret";
@@ -73,29 +73,22 @@ beforeEach(async () => {
   expect((await reset()).status).toBe(200);
 });
 
-test("サイトルートは暗号URLへ転送し、復号後に参加者トップを表示する", async () => {
-  let assetPath = "";
-  const env = {
+test("サイトルートは大会トップへ転送する（暗号化URLは作らない）", async () => {
+  const response = await worker.fetch(new Request(`${BASE}/`), {
     SESSION_SECRET: ROUTE_SECRET,
-    ASSETS: {
-      fetch: async (request: Request) => {
-        assetPath = new URL(request.url).pathname;
-        return new Response("<!doctype html><head></head><body>app</body>", {
-          headers: { "content-type": "text/html" },
-        });
-      },
-    },
-  } as Env;
-  const response = await worker.fetch(new Request(`${BASE}/`), env);
+  } as Env);
   expect(response.status).toBe(302);
-  const encryptedUrl = new URL(response.headers.get("location")!);
-  expect(encryptedUrl.pathname).toMatch(/^\/u\//);
-  const route = await decryptRoute(encryptedUrl.pathname.slice(3), ROUTE_SECRET);
-  expect(route).toBe("/");
-  const page = await worker.fetch(new Request(encryptedUrl), env);
-  expect(page.status).toBe(200);
-  expect(await page.text()).toContain('window.__APP_ROUTE__="/"');
-  expect(assetPath).toBe("/20261220/");
+  expect(response.headers.get("location")).toBe(`${BASE}/20261220/`);
+});
+
+test("以前の暗号化URLは、元の普通のURLへ301で戻す", async () => {
+  const env = { SESSION_SECRET: ROUTE_SECRET } as Env;
+  for (const route of ["/20261220/knockout", "/registration/20261220/members", "/"]) {
+    const token = await encryptRoute(route, ROUTE_SECRET);
+    const response = await worker.fetch(new Request(`${BASE}${token}`), env);
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe(`${BASE}${route === "/" ? "/20261220/" : route}`);
+  }
 });
 
 test("有効でない暗号URLは404を返す", async () => {
@@ -105,52 +98,22 @@ test("有効でない暗号URLは404を返す", async () => {
   expect(response.status).toBe(404);
 });
 
-test("正規パスを暗号化するAPIは許可された画面URLだけを受け付ける", async () => {
-  const env = { SESSION_SECRET: ROUTE_SECRET } as Env;
-  const response = await worker.fetch(
-    new Request(`${BASE}/api/route-token`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ route: "/registration/20261220/verify" }),
-    }),
-    env,
-  );
-  expect(response.status).toBe(200);
-  const { url } = (await response.json()) as { url: string };
-  expect(url).toMatch(/^\/u\//);
-  expect(await decryptRoute(url.slice(3), ROUTE_SECRET)).toBe("/registration/20261220/verify");
-  const invalid = await worker.fetch(
-    new Request(`${BASE}/api/route-token`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ route: "/api/state" }),
-    }),
-    env,
-  );
-  expect(invalid.status).toBe(400);
+test("暗号化URLを作るAPIは廃止した", async () => {
+  const response = await call("/api/route-token", json("POST", { route: "/20261220/teams" }));
+  expect(response.status).toBe(404);
 });
 
-test("大会URLは暗号化され、元のパスをWorkerだけが復号できる", async () => {
-  const response = await worker.fetch(new Request(`${BASE}/20261220/knockout`), {
-    SESSION_SECRET: ROUTE_SECRET,
-  } as Env);
-  expect(response.status).toBe(302);
-  const token = new URL(response.headers.get("location")!).pathname.slice(3);
-  expect(await decryptRoute(token, ROUTE_SECRET)).toBe("/20261220/knockout");
-});
-
-test("旧管理URLも同じ暗号URL形式へ転送する", async () => {
+test("旧管理URLは管理ログイン画面へ転送する", async () => {
   for (const pathname of ["/superadmin", "/subadmin"]) {
     const response = await worker.fetch(new Request(`${BASE}${pathname}`), {
       SESSION_SECRET: ROUTE_SECRET,
     } as Env);
-    expect(response.status).toBe(302);
-    const token = new URL(response.headers.get("location")!).pathname.slice(3);
-    expect(await decryptRoute(token, ROUTE_SECRET)).toBe(pathname);
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe(`${BASE}/20261220/admin`);
   }
 });
 
-test("登録フォームの全URLをSPAへフォールバックする", async () => {
+test("登録フォームのURLはSPAのHTMLを返す", async () => {
   let assetPath = "";
   const env = {
     SESSION_SECRET: ROUTE_SECRET,
@@ -163,12 +126,8 @@ test("登録フォームの全URLをSPAへフォールバックする", async ()
       },
     },
   } as Env;
-  const response = await worker.fetch(new Request(`${BASE}/registration/20261220/members`), env);
-  expect(response.status).toBe(302);
-  const token = new URL(response.headers.get("location")!).pathname.slice(3);
-  const page = await worker.fetch(new Request(`${BASE}/u/${token}`), env);
+  const page = await worker.fetch(new Request(`${BASE}/registration/20261220/members`), env);
   expect(page.status).toBe(200);
-  expect(await page.text()).toContain('window.__APP_ROUTE__="/registration/20261220/members"');
   expect(assetPath).toBe("/20261220/");
 });
 
@@ -880,13 +839,9 @@ test("本番では test 大会のAPIを使えない", async () => {
   expect(await response.json()).toMatchObject({ code: "INVALID_TOURNAMENT_ID" });
 });
 
-test("本番では /test のルートを暗号化URLにしない", async () => {
-  const response = await fetchAs(productionEnv(), "/api/route-token", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ route: "/test/" }),
-  });
-  expect(response.status).toBe(400);
+test("本番では /test の古い暗号化URLも404にする", async () => {
+  const token = await encryptRoute("/test/", env.SESSION_SECRET);
+  expect((await fetchAs(productionEnv(), token)).status).toBe(404);
 });
 
 test("GET /api/env は本番かテスト環境かを返す", async () => {
@@ -936,4 +891,13 @@ test("テスト環境（limitsEnabled: false）では締め切り後もメンバ
       ),
     ).toMatchObject({ name: "Tester", backNumber: 1 });
   });
+});
+
+test("APIの応答にセキュリティ用のヘッダーが付く", async () => {
+  for (const path of ["/api/session", "/api/state"]) {
+    const response = await call(path);
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+    expect(response.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
+  }
 });

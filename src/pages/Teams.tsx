@@ -42,7 +42,7 @@ export function Teams() {
     <>
       <PageTitle eyebrow="THE CLUBS" title="Participating teams">
         <span className="muted">
-          {teams.length} competition · {registeredTeams.length} registered
+          {teams.length} competing · {registeredTeams.length} registered
         </span>
       </PageTitle>
       <section className="team-directory-section">

@@ -15,21 +15,21 @@ import { MatchDetail } from "./pages/MatchDetail";
 import { Matches } from "./pages/Matches";
 import { NotFound } from "./pages/NotFound";
 import { Overview } from "./pages/Overview";
-import { Standings } from "./pages/Standings";
 import { SubAdmin } from "./pages/SubAdmin";
 import { SuperAdmin } from "./pages/SuperAdmin";
 import { TeamDetail, Teams } from "./pages/Teams";
 import { getTournamentId, REGISTRATION_BASE_PATH } from "./config";
+import { EVENT_LOGO_SRC } from "./components/ui/brand";
 import type { Match, SessionInfo } from "./types";
 
+/** `mobile: true` の5つだけをスマホの下メニューに出す。PCの左メニューには全部出す。 */
 const navItems = [
-  { to: "/", label: "Overview", icon: "⌂" },
-  { to: "/teams", label: "Teams", icon: "♟" },
-  { to: "/matches", label: "Matches", icon: "▦" },
-  { to: "/groups", label: "Groups", icon: "◫" },
-  { to: "/live", label: "Live", icon: "◉" },
-  { to: "/standings", label: "Standings", icon: "☷" },
-  { to: "/knockout", label: "Knockout", icon: "⌘" },
+  { to: "/", label: "Home", icon: "⌂", mobile: true },
+  { to: "/matches", label: "Matches", icon: "▦", mobile: true },
+  { to: "/groups", label: "Groups", icon: "☷", mobile: true },
+  { to: "/knockout", label: "Knockout", icon: "⌘", mobile: true },
+  { to: "/teams", label: "Teams", icon: "♟", mobile: true },
+  { to: "/live", label: "Live", icon: "◉", mobile: false },
 ];
 
 function AdminConsole({
@@ -119,22 +119,18 @@ function App() {
         <header className="topbar">
           <img
             className="header-logo"
-            src={`${import.meta.env.BASE_URL}velocity-fc-logo.png`}
+            src={EVENT_LOGO_SRC}
             alt="Velocity FC logo"
+            width="56"
+            height="56"
           />
           <button className="brand" onClick={() => navigate("/")}>
             VELOCITY CUP 2026
           </button>
           <div className="admin-links">
             <a href={`${REGISTRATION_BASE_PATH}/`} className="admin-toggle header-reg-btn">
-              チーム登録
+              Register
             </a>
-            <a href={`${REGISTRATION_BASE_PATH}/verify`} className="admin-toggle">
-              メンバー登録
-            </a>
-            <NavLink to="/admin" className="admin-toggle">
-              Admin <span>↗</span>
-            </NavLink>
           </div>
         </header>
       </div>
@@ -179,7 +175,7 @@ function App() {
         <TeamsProvider teams={teams}>
           <main className="main-content">
             <Routes>
-              <Route path="/" element={<Overview />} />
+              <Route path="/" element={<Overview matches={matches} />} />
               <Route path="/teams" element={<Teams />} />
               <Route path="/teams/:teamId" element={<TeamDetail matches={matches} />} />
               <Route path="/matches" element={<Matches matches={matches} />} />
@@ -187,7 +183,7 @@ function App() {
               <Route path="/groups" element={<Groups matches={matches} />} />
               <Route path="/groups/:groupId" element={<GroupDetail matches={matches} />} />
               <Route path="/live" element={<Live matches={matches} />} />
-              <Route path="/standings" element={<Standings matches={matches} />} />
+              <Route path="/standings" element={<Navigate to="/groups" replace />} />
               <Route path="/knockout" element={<Bracket matches={matches} />} />
               <Route path="/bracket" element={<Navigate to="/knockout" replace />} />
               <Route
@@ -247,17 +243,19 @@ function App() {
         </TeamsProvider>
       </div>
       <nav className="bottom-nav">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/"}
-            className={({ isActive }) => (isActive ? "active" : "")}
-          >
-            <span>{item.icon}</span>
-            {item.label}
-          </NavLink>
-        ))}
+        {navItems
+          .filter((item) => item.mobile)
+          .map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === "/"}
+              className={({ isActive }) => (isActive ? "active" : "")}
+            >
+              <span>{item.icon}</span>
+              {item.label}
+            </NavLink>
+          ))}
       </nav>
       <footer>
         © 2026 VELOCITY CUP <span>•</span> Tournament operations platform

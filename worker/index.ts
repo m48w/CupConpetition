@@ -7,9 +7,9 @@ import {
   verifySession,
   withIdentity,
 } from "./auth";
-import { jsonResponse } from "./http";
+import { jsonResponse, withSecurityHeaders } from "./http";
 import { TournamentRoom } from "./room";
-import { decryptRoute, encryptRoute, isEncryptedRoute, isPublicRoute } from "./route-token";
+import { decryptRoute, isEncryptedRoute, isPublicRoute } from "./route-token";
 
 export { TournamentRoom };
 
@@ -52,46 +52,16 @@ export default {
     // 確認用のサンプル大会は本番では公開しない。テスト環境で確認する。
     if (isProduction(env) && isTestRoute(url.pathname)) return new Response(null, { status: 404 });
     if (isEncryptedRoute(url.pathname)) {
+      // 以前の暗号化URL（/u/<token>）は、ブックマークやシェア済みのリンクのために
+      // 復号して普通のURLへ戻す。新しい暗号化URLはもう作らない。
       const route = await decryptRoute(url.pathname.slice("/u/".length), env.SESSION_SECRET);
       if (!route || !isPublicRoute(route)) return new Response(null, { status: 404 });
       if (isProduction(env) && isTestRoute(route)) return new Response(null, { status: 404 });
-      const routeUrl = new URL(route, url.origin);
-      const assetUrl = new URL(`${EVENT_BASE_PATH}/`, url.origin);
-      const shell = await env.ASSETS.fetch(new Request(assetUrl, request));
-      if (!shell.ok || !shell.headers.get("content-type")?.includes("text/html")) return shell;
-      const html = await shell.text();
-      const injectedRoute = JSON.stringify(
-        `${routeUrl.pathname}${routeUrl.search}${routeUrl.hash}`,
-      ).replace(/</g, "\\u003c");
-      const headers = new Headers(shell.headers);
-      headers.delete("content-length");
-      headers.delete("content-encoding");
-      headers.delete("etag");
-      headers.set("cache-control", "no-store");
-      return new Response(
-        html.replace("</head>", `<script>window.__APP_ROUTE__=${injectedRoute}</script></head>`),
-        {
-          status: shell.status,
-          statusText: shell.statusText,
-          headers,
-        },
-      );
-    }
-    const isAssetRequest =
-      url.pathname.startsWith("/assets/") ||
-      url.pathname.startsWith(`${EVENT_BASE_PATH}/assets/`) ||
-      /^\/[^/]+\.[^/]+$/.test(url.pathname);
-    if (!isAssetRequest && isPublicRoute(`${url.pathname}${url.search}${url.hash}`)) {
-      const encryptedPath = await encryptRoute(
-        `${url.pathname}${url.search}${url.hash}`,
-        env.SESSION_SECRET,
-      );
-      return Response.redirect(`${url.origin}${encryptedPath}`, 302);
+      const target = new URL(route === "/" ? `${EVENT_BASE_PATH}/` : route, url.origin);
+      return Response.redirect(target.toString(), 301);
     }
     if (url.pathname === "/") {
-      // Serve the participant portal shell while leaving `/` in the browser URL.
-      url.pathname = `${EVENT_BASE_PATH}/`;
-      return env.ASSETS.fetch(new Request(url, request));
+      return Response.redirect(`${url.origin}${EVENT_BASE_PATH}/`, 302);
     }
     if (url.pathname === "/test") {
       return Response.redirect(`${url.origin}/test/${url.search}`, 308);
@@ -146,22 +116,6 @@ export default {
     if (!isAllowedTournamentId(tournamentId, env)) {
       return jsonResponse(400, { error: "invalid tournament id", code: "INVALID_TOURNAMENT_ID" });
     }
-    if (url.pathname === "/api/route-token" && request.method === "POST") {
-      let body: { route?: unknown };
-      try {
-        body = (await request.json()) as { route?: unknown };
-      } catch {
-        return jsonResponse(400, { error: "invalid route", code: "INVALID_ROUTE" });
-      }
-      if (
-        typeof body.route !== "string" ||
-        !isPublicRoute(body.route) ||
-        (isProduction(env) && isTestRoute(body.route))
-      ) {
-        return jsonResponse(400, { error: "invalid route", code: "INVALID_ROUTE" });
-      }
-      return jsonResponse(200, { url: await encryptRoute(body.route, env.SESSION_SECRET) });
-    }
     const token = readSessionToken(request.headers.get("cookie"));
     const session = token ? await verifySession(token, env.SESSION_SECRET, Date.now()) : null;
 
@@ -177,6 +131,8 @@ export default {
     const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName(roomName));
     const headers = new Headers(request.headers);
     headers.set("x-tournament-id", tournamentId);
-    return room.fetch(withIdentity(new Request(request, { headers }), session));
+    return withSecurityHeaders(
+      await room.fetch(withIdentity(new Request(request, { headers }), session)),
+    );
   },
 } satisfies ExportedHandler<Env>;

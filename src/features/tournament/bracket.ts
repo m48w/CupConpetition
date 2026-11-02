@@ -24,9 +24,9 @@ export interface BracketRound {
 
 const ROUNDS: { stage: Stage; title: string; count: number; feederLabel: string }[] = [
   { stage: "R16", title: "Round of 16", count: 8, feederLabel: "" },
-  { stage: "QF", title: "Quarter-finals", count: 4, feederLabel: "M" },
-  { stage: "SF", title: "Semi-finals", count: 2, feederLabel: "QF" },
-  { stage: "FINAL", title: "Final", count: 1, feederLabel: "SF" },
+  { stage: "QF", title: "Quarter-finals", count: 4, feederLabel: "R16-" },
+  { stage: "SF", title: "Semi-finals", count: 2, feederLabel: "QF-" },
+  { stage: "FINAL", title: "Final", count: 1, feederLabel: "SF-" },
 ];
 
 /**

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
 import { MatchCard, stageLabel, useTeams } from "../features/tournament";
 import type { Match } from "../types";
@@ -19,8 +20,9 @@ export function Matches({ matches }: { matches: Match[] }) {
   return (
     <>
       <PageTitle eyebrow="FULL TOURNAMENT SCHEDULE" title="All matches">
-        <span className="bracket-note">All group fixtures · {filtered.length} shown</span>
+        <span className="bracket-note">{filtered.length} shown</span>
       </PageTitle>
+      {matches.length === 0 && <Empty text="The match schedule will be published soon." />}
       <div className="filter-bar">
         <select value={stage} onChange={(event) => setStage(event.target.value)}>
           <option value="ALL">Round · All</option>

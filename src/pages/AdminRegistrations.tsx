@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { tournamentScopedUrl } from "../config";
 import type { SessionInfo } from "../types";
 import { ApiError, requestJson } from "../utils/http";
+import { shrinkLogo } from "../utils/image";
 
 interface AdminTeam {
   id: string;
@@ -33,15 +34,6 @@ interface AdminClub {
   name: string;
   logoId: string | null;
   teams: AdminTeam[];
-}
-
-function encodeBase64(bytes: Uint8Array) {
-  let binary = "";
-  const chunkSize = 0x8000;
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
-  }
-  return btoa(binary);
 }
 
 export function AdminRegistrations({ session }: { session: SessionInfo }) {
@@ -83,10 +75,10 @@ export function AdminRegistrations({ session }: { session: SessionInfo }) {
     }
     setBusyClub(club.id);
     try {
-      const dataBase64 = encodeBase64(new Uint8Array(await file.arrayBuffer()));
+      const { contentType, dataBase64 } = await shrinkLogo(file);
       await requestJson(`/api/admin/registrations/clubs/${encodeURIComponent(club.id)}/logo`, {
         method: "PUT",
-        body: JSON.stringify({ contentType: file.type, dataBase64 }),
+        body: JSON.stringify({ contentType, dataBase64 }),
       });
       await load();
       setNotice(`Logo saved for ${club.name}.`);

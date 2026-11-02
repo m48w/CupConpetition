@@ -42,27 +42,31 @@ export function LoginForm({
         <p>{description}</p>
         <form onSubmit={submit}>
           {!fixedUsername && (
+            <label className="login-field">
+              <span>Username</span>
+              <input
+                name="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                required
+              />
+            </label>
+          )}
+          <label className="login-field">
+            <span>Password</span>
             <input
-              name="username"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="Username (e.g. subadmin1)"
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
+              name="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="current-password"
               required
             />
-          )}
-          <input
-            name="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Password"
-            autoComplete="current-password"
-            required
-          />
+          </label>
           {error && <div className="login-error">{error}</div>}
           <button className="primary-button" type="submit" disabled={busy}>
             {busy ? "Signing in…" : "Sign in"}
