@@ -29,7 +29,7 @@ export const messages = {
   "nav.home": { en: "Home", my: "ပင်မ" },
   "nav.matches": { en: "Matches", my: "ပွဲစဉ်များ" },
   "nav.groups": { en: "Groups", my: "အုပ်စုများ" },
-  "nav.knockout": { en: "Knockout", my: "အပိုင်းထွက်" },
+  "nav.knockout": { en: "Knockout", my: "ရှုံးထွက်" },
   "nav.teams": { en: "Teams", my: "အသင်းများ" },
   "nav.live": { en: "Live", my: "တိုက်ရိုက်" },
   "nav.info": { en: "Info", my: "အချက်အလက်" },
@@ -48,11 +48,11 @@ export const messages = {
   "home.live.eyebrow": { en: "LIVE NOW", my: "ယခု တိုက်ရိုက်" },
   "home.live.title": { en: "Matches on the pitch", my: "ကစားနေသော ပွဲများ" },
   "home.live.all": { en: "All live matches", my: "တိုက်ရိုက်ပွဲ အားလုံး" },
-  "home.countdown.eyebrow": { en: "MATCH DAY", my: "ပြိုင်ပွဲနေ့" },
-  "home.countdown.title": { en: "Countdown to kick-off", my: "ပွဲစရန် ကျန်ရှိချိန်" },
+  "home.countdown.eyebrow": { en: "", my: "" },
+  "home.countdown.title": { en: "Countdown to kick-off", my: "ပြိုင်ပွဲရောက်ရန်" },
   "home.countdown.date": {
     en: "Sunday, 20 December 2026",
-    my: "2026 ခုနှစ် ဒီဇင်ဘာလ 20 ရက် (တနင်္ဂနွေနေ့)",
+    my: "2026 ဒီဇင်ဘာလ 20 ရက် (တနင်္ဂနွေနေ့)",
   },
   "home.countdown.started": { en: "Tournament day is here!", my: "ပြိုင်ပွဲနေ့ ရောက်ပါပြီ!" },
   "home.countdown.aria": { en: "Time until tournament day", my: "ပြိုင်ပွဲနေ့အထိ ကျန်ချိန်" },
@@ -61,22 +61,22 @@ export const messages = {
   "home.countdown.minutes": { en: "Minutes", my: "မိနစ်" },
   "home.countdown.seconds": { en: "Seconds", my: "စက္ကန့်" },
   "home.teams.eyebrow": { en: "THE CLUBS", my: "အသင်းများ" },
-  "home.teams.title": { en: "Participating teams", my: "ပါဝင်သော အသင်းများ" },
+  "home.teams.title": { en: "Teams", my: "ပါဝင်သော အသင်းများ" },
   "home.teams.viewAll": { en: "View all teams", my: "အသင်းအားလုံး ကြည့်ရန်" },
   "home.teams.empty": {
     en: "Teams will appear here after the groups are decided.",
     my: "အုပ်စုများ သတ်မှတ်ပြီးနောက် အသင်းများကို ဤနေရာတွင် ပြသပါမည်။",
   },
   "home.rules.eyebrow": { en: "PLAY FAIR", my: "တရားမျှတစွာ ကစားပါ" },
-  "home.rules.title": { en: "Tournament rules", my: "ပြိုင်ပွဲ စည်းမျဉ်းများ" },
+  "home.rules.title": { en: "Competition rules", my: "ပြိုင်ပွဲ စည်းမျဉ်းများ" },
   "home.rules.soon": {
-    en: "The tournament rules will be announced soon.",
+    en: "The Competition rules will be announced soon.",
     my: "ပြိုင်ပွဲ စည်းမျဉ်းများကို မကြာမီ ကြေညာပါမည်။",
   },
 
   // ===== Teams =====
   "teams.eyebrow": { en: "THE CLUBS", my: "အသင်းများ" },
-  "teams.title": { en: "Participating teams", my: "ပါဝင်သော အသင်းများ" },
+  "teams.title": { en: "Teams", my: "ပါဝင်သော အသင်းများ" },
   "teams.summary": {
     en: "{competing} competing · {registered} registered",
     my: "ယှဉ်ပြိုင်မည် {competing} · စာရင်းသွင်းပြီး {registered}",
@@ -188,7 +188,7 @@ export const messages = {
   "bracket.ready": { en: "15 matches · One champion", my: "ပွဲ 15 ပွဲ · ချန်ပီယံ တစ်သင်း" },
   "bracket.notDecided": {
     en: "Knockout teams are decided after the group stage.",
-    my: "အုပ်စုအဆင့် ပြီးဆုံးပြီးနောက် အပိုင်းထွက်အသင်းများကို သတ်မှတ်ပါမည်။",
+    my: "အုပ်စုအဆင့် ပြီးဆုံးပြီးနောက် ရှုံးထွက်အဆင့်အသင်းများကို သတ်မှတ်ပါမည်။",
   },
   "bracket.tagline": {
     en: "Every match. Every moment. One champion.",
@@ -455,11 +455,11 @@ export const messages = {
   "err.REQUIRED_LOGO": { en: "A club logo is required.", my: "ကလပ် လိုဂို လိုအပ်ပါသည်။" },
   "err.INVALID_LOGO_TYPE": {
     en: "The logo must be PNG, JPEG, or WebP.",
-    my: "လိုဂိုသည် PNG, JPEG သို့မဟုတ် WebP ဖြစ်ရပါမည်။",
+    my: "အသင်း Logo Fileသည် PNG, JPEG သို့မဟုတ် WebP ဖြစ်ရပါမည်။",
   },
   "err.INVALID_LOGO": {
     en: "The logo file is not valid or is larger than 1 MB.",
-    my: "လိုဂိုဖိုင် မမှန်ကန်ပါ သို့မဟုတ် 1 MB ထက် ကြီးနေပါသည်။",
+    my: "အသင်း Logo File မမှန်ကန်ပါ သို့မဟုတ် 1 MB ထက် ကြီးနေပါသည်။",
   },
   "err.DUPLICATE_TEAM": {
     en: "A team with this name is already registered. Please use a different name.",
@@ -471,11 +471,11 @@ export const messages = {
   },
   "err.TOO_MANY_ATTEMPTS": {
     en: "Too many tries. Please wait 15 minutes and try again.",
-    my: "ကြိုးစားမှု များလွန်းနေသည်။ 15 မိနစ် စောင့်ပြီး ပြန်ကြိုးစားပါ။",
+    my: "သတ်မှတ်ထားသည့် အကြိမ်အရေအတွက်ထက်ကျော်လွန်သွားပါသဖြင့် နောက် ၁၅ မိနစ် စောင့်ပြီး ပြန်ကြိုးစားပါ။",
   },
   "err.CONTACT_NOT_VERIFIED": {
     en: "We could not find a team with this email and phone number. Please check them.",
-    my: "ဤအီးမေးလ်နှင့် ဖုန်းနံပါတ်ဖြင့် အသင်း မတွေ့ပါ။ စစ်ဆေးပါ။",
+    my: "ဤအီးမေးလ်နှင့် ဖုန်းနံပါတ်ဖြင့် အသင်း မတွေ့ပါ။ ပြန်လည်စစ်ဆေးပါ။",
   },
   "err.VERIFY_REQUIRED": {
     en: "Please verify your team again.",
@@ -497,15 +497,15 @@ export const messages = {
   },
   "err.REGISTRATION_FULL": {
     en: "Registration is full, or there are not enough places for all your teams.",
-    my: "စာရင်းသွင်းမှု ပြည့်နေပါသည် သို့မဟုတ် သင့်အသင်းအားလုံးအတွက် နေရာ မလောက်ပါ။",
+    my: "စာရင်းသွင်းမှု ပြည့်နေပါသည်",
   },
   "err.REGISTRATION_CLOSED": {
-    en: "Team registration closed on 6 December 2026 at 23:59 (Japan time).",
-    my: "အသင်း စာရင်းသွင်းချိန် 2026 ဒီဇင်ဘာ 6 · 23:59 (ဂျပန်စံတော်ချိန်) တွင် ပြီးဆုံးခဲ့သည်။",
+    en: "Team registration closed on 6 December 2026 at 23:59.",
+    my: "2026 ဒီဇင်ဘာ 6 · 23:59 အထိသာ အသင်းစာရင်ပေးသွင်းနိုင်မည်ဖြစ်ပါသည်",
   },
   "err.MEMBER_REGISTRATION_CLOSED": {
-    en: "Player registration closed on 12 December 2026 at 23:59 (Japan time).",
-    my: "ကစားသမား စာရင်းသွင်းချိန် 2026 ဒီဇင်ဘာ 12 · 23:59 (ဂျပန်စံတော်ချိန်) တွင် ပြီးဆုံးခဲ့သည်။",
+    en: "Player registration closed on 12 December 2026 at 23:59 .",
+    my: "ကစားသမား စာရင်းသွင်းချိန် 2026 ဒီဇင်ဘာ 12 · 23:59 အထိသာစာရင်းပေးသွင်းနိုင်ပါမည်ဖြစ်ပါသည်",
   },
 } as const satisfies Record<string, { en: string; my?: string }>;
 
