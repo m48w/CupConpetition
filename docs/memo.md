@@ -4,7 +4,35 @@
 
 Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操作できる形で構築した。
 
+## 最新更新（2026-11-04）
+
+- ミャンマー語・英語の文言を手で修正（`1519303`、`src/i18n/messages.ts`）。Knockout のミャンマー語を「ရှုံးထွက်」に、Home の見出しなどを調整。
+- 開発メモ・日報を更新。
+
+## 最新更新（2026-11-03）
+
+- 本番と別のテスト環境（Worker `velocity-cup-staging`、別のデータ・別のパスワード）を追加。`npm run deploy:staging` でデプロイ。画面上に「TEST SITE」の帯を表示し、登録の締め切り・定員はチェックしない（`REGISTRATION_LIMITS=off`）。
+- 本番では `/test/` を404、大会ID `test` を400にした。`GET /api/env` で本番かテスト環境かを返す。
+- サイト改善の仕様書・設計書（`docs/サイト改善_仕様書.md`、`docs/サイト改善_設計書.md`）を作成し、段階1〜4を実装。
+  - 段階1: URL暗号化を廃止（2026-10-27の内容を置き換え）。以前の `/u/<token>` は元のURLへ301。下メニューを5つに整理、Standings を Groups に統合、ヘッダーは「Register」ボタンのみ（Admin ボタンは外した）、空ページの案内、ロゴの軽量化、セキュリティ用ヘッダー。
+  - 段階2: 英語・ミャンマー語の切り替え（`src/i18n/`）。最初は英語、選んだ言語はブラウザに保存。
+  - 段階3: Info ページ（`src/content/info.ts`）、チーム登録の定員40・締め切り 2026-12-06 23:59:59 JST、`GET /api/registration/status`。
+  - 段階4: マイチーム、お知らせバナー（Super Admin が管理画面から出す）、登録データの CSV ダウンロード。
+- 決定事項: 得点ランキングと得点（誰がゴールしたか）の記録は作らない。登録メンバーの名前・背番号は公開を続ける。
+- テスト環境にデプロイして確認し、問題なし。本番は未デプロイ（この時点では前のコード）。
+- 確認：`vitest run`（176件）、`tsc -b`、`eslint .`、`prettier --check .`、`npm run build` 全て成功。
+
+## 最新更新（2026-10-30）
+
+- サイトとソースコードをレビューし、`docs/レビュー書_2026-10-30.md` にまとめた。
+- 大会IDが「u」になる不具合を修正。URL暗号化後に `/u/<token>` の先頭を大会IDとして読んでいたため、データが `u` の Durable Object に保存されていた。大会IDは起動時に一度だけ決める（`setTournamentId`）。
+- ログイン回数制限のすり抜けを修正。大会IDを `20261220` と `test` だけに制限し、ログイン失敗回数は固定の Durable Object（`auth`）で数える。
+- `u` の Durable Object にあったデータはテスト用のため移行しない。
+- 確認：`vitest run`（146件）成功。
+
 ## 最新更新（2026-10-27）
+
+※ URL暗号化は 2026-11-03 に廃止した。以下は当時の記録。
 
 - URL暗号化（Web Crypto API AES-GCM 256bit による `/u/<token>` 形式）を実装。ブラウザのアドレスバーに直接の内部パスを表示させず、暗号化トークンとして表示・保持。
 - 公開ルートアクセス時はWorkerが暗号化URLへ302転送し、暗号化URL直接アクセスや再読み込み時はWorkerが復号して初期ルートを注入（`window.__APP_ROUTE__`）。
@@ -114,11 +142,14 @@ export PATH="$HOME/.nvm/versions/node/v24.21.0/bin:$PATH"
 npm run dev -- --host 0.0.0.0 --port 4173
 ```
 
+ローカル開発はテスト環境として動かす。`.dev.vars` に `APP_ENV=staging` と `REGISTRATION_LIMITS=on` を書いておく（無いと `/test/` が404になる）。
+
 ブラウザー確認URL（大会ルート）:
 
 - `http://localhost:4173/20261220/`
 - `http://localhost:4173/20261220/matches`
-- `http://localhost:4173/20261220/live`
+- `http://localhost:4173/20261220/info`
+- `http://localhost:4173/test/`（サンプルの40チーム・95試合）
 - `http://localhost:4173/20261220/knockout`
 - `http://localhost:4173/20261220/admin`
 
@@ -129,7 +160,15 @@ npm run dev -- --host 0.0.0.0 --port 4173
 - 複数端末間の同期は Durable Object からの WebSocket 配信で実現済み。認証もサーバー側に実装済みである。
 - データを初期状態に戻すには、管理ダッシュボード（`/20261220/admin/dashboard`）の「↺ Reset all matches」ボタンを使うのが通常の方法である。プログラムから行う場合は Super-admin として `POST /api/reset` を呼ぶ。
 
+- 公開ページのヘッダーに Admin ボタンは無い。管理者は `/20261220/admin` を直接開く。
+- 本番（`velocity-cup`）とテスト環境（`velocity-cup-staging`）はデータとパスワードが別。テスト環境の Secret は `--env staging` を付けて登録する。
+- 翻訳は `src/i18n/messages.ts`、大会情報は `src/content/info.ts` を直す。
+- gitで改行コードの差分が出る場合は `core.autocrlf` の設定を確認する（Windows で作業しているため）。
+
 ## 次の候補
+
+- 本番へのデプロイ（テスト環境で皆の確認が終わってから）。
+- 大会情報（ルール、行き方、持ち物、問い合わせ先、FAQ）を `src/content/info.ts` に記入。
 
 - 操作履歴・監査ログ。
 - 試合結果に応じたノックアウトチームの自動反映。
