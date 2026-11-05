@@ -41,3 +41,12 @@ createRoot(document.getElementById("root")!).render(
     </BrowserRouter>
   </StrictMode>,
 );
+
+// 「ホーム画面に追加」のための Service Worker（キャッシュはしない）。開発サーバーでは登録しない。
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // 登録できなくても、サイトはふつうに使える。
+    });
+  });
+}

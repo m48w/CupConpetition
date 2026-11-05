@@ -4,6 +4,17 @@
 
 Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操作できる形で構築した。
 
+## 最新更新（2026-11-05）
+
+- 別のAIが作ったQA報告書を確認。チーム数・試合数・会場名・エラー文などが実際のサイトと合わず、内容の半分は信用できなかった。本当だった点（幅650px前後のヘッダーの重なり、カウントダウンの基準、TEST SITE の帯の翻訳、ロゴの説明文）を直した。
+- スマホ・タブレット（幅900px以下）のヘッダーを ☰ メニューにまとめた（Register、言語切り替え、ホーム画面に追加）。
+- ホーム画面に追加（PWA）: `public/manifest.webmanifest`、`public/icons/`、`public/sw.js`（キャッシュしない）。
+- Info ページを廃止し、大会情報（日付・時間・会場・住所・地図）と Contact を Home の下に移した。`/20261220/info` は Home へ転送。
+- スマホの下メニューを Home / Matches / Groups / Knockout / Live にした。
+- カウントダウンを最初の試合（2026-12-20 9:00 JST）までにした。
+- Home のカウントダウン上の小さな見出しを削除（11/4 に文言を空にしてテストが失敗していたため、キーごと削除）。
+- 確認：`vitest run`（176件）、`tsc -b`、`eslint .`、`prettier --check .` 成功。ローカルでスマホ（375px）・650px の表示を英語・ミャンマー語で確認。
+
 ## 最新更新（2026-11-04）
 
 - ミャンマー語・英語の文言を手で修正（`1519303`、`src/i18n/messages.ts`）。Knockout のミャンマー語を「ရှုံးထွက်」に、Home の見出しなどを調整。
@@ -148,7 +159,6 @@ npm run dev -- --host 0.0.0.0 --port 4173
 
 - `http://localhost:4173/20261220/`
 - `http://localhost:4173/20261220/matches`
-- `http://localhost:4173/20261220/info`
 - `http://localhost:4173/test/`（サンプルの40チーム・95試合）
 - `http://localhost:4173/20261220/knockout`
 - `http://localhost:4173/20261220/admin`
@@ -162,13 +172,13 @@ npm run dev -- --host 0.0.0.0 --port 4173
 
 - 公開ページのヘッダーに Admin ボタンは無い。管理者は `/20261220/admin` を直接開く。
 - 本番（`velocity-cup`）とテスト環境（`velocity-cup-staging`）はデータとパスワードが別。テスト環境の Secret は `--env staging` を付けて登録する。
-- 翻訳は `src/i18n/messages.ts`、大会情報は `src/content/info.ts` を直す。
+- 翻訳は `src/i18n/messages.ts`、Home の下の大会情報・問い合わせ先は `src/content/info.ts` を直す。
 - gitで改行コードの差分が出る場合は `core.autocrlf` の設定を確認する（Windows で作業しているため）。
 
 ## 次の候補
 
 - 本番へのデプロイ（テスト環境で皆の確認が終わってから）。
-- 大会情報（ルール、行き方、持ち物、問い合わせ先、FAQ）を `src/content/info.ts` に記入。
+- 問い合わせ先を `src/content/info.ts` に、ルールを Home のルール欄に記入。
 
 - 操作履歴・監査ログ。
 - 試合結果に応じたノックアウトチームの自動反映。

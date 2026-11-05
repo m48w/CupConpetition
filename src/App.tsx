@@ -10,7 +10,6 @@ import { Bracket } from "./pages/Bracket";
 import { AdminDashboard, AdminEntry, ProtectedAdminNotFound } from "./pages/AdminRoutes";
 import { AdminRegistrations } from "./pages/AdminRegistrations";
 import { Groups, GroupDetail } from "./pages/Groups";
-import { Info } from "./pages/Info";
 import { Live } from "./pages/Live";
 import { MatchDetail } from "./pages/MatchDetail";
 import { Matches } from "./pages/Matches";
@@ -22,6 +21,7 @@ import { TeamDetail, Teams } from "./pages/Teams";
 import { getTournamentId, REGISTRATION_BASE_PATH } from "./config";
 import { EVENT_LOGO_SRC } from "./components/ui/brand";
 import { AnnouncementBar } from "./components/ui/AnnouncementBar";
+import { HeaderMenu } from "./components/ui/HeaderMenu";
 import { LanguageSwitch } from "./components/ui/LanguageSwitch";
 import type { MessageKey } from "./i18n/messages";
 import { useI18n } from "./i18n/useI18n";
@@ -33,9 +33,8 @@ const navItems: { to: string; label: MessageKey; icon: string; mobile: boolean }
   { to: "/matches", label: "nav.matches", icon: "▦", mobile: true },
   { to: "/groups", label: "nav.groups", icon: "☷", mobile: true },
   { to: "/knockout", label: "nav.knockout", icon: "⌘", mobile: true },
-  { to: "/info", label: "nav.info", icon: "ⓘ", mobile: true },
+  { to: "/live", label: "nav.live", icon: "◉", mobile: true },
   { to: "/teams", label: "nav.teams", icon: "♟", mobile: false },
-  { to: "/live", label: "nav.live", icon: "◉", mobile: false },
 ];
 
 function AdminConsole({
@@ -135,12 +134,14 @@ function App() {
           <button className="brand" onClick={() => navigate("/")}>
             VELOCITY CUP 2026
           </button>
-          <div className="admin-links">
+          {/* PC: ボタンを並べる。スマホ・タブレット: ☰ メニューにまとめる。 */}
+          <div className="admin-links header-actions-desktop">
             <LanguageSwitch />
             <a href={`${REGISTRATION_BASE_PATH}/`} className="admin-toggle header-reg-btn">
               {t("app.register")}
             </a>
           </div>
+          <HeaderMenu />
         </header>
       </div>
       <div className="layout">
@@ -187,7 +188,8 @@ function App() {
             <AnnouncementBar announcements={announcements} />
             <Routes>
               <Route path="/" element={<Overview matches={matches} />} />
-              <Route path="/info" element={<Info />} />
+              {/* Info ページは Home の下の「大会情報」にまとめた。古いリンクは Home へ。 */}
+              <Route path="/info" element={<Navigate to="/" replace />} />
               <Route path="/teams" element={<Teams />} />
               <Route path="/teams/:teamId" element={<TeamDetail matches={matches} />} />
               <Route path="/matches" element={<Matches matches={matches} />} />

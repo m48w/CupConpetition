@@ -2439,3 +2439,105 @@ footer span {
   box-sizing: border-box;
   resize: vertical;
 }
+
+/* ===== 段階5: ☰ メニュー（スマホ・タブレット） ===== */
+.header-menu {
+  display: none;
+  position: relative;
+  justify-self: end;
+}
+.header-menu-button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: #edf4ff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.header-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(320px, calc(100vw - 20px));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0d1523;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+}
+.header-menu-register {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-weight: 700;
+}
+.header-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #b9c4d6;
+  font-size: 14px;
+}
+.header-menu-install {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: #edf4ff;
+}
+.header-menu-install .outline-button {
+  min-height: 44px;
+  justify-content: center;
+  font-size: 14px;
+}
+.header-menu-note {
+  margin: 0;
+  color: #8a99b3;
+  font-size: 12px;
+  line-height: 1.6;
+}
+@media (max-width: 900px) {
+  .header-actions-desktop {
+    display: none !important;
+  }
+  .header-menu {
+    display: block;
+  }
+  .topbar {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+  /* ☰ だけになったので、大会名はスマホでも表示する */
+  .topbar .brand {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: hidden;
+    clip: auto;
+    justify-self: center;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 480px) {
+  .topbar {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+}
+
+/* Home の大会情報 */
+.info-subtitle {
+  margin: 22px 0 10px;
+  font-size: 16px;
+}
