@@ -9,6 +9,30 @@
  */
 export const messages = {
   // ===== 共通 =====
+  "app.testSite": {
+    en: "TEST SITE — for testing only. Data will be deleted.",
+    my: "စမ်းသပ်ရန် ဆိုက် — စမ်းသပ်ရန်အတွက်သာ။ အချက်အလက်များကို ဖျက်ပါမည်။",
+  },
+  "menu.open": { en: "Open menu", my: "မီနူး ဖွင့်ရန်" },
+  "menu.close": { en: "Close menu", my: "မီနူး ပိတ်ရန်" },
+  "menu.title": { en: "Menu", my: "မီနူး" },
+  "install.button": { en: "Add to home screen", my: "ပင်မစာမျက်နှာသို့ ထည့်ရန်" },
+  "install.hint": {
+    en: "Open the tournament app from your home screen, like other apps.",
+    my: "အခြားအက်ပ်များကဲ့သို့ ပင်မစာမျက်နှာမှ ပြိုင်ပွဲအက်ပ်ကို ဖွင့်နိုင်ပါသည်။",
+  },
+  "install.ios": {
+    en: "On iPhone or iPad: tap the Share button (□↑) in Safari, then tap “Add to Home Screen”.",
+    my: "iPhone သို့မဟုတ် iPad တွင်: Safari ရှိ Share ခလုတ် (□↑) ကို နှိပ်ပြီး “Add to Home Screen” ကို နှိပ်ပါ။",
+  },
+  "install.other": {
+    en: "Open your browser menu and choose “Install app” or “Add to Home screen”.",
+    my: "ဘရောက်ဇာ မီနူးကို ဖွင့်ပြီး “Install app” သို့မဟုတ် “Add to Home screen” ကို ရွေးပါ။",
+  },
+  "install.done": {
+    en: "The app is on your home screen.",
+    my: "အက်ပ်ကို ပင်မစာမျက်နှာသို့ ထည့်ပြီးပါပြီ။",
+  },
   "app.register": { en: "Register", my: "စာရင်းသွင်းရန်" },
   "app.footer": {
     en: "Tournament operations platform",
@@ -32,7 +56,6 @@ export const messages = {
   "nav.knockout": { en: "Knockout", my: "ရှုံးထွက်" },
   "nav.teams": { en: "Teams", my: "အသင်းများ" },
   "nav.live": { en: "Live", my: "တိုက်ရိုက်" },
-  "nav.info": { en: "Info", my: "အချက်အလက်" },
 
   // ===== 接続 =====
   "conn.connecting": {
@@ -48,11 +71,10 @@ export const messages = {
   "home.live.eyebrow": { en: "LIVE NOW", my: "ယခု တိုက်ရိုက်" },
   "home.live.title": { en: "Matches on the pitch", my: "ကစားနေသော ပွဲများ" },
   "home.live.all": { en: "All live matches", my: "တိုက်ရိုက်ပွဲ အားလုံး" },
-  "home.countdown.eyebrow": { en: "", my: "" },
   "home.countdown.title": { en: "Countdown to kick-off", my: "ပြိုင်ပွဲရောက်ရန်" },
   "home.countdown.date": {
-    en: "Sunday, 20 December 2026",
-    my: "2026 ဒီဇင်ဘာလ 20 ရက် (တနင်္ဂနွေနေ့)",
+    en: "Sunday, 20 December 2026 · first match at 9:00",
+    my: "2026 ဒီဇင်ဘာလ 20 ရက် (တနင်္ဂနွေနေ့) · ပထမပွဲ 9:00",
   },
   "home.countdown.started": { en: "Tournament day is here!", my: "ပြိုင်ပွဲနေ့ ရောက်ပါပြီ!" },
   "home.countdown.aria": { en: "Time until tournament day", my: "ပြိုင်ပွဲနေ့အထိ ကျန်ချိန်" },
@@ -202,7 +224,6 @@ export const messages = {
   "bracket.when": { en: "{time} · Court {court}", my: "{time} · ကွင်း {court}" },
 
   // ===== Info =====
-  "info.eyebrow": { en: "TOURNAMENT INFO", my: "ပြိုင်ပွဲ အချက်အလက်" },
   "info.title": { en: "Tournament information", my: "ပြိုင်ပွဲ သတင်းအချက်အလက်" },
   "info.date": { en: "Date", my: "ရက်စွဲ" },
   "info.time": { en: "Time", my: "အချိန်" },
@@ -210,14 +231,8 @@ export const messages = {
   "info.address": { en: "Address", my: "လိပ်စာ" },
   "info.addressJa": { en: "Address in Japanese", my: "ဂျပန်ဘာသာ လိပ်စာ" },
   "info.map": { en: "Open in Google Maps", my: "Google Maps တွင် ဖွင့်ရန်" },
-  "info.gettingThere": { en: "Getting there", my: "သွားရောက်ပုံ" },
-  "info.schedule": { en: "Schedule of the day", my: "ပြိုင်ပွဲနေ့ အချိန်ဇယား" },
-  "info.rules": { en: "Rules", my: "စည်းမျဉ်းများ" },
-  "info.bring": { en: "What to bring", my: "ယူဆောင်ရမည့် ပစ္စည်းများ" },
   "info.contact": { en: "Contact", my: "ဆက်သွယ်ရန်" },
-  "info.faq": { en: "Questions and answers", my: "မေးလေ့ရှိသော မေးခွန်းများ" },
   "info.tba": { en: "To be announced", my: "နောက်မှ ကြေညာပါမည်" },
-  "home.rules.link": { en: "See tournament information", my: "ပြိုင်ပွဲ အချက်အလက် ကြည့်ရန်" },
 
   // ===== 登録状況 =====
   "status.count": {
@@ -321,8 +336,8 @@ export const messages = {
   "reg.logo.choose": { en: "Choose file", my: "ဖိုင် ရွေးရန်" },
   "reg.logo.remove": { en: "Remove selected logo", my: "ရွေးထားသော လိုဂိုကို ဖယ်ရှားရန်" },
   "reg.logo.note": {
-    en: "Each form needs a logo. If your club already has a logo, it will not be changed. The organisers can change it.",
-    my: "ဖောင်တိုင်းတွင် လိုဂို လိုအပ်ပါသည်။ ကလပ်တွင် လိုဂို ရှိပြီးသားဖြစ်ပါက မပြောင်းလဲပါ။ စီစဉ်သူများက ပြောင်းလဲပေးနိုင်ပါသည်။",
+    en: "Please always choose a logo. If your club already has a logo from an earlier registration, we keep the old logo. To change it, contact the organisers.",
+    my: "လိုဂိုကို အမြဲ ရွေးပါ။ ယခင်က စာရင်းသွင်းစဉ် ကလပ်လိုဂို ထည့်ပြီးသားဖြစ်ပါက ယခင်လိုဂိုကိုသာ ဆက်သုံးပါမည်။ ပြောင်းလိုပါက စီစဉ်သူများကို ဆက်သွယ်ပါ။",
   },
   "reg.submitting": { en: "Sending…", my: "ပို့နေသည်…" },
   "reg.submitMany": { en: "Register teams", my: "အသင်းများ စာရင်းသွင်းရန်" },

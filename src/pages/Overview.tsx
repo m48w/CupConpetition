@@ -4,11 +4,13 @@ import { isOnPitch, MatchCard, TeamBadge, useTeams } from "../features/tournamen
 import { useI18n } from "../i18n/useI18n";
 import { MyTeamCard } from "../features/tournament/components/MyTeamCard";
 import { useMyTeam } from "../features/tournament/hooks/useMyTeam";
+import { TournamentInfoSection } from "../features/info/TournamentInfoSection";
 import { RegistrationStatusNote } from "../features/registration/RegistrationStatusNote";
 import { useRegistrationStatus } from "../features/registration/useRegistrationStatus";
 import type { Match } from "../types";
 
-const EVENT_DATE = new Date("2026-12-19T15:00:00.000Z");
+/** 最初の試合（2026-12-20 9:00 JST）。カウントダウンはここまで。 */
+const EVENT_DATE = new Date("2026-12-20T00:00:00.000Z");
 
 function getCountdown(now: number) {
   const remaining = Math.max(0, EVENT_DATE.getTime() - now);
@@ -66,7 +68,6 @@ export function Overview({ matches }: { matches: Match[] }) {
       )}
       <MyTeamCard teams={teams} matches={matches} myTeam={myTeam} onChoose={chooseMyTeam} />
       <section className="overview-countdown">
-        <div className="eyebrow">{t("home.countdown.eyebrow")}</div>
         <h1>{t("home.countdown.title")}</h1>
         <p className="countdown-date">{t("home.countdown.date")}</p>
         {countdown.started ? (
@@ -114,11 +115,10 @@ export function Overview({ matches }: { matches: Match[] }) {
         </div>
         <div className="rules-placeholder">
           <p>{t("home.rules.soon")}</p>
-          <Link className="outline-button" to="/info">
-            {t("home.rules.link")}
-          </Link>
         </div>
       </section>
+
+      <TournamentInfoSection />
     </>
   );
 }

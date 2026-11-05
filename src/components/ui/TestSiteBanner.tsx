@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "../../i18n/useI18n";
 
 /** テスト環境のときだけ、画面の一番上に「テスト用のサイト」の帯を出す。本番では何も出さない。 */
 export function TestSiteBanner() {
+  const { t } = useI18n();
   const [isStaging, setIsStaging] = useState(false);
 
   useEffect(() => {
@@ -22,7 +24,7 @@ export function TestSiteBanner() {
   if (!isStaging) return null;
   return (
     <div className="test-site-banner" role="status">
-      TEST SITE — for testing only. Data will be deleted.
+      {t("app.testSite")}
     </div>
   );
 }
