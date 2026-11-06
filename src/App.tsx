@@ -31,9 +31,10 @@ import type { Match, SessionInfo } from "./types";
 const navItems: { to: string; label: MessageKey; icon: string; mobile: boolean }[] = [
   { to: "/", label: "nav.home", icon: "⌂", mobile: true },
   { to: "/matches", label: "nav.matches", icon: "▦", mobile: true },
+  // Live は下メニューの真ん中に置く。
+  { to: "/live", label: "nav.live", icon: "◉", mobile: true },
   { to: "/groups", label: "nav.groups", icon: "☷", mobile: true },
   { to: "/knockout", label: "nav.knockout", icon: "⌘", mobile: true },
-  { to: "/live", label: "nav.live", icon: "◉", mobile: true },
   { to: "/teams", label: "nav.teams", icon: "♟", mobile: false },
 ];
 
