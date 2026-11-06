@@ -8,3 +8,6 @@ vite.config.js
 vite.config.d.ts
 .wrangler/
 .dev.vars
+
+# サンプルデータ（実在クラブのロゴ）。テスト環境で使うだけで、git には入れない。
+sample/

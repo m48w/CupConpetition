@@ -46,6 +46,11 @@ npx wrangler secret put SESSION_SECRET --env staging
 npm run deploy:staging
 ```
 
+To fill the test site with sample teams, put the logos and `team_logos.json` in `sample/` (not
+committed) and run `npm run seed:staging`. It registers one team per logo with 11 sample players,
+using the fictional contact `sample@example.com` / `09000000000`. It refuses to run against
+production and skips teams that already exist.
+
 The tournament app is served under `/20261220/`; the site root `/` returns 404. Staff sign in at
 `/20261220/admin`. The previous `/superadmin` and `/subadmin` URLs redirect to the admin sign-in
 page. The admin dashboard assigns `subadmin1`–`2` to Court 1, `3`–`4` to Court 2, and `5`–`6` to
