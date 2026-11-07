@@ -75,6 +75,7 @@ function App() {
     teams,
     announcements,
     groupOrders,
+    goals,
     connection,
     error,
     patchMatch,
@@ -177,7 +178,7 @@ function App() {
             )}
           </div>
         </aside>
-        <TeamsProvider teams={teams} groupOrders={groupOrders}>
+        <TeamsProvider teams={teams} groupOrders={groupOrders} goals={goals}>
           <main className="main-content">
             <AnnouncementBar announcements={announcements} />
             <Routes>

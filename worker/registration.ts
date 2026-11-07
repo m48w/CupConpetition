@@ -1,3 +1,5 @@
+import type { Player } from "../src/types";
+
 type SqlStorage = DurableObjectStorage["sql"];
 
 export interface TeamRegistrationInput {
@@ -793,6 +795,17 @@ export class RegistrationStore {
       deadlinePassed: this.memberDeadlinePassed(now),
       clubs: results,
     };
+  }
+
+  /** 登録チームの選手（得点者を選ぶため）。チームが無ければ空。 */
+  listPlayers(teamId: string): Player[] {
+    return this.sql
+      .exec<{ id: string; name: string; back_number: number }>(
+        "SELECT id, name, back_number FROM registration_members WHERE team_id = ? ORDER BY back_number",
+        teamId,
+      )
+      .toArray()
+      .map((row) => ({ id: row.id, name: row.name, backNumber: row.back_number }));
   }
 
   listPublicTeams(): PublicRegistrationTeam[] {

@@ -1271,3 +1271,126 @@ test("同点の順番を手で決める: Super Admin だけ、グループの全
   expect(((await saved.json()) as TournamentState).groupOrders?.A).toEqual([ids[1], ids[0]]);
   await call("/api/initialize", asTournament("test", json("POST", {}, superadmin)));
 });
+
+test("得点者: QF から記録でき、点数とゴールの数が合い、Reset で消える", async () => {
+  await call("/api/initialize", asTournament("test", json("POST", {}, superadmin)));
+  // 前のテストで登録したチームを使う（部屋の定員のため）。
+  const draft = (await (
+    await call("/api/admin/group-draft", asTournament("test", { headers: { cookie: superadmin } }))
+  ).json()) as { candidates: { id: string }[] };
+  const ids = draft.candidates.slice(0, 16).map((candidate) => candidate.id);
+  expect(ids).toHaveLength(16);
+  const groups = Object.fromEntries(
+    ["A", "B", "C", "D", "E", "F", "G", "H"].map((groupId, index) => [
+      groupId,
+      ids.slice(index * 2, index * 2 + 2),
+    ]),
+  );
+  await call("/api/teams/groups", asTournament("test", json("PUT", { groups }, superadmin)));
+  let state = (await (
+    await call("/api/schedule", asTournament("test", json("POST", {}, superadmin)))
+  ).json()) as TournamentState;
+
+  // ids[0] のチームに選手を2人入れる。
+  const room = env.TOURNAMENT.get(env.TOURNAMENT.idFromName("test"));
+  const memberIds = [crypto.randomUUID(), crypto.randomUUID()];
+  await runInDurableObject(room, (_instance, storage) => {
+    storage.storage.sql.exec("DELETE FROM registration_members WHERE team_id = ?", ids[0]);
+    memberIds.forEach((memberId, index) =>
+      storage.storage.sql.exec(
+        `INSERT INTO registration_members (id, team_id, name, back_number, created_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        memberId,
+        ids[0],
+        `Player ${index + 1}`,
+        index + 9,
+        new Date().toISOString(),
+      ),
+    );
+  });
+
+  const patchIn = (id: string, body: Partial<Match>) =>
+    call(`/api/matches/${id}`, asTournament("test", json("PATCH", body, superadmin)));
+  const playHomeWin = async (id: string) => {
+    await patchIn(id, { status: "LIVE" });
+    await patchIn(id, { homeScore: 1 });
+    return (await (await patchIn(id, { status: "FINISHED" })).json()) as TournamentState;
+  };
+  for (const match of state.matches.filter((m) => m.stage === "GROUP")) {
+    state = await playHomeWin(match.id);
+  }
+  for (const match of state.matches.filter((m) => m.stage === "R16")) {
+    state = await playHomeWin(match.id);
+  }
+  const qf = state.matches.find(
+    (m) => m.stage === "QF" && (m.homeTeamId === ids[0] || m.awayTeamId === ids[0]),
+  )!;
+  expect(qf).toBeDefined();
+  const other = qf.homeTeamId === ids[0] ? qf.awayTeamId : qf.homeTeamId;
+  const addGoal = (matchId: string, body: unknown, cookie = superadmin) =>
+    call(`/api/matches/${matchId}/goals`, asTournament("test", json("POST", body, cookie)));
+
+  // R16 は得点者を記録しない。QF も始まる前は記録できない。
+  const r16 = await addGoal("R16-1", { teamId: state.matches[0].homeTeamId, memberId: null });
+  expect(await r16.json()).toMatchObject({ code: "GOALS_NOT_TRACKED" });
+  const early = await addGoal(qf.id, { teamId: ids[0], memberId: null });
+  expect(await early.json()).toMatchObject({ code: "MATCH_NOT_STARTED" });
+
+  await patchIn(qf.id, { status: "LIVE" });
+  // QF の点数は PATCH で直接変えられない。
+  expect((await patchIn(qf.id, { homeScore: 1 })).status).toBe(400);
+
+  const players = (await (
+    await call(
+      `/api/matches/${qf.id}/players`,
+      asTournament("test", { headers: { cookie: superadmin } }),
+    )
+  ).json()) as { home: { id: string }[]; away: { id: string }[] };
+  const mine = qf.homeTeamId === ids[0] ? players.home : players.away;
+  expect(mine.map((player) => player.id)).toEqual(memberIds);
+
+  const scored = await addGoal(qf.id, { teamId: ids[0], memberId: memberIds[0] });
+  expect(scored.status).toBe(200);
+  state = (await scored.json()) as TournamentState;
+  const side = qf.homeTeamId === ids[0] ? "homeScore" : "awayScore";
+  expect(state.matches.find((m) => m.id === qf.id)![side]).toBe(1);
+  expect(state.goals).toHaveLength(1);
+  expect(state.goals![0]).toMatchObject({ playerName: "Player 1", backNumber: 9, minute: 1 });
+
+  const wrongPlayer = await addGoal(qf.id, { teamId: other, memberId: memberIds[0] });
+  expect(await wrongPlayer.json()).toMatchObject({ code: "INVALID_PLAYER" });
+  expect((await addGoal(qf.id, { teamId: other, memberId: null })).status).toBe(200);
+  if (qf.court !== 1) {
+    expect((await addGoal(qf.id, { teamId: other, memberId: null }, court1)).status).toBe(403);
+  }
+
+  // 得点者を変えても点数は変わらない。
+  const goalId = state.goals![0].id;
+  const changed = (await (
+    await call(
+      `/api/goals/${goalId}`,
+      asTournament("test", json("PATCH", { memberId: memberIds[1] }, superadmin)),
+    )
+  ).json()) as TournamentState;
+  expect(changed.goals!.find((goal) => goal.id === goalId)).toMatchObject({
+    playerName: "Player 2",
+  });
+  expect(changed.matches.find((m) => m.id === qf.id)![side]).toBe(1);
+
+  // 「−」は最後のゴールを消す。もう無ければ NO_GOAL。
+  const removeLast = () =>
+    call(
+      `/api/matches/${qf.id}/goals/last?team=${ids[0]}`,
+      asTournament("test", json("DELETE", {}, superadmin)),
+    );
+  const removed = (await (await removeLast()).json()) as TournamentState;
+  expect(removed.matches.find((m) => m.id === qf.id)![side]).toBe(0);
+  expect(removed.goals).toHaveLength(1);
+  expect(await (await removeLast()).json()).toMatchObject({ code: "NO_GOAL" });
+
+  const reset = (await (
+    await call("/api/reset", asTournament("test", json("POST", {}, superadmin)))
+  ).json()) as TournamentState;
+  expect(reset.goals).toEqual([]);
+  await call("/api/initialize", asTournament("test", json("POST", {}, superadmin)));
+});

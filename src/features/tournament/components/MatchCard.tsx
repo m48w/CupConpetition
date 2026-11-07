@@ -1,11 +1,32 @@
 import { useI18n } from "../../../i18n/useI18n";
-import type { Match } from "../../../types";
+import type { Goal, Match } from "../../../types";
 import { formatTime } from "../../../utils/format";
+import { goalsOf, tracksScorers } from "../goals";
 import { useMatchClock } from "../hooks/useMatchClock";
+import { useGoals } from "../teamContext";
 import { TeamBadge } from "./TeamBadge";
 
-export function MatchCard({ match, compact = false }: { match: Match; compact?: boolean }) {
+export function MatchCard({
+  match,
+  compact = false,
+  showScorers = false,
+}: {
+  match: Match;
+  compact?: boolean;
+  /** 準々決勝からの得点者を出す（試合の詳細・Live）。 */
+  showScorers?: boolean;
+}) {
   const { t } = useI18n();
+  const allGoals = useGoals();
+  const goals = showScorers && tracksScorers(match) ? goalsOf(allGoals, match.id) : [];
+  const goalLabel = (goal: Goal) =>
+    goal.playerName
+      ? t("match.goal", {
+          minute: goal.minute,
+          number: goal.backNumber ?? "",
+          name: goal.playerName,
+        })
+      : t("match.goalUnknown", { minute: goal.minute });
   const clock = useMatchClock(match);
   const live = match.status === "LIVE";
   const onPitch = live || match.status === "PAUSED";
@@ -36,6 +57,21 @@ export function MatchCard({ match, compact = false }: { match: Match; compact?: 
           <strong>{match.status === "SCHEDULED" ? "–" : match.awayScore}</strong>
         </div>
       </div>
+      {goals.length > 0 && (
+        <div className="match-scorers" aria-label={t("match.scorers")}>
+          {[match.homeTeamId, match.awayTeamId].map((teamId, index) => (
+            <ul key={index}>
+              {goals
+                .filter((goal) => goal.teamId === teamId)
+                .map((goal) => (
+                  <li key={goal.id}>
+                    <span aria-hidden="true">⚽</span> {goalLabel(goal)}
+                  </li>
+                ))}
+            </ul>
+          ))}
+        </div>
+      )}
       {match.isPenaltyShootout && (
         <p className="match-penalties">
           {t("match.penalties", {

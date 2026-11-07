@@ -7,10 +7,13 @@ import {
   resultsKey,
   type GroupOrders,
 } from "../src/features/tournament/progression";
-import { buildTournamentSchedule, GROUP_IDS } from "../src/features/tournament/schedule";
+import { goalMinute, tracksScorers } from "../src/features/tournament/goals";
+import { elapsedSeconds } from "../src/features/tournament/timer";
+import { buildTournamentSchedule, GROUP_IDS, TBD } from "../src/features/tournament/schedule";
 import type {
   Announcement,
   AnnouncementLevel,
+  Goal,
   Match,
   MatchStatus,
   Team,
@@ -55,6 +58,11 @@ export type StoreErrorCode =
   | "PENALTIES_REQUIRED"
   | "INVALID_ORDER"
   | "GROUP_TOO_LARGE"
+  | "GOALS_NOT_TRACKED"
+  | "MATCH_NOT_STARTED"
+  | "INVALID_PLAYER"
+  | "NO_GOAL"
+  | "UNKNOWN_GOAL"
   | "INVALID_ANNOUNCEMENT"
   | "UNKNOWN_ANNOUNCEMENT";
 
@@ -108,6 +116,13 @@ export interface AnnouncementInput {
   active?: unknown;
 }
 
+/** ゴールの得点者。Unknown player はすべて null。 */
+export interface GoalScorer {
+  memberId: string | null;
+  playerName: string | null;
+  backNumber: number | null;
+}
+
 export class StoreError extends Error {
   constructor(
     message: string,
@@ -136,6 +151,17 @@ export interface Store {
   setGroupOrder(groupId: string, teamIds: string[], sampleData?: boolean): TournamentState;
   /** 試合が始まっているか（グループ分けを変えられないか）。 */
   hasStartedMatch(sampleData?: boolean): boolean;
+  /** QF・SF・決勝のゴールを1件入れ、そのチームの点数を1点増やす。 */
+  addGoal(
+    matchId: string,
+    teamId: string,
+    scorer: GoalScorer,
+    sampleData?: boolean,
+  ): TournamentState;
+  /** そのチームの最後のゴールを消し、点数を1点減らす。 */
+  removeLastGoal(matchId: string, teamId: string, sampleData?: boolean): TournamentState;
+  /** ゴールの得点者を変える（点数は変わらない）。 */
+  changeGoalScorer(goalId: string, scorer: GoalScorer, sampleData?: boolean): TournamentState;
   /** 非表示も含めた全部のお知らせ（管理画面用）。 */
   listAnnouncements(): Announcement[];
   createAnnouncement(input: AnnouncementInput, sampleData?: boolean): TournamentState;
@@ -181,6 +207,16 @@ const SCHEMA = [
      team_ids TEXT NOT NULL,
      results_key TEXT NOT NULL,
      updated_at TEXT NOT NULL
+   )`,
+  `CREATE TABLE IF NOT EXISTS match_goals (
+     id TEXT PRIMARY KEY,
+     match_id TEXT NOT NULL,
+     team_id TEXT NOT NULL,
+     member_id TEXT,
+     player_name TEXT,
+     back_number INTEGER,
+     minute INTEGER NOT NULL,
+     created_at TEXT NOT NULL
    )`,
   `CREATE TABLE IF NOT EXISTS announcements (
      id TEXT PRIMARY KEY,
@@ -360,6 +396,48 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       )
       .toArray()[0];
 
+  const readGoals = () =>
+    sql
+      .exec<{
+        id: string;
+        match_id: string;
+        team_id: string;
+        member_id: string | null;
+        player_name: string | null;
+        back_number: number | null;
+        minute: number;
+        created_at: string;
+      }>(
+        `SELECT id, match_id, team_id, member_id, player_name, back_number, minute, created_at
+         FROM match_goals ORDER BY created_at, rowid`,
+      )
+      .toArray()
+      .map((row): Goal => ({
+        id: row.id,
+        matchId: row.match_id,
+        teamId: row.team_id,
+        memberId: row.member_id,
+        playerName: row.player_name,
+        backNumber: row.back_number,
+        minute: row.minute,
+        createdAt: row.created_at,
+      }));
+
+  /** 試合が無くなったり、チームが変わったりしたゴールを消す。トランザクションの中で使う。 */
+  const pruneGoals = (matches: Match[]) => {
+    const byId = new Map(matches.map((match) => [match.id, match]));
+    for (const goal of readGoals()) {
+      const match = byId.get(goal.matchId);
+      if (
+        !match ||
+        match.status === "SCHEDULED" ||
+        (goal.teamId !== match.homeTeamId && goal.teamId !== match.awayTeamId)
+      ) {
+        sql.exec("DELETE FROM match_goals WHERE id = ?", goal.id);
+      }
+    }
+  };
+
   const insertTeams = (nextTeams: Team[]) =>
     nextTeams.forEach((team, position) =>
       sql.exec(
@@ -433,7 +511,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
   const withProgress = (matches: Match[]) =>
     progress(readTeams(), matches, readGroupOrders(matches));
 
-  const writeAll = (input: Match[], sampleData: boolean) => {
+  const writeAll = (input: Match[], sampleData: boolean, clearGoals = false) => {
     ensureInitialized(sampleData);
     const ids = new Set(input.map((match) => match.id));
     if (ids.size !== input.length) {
@@ -443,6 +521,8 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
     storage.transactionSync(() => {
       sql.exec("DELETE FROM matches");
       insertMatches(matches);
+      if (clearGoals) sql.exec("DELETE FROM match_goals");
+      else pruneGoals(matches);
       bumpVersion();
     });
     return snapshot();
@@ -468,6 +548,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       matches: readMatches(),
       announcements: readAnnouncements(true),
       groupOrders: readGroupOrders(readMatches()),
+      goals: readGoals(),
     };
   };
 
@@ -491,6 +572,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       sql.exec("DELETE FROM teams");
       // チームが変わったら、手で決めた順番も使えないので消す。
       sql.exec("DELETE FROM group_orders");
+      sql.exec("DELETE FROM match_goals");
       insertTeams(nextTeams);
       bumpVersion();
     });
@@ -509,6 +591,70 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       throw new StoreError("team name, group, or color is invalid", "INVALID_TEAM");
     }
     return { ...team, name, groupId: team.groupId, color: team.color.toLowerCase() };
+  };
+
+  /**
+   * 1試合の変更を保存する。結果が変わるときは次の試合が始まっていないか確かめ、
+   * 決勝トーナメントのチームも入れ直す。`extra` は同じトランザクションで行う追加の書き込み。
+   */
+  const commitMatch = (current: Match, next: Match, touchesResult: boolean, extra?: () => void) => {
+    const all = readMatches();
+    // 終わった試合の結果は、その結果でチームが決まる次の試合が始まったら変えられない。
+    if (current.status === "FINISHED" && touchesResult) {
+      const started = dependentsOf(current, all).find(isStarted);
+      if (started) {
+        throw new StoreError(
+          `the next match (${started.id}) has already started; this result can no longer be changed`,
+          "RESULT_LOCKED",
+        );
+      }
+    }
+    if (next.status === "FINISHED" && needsPenaltyWinner(next)) {
+      throw new StoreError(
+        "enter the penalty shoot-out result before finishing a drawn knockout match",
+        "PENALTIES_REQUIRED",
+      );
+    }
+    const before = all.map((match) => (match.id === current.id ? next : match));
+    const after = withProgress(before);
+    storage.transactionSync(() => {
+      for (const match of after) {
+        const original = all.find((candidate) => candidate.id === match.id);
+        if (match !== original) {
+          sql.exec("UPDATE matches SET data = ? WHERE id = ?", JSON.stringify(match), match.id);
+        }
+      }
+      extra?.();
+      bumpVersion();
+    });
+    return snapshot();
+  };
+
+  const readMatch = (id: string) => {
+    const row = sql
+      .exec<{ data: string }>("SELECT data FROM matches WHERE id = ?", id)
+      .toArray()[0];
+    if (!row) throw new StoreError(`unknown match: ${id}`, "UNKNOWN_MATCH");
+    return JSON.parse(row.data) as Match;
+  };
+
+  /** ゴールを記録できる試合か確かめ、そのチームの側（ホーム・アウェイ）を返す。 */
+  const goalSide = (match: Match, teamId: string) => {
+    if (!tracksScorers(match)) {
+      throw new StoreError(
+        "goal scorers are recorded only from the quarter-finals",
+        "GOALS_NOT_TRACKED",
+      );
+    }
+    if (match.status === "SCHEDULED") {
+      throw new StoreError("start the match to record goals", "MATCH_NOT_STARTED");
+    }
+    if (teamId === TBD) {
+      throw new StoreError("the team is not decided yet", "INVALID_PLAYER");
+    }
+    if (teamId === match.homeTeamId) return "homeScore" as const;
+    if (teamId === match.awayTeamId) return "awayScore" as const;
+    throw new StoreError("the team is not playing in this match", "INVALID_PLAYER");
   };
 
   return {
@@ -542,12 +688,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         throw new StoreError(`invalid value for field: ${invalidField[0]}`, "INVALID_FIELD_VALUE");
       }
 
-      const row = sql
-        .exec<{ data: string }>("SELECT data FROM matches WHERE id = ?", id)
-        .toArray()[0];
-      if (!row) throw new StoreError(`unknown match: ${id}`, "UNKNOWN_MATCH");
-
-      const current = JSON.parse(row.data) as Match;
+      const current = readMatch(id);
       const next = { ...current, ...patch };
       const touchesPenalties = Object.keys(patch).some((field) =>
         ["isPenaltyShootout", "penaltyHomeScore", "penaltyAwayScore"].includes(field),
@@ -561,35 +702,18 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
           (field) =>
             field in patch && patch[field as keyof Match] !== current[field as keyof Match],
         );
-      const all = readMatches();
-      // 終わった試合の結果は、その結果でチームが決まる次の試合が始まったら変えられない。
-      if (current.status === "FINISHED" && touchesResult) {
-        const started = dependentsOf(current, all).find(isStarted);
-        if (started) {
-          throw new StoreError(
-            `the next match (${started.id}) has already started; this result can no longer be changed`,
-            "RESULT_LOCKED",
-          );
-        }
-      }
-      if (next.status === "FINISHED" && needsPenaltyWinner(next)) {
+      if (
+        tracksScorers(current) &&
+        (["homeScore", "awayScore"] as const).some(
+          (field) => field in patch && patch[field] !== current[field],
+        )
+      ) {
         throw new StoreError(
-          "enter the penalty shoot-out result before finishing a drawn knockout match",
-          "PENALTIES_REQUIRED",
+          "quarter-final, semi-final and final scores change only by recording goals",
+          "FIELD_NOT_PATCHABLE",
         );
       }
-      const before = all.map((match) => (match.id === id ? next : match));
-      const after = withProgress(before);
-      storage.transactionSync(() => {
-        for (const match of after) {
-          const original = all.find((candidate) => candidate.id === match.id);
-          if (match !== original) {
-            sql.exec("UPDATE matches SET data = ? WHERE id = ?", JSON.stringify(match), match.id);
-          }
-        }
-        bumpVersion();
-      });
-      return snapshot();
+      return commitMatch(current, next, touchesResult);
     },
 
     replaceMatches(matches, sampleData = defaultSampleData) {
@@ -604,7 +728,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         groupCounts[team.groupId] = (groupCounts[team.groupId] ?? 0) + 1;
       }
       const scheduleReady = scheduleProblems(groupCounts).length === 0;
-      return writeAll(scheduleReady ? buildTournamentSchedule(currentTeams) : [], sampleData);
+      return writeAll(scheduleReady ? buildTournamentSchedule(currentTeams) : [], sampleData, true);
     },
 
     addTeam(team, sampleData = defaultSampleData) {
@@ -657,6 +781,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         sql.exec("DELETE FROM matches");
         sql.exec("DELETE FROM teams");
         sql.exec("DELETE FROM group_orders");
+        sql.exec("DELETE FROM match_goals");
         bumpVersion();
       });
       return snapshot();
@@ -676,7 +801,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
           "INVALID_TEAM",
         );
       }
-      return writeAll(buildTournamentSchedule(currentTeams), sampleData);
+      return writeAll(buildTournamentSchedule(currentTeams), sampleData, true);
     },
 
     hasStartedMatch(sampleData = defaultSampleData) {
@@ -748,6 +873,67 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         );
       });
       return writeAll(matches, sampleData);
+    },
+
+    addGoal(matchId, teamId, scorer, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const current = readMatch(matchId);
+      const side = goalSide(current, teamId);
+      const next = { ...current, [side]: current[side] + 1 };
+      const minute = goalMinute(elapsedSeconds(current, Date.now()));
+      return commitMatch(current, next, true, () =>
+        sql.exec(
+          `INSERT INTO match_goals
+             (id, match_id, team_id, member_id, player_name, back_number, minute, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          crypto.randomUUID(),
+          matchId,
+          teamId,
+          scorer.memberId,
+          scorer.playerName,
+          scorer.backNumber,
+          minute,
+          new Date().toISOString(),
+        ),
+      );
+    },
+
+    removeLastGoal(matchId, teamId, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const current = readMatch(matchId);
+      const side = goalSide(current, teamId);
+      const last = sql
+        .exec<{ id: string }>(
+          `SELECT id FROM match_goals WHERE match_id = ? AND team_id = ?
+           ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+          matchId,
+          teamId,
+        )
+        .toArray()[0];
+      if (!last) throw new StoreError("this team has no recorded goal to remove", "NO_GOAL");
+      const next = { ...current, [side]: Math.max(0, current[side] - 1) };
+      return commitMatch(current, next, true, () =>
+        sql.exec("DELETE FROM match_goals WHERE id = ?", last.id),
+      );
+    },
+
+    changeGoalScorer(goalId, scorer, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const exists = sql
+        .exec<{ id: string }>("SELECT id FROM match_goals WHERE id = ?", goalId)
+        .toArray()[0];
+      if (!exists) throw new StoreError(`unknown goal: ${goalId}`, "UNKNOWN_GOAL");
+      storage.transactionSync(() => {
+        sql.exec(
+          "UPDATE match_goals SET member_id = ?, player_name = ?, back_number = ? WHERE id = ?",
+          scorer.memberId,
+          scorer.playerName,
+          scorer.backNumber,
+          goalId,
+        );
+        bumpVersion();
+      });
+      return snapshot();
     },
 
     listAnnouncements() {

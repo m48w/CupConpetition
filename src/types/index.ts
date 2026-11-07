@@ -31,6 +31,26 @@ export interface Match {
   sourceMatchIds?: string[];
 }
 
+/** 準々決勝から記録するゴール1件。Unknown player のときは選手の項目が null。 */
+export interface Goal {
+  id: string;
+  matchId: string;
+  teamId: string;
+  memberId: string | null;
+  playerName: string | null;
+  backNumber: number | null;
+  /** タイマーの分（切り上げ。12分30秒なら 13）。 */
+  minute: number;
+  createdAt: string;
+}
+
+/** 得点者を選ぶための登録選手。 */
+export interface Player {
+  id: string;
+  name: string;
+  backNumber: number;
+}
+
 export type AnnouncementLevel = "info" | "warning";
 
 /** 管理者が出すお知らせ。英語は必須、ミャンマー語は無ければ英語を表示する。 */
@@ -53,6 +73,8 @@ export interface TournamentState {
   announcements?: Announcement[];
   /** 同点のとき Super Admin が手で決めた順番（今の結果に合うものだけ）。グループID → チームIDの並び。 */
   groupOrders?: Record<string, string[]>;
+  /** 準々決勝から記録したゴール（記録した順）。 */
+  goals?: Goal[];
 }
 
 /** WebSocket でサーバーが送るメッセージ。 */

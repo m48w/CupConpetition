@@ -10,7 +10,13 @@ import {
   type RegistrationStore,
 } from "./registration";
 import { GROUP_IDS } from "../src/features/tournament/schedule";
-import { StoreError, type AnnouncementInput, type GroupedTeamInput, type Store } from "./store";
+import {
+  StoreError,
+  type AnnouncementInput,
+  type GoalScorer,
+  type GroupedTeamInput,
+  type Store,
+} from "./store";
 
 type GroupId = (typeof GROUP_IDS)[number];
 
@@ -62,6 +68,36 @@ function assertCourt(store: Store, who: Identity, matchId: string, sampleData: b
       "WRONG_COURT",
     );
   }
+}
+
+/** 試合用チームの登録選手。登録から作ったチームでなければ空。 */
+function playersOf(
+  store: Store,
+  registrations: RegistrationStore,
+  teamId: string,
+  sampleData: boolean,
+) {
+  const team = store.read(sampleData).teams.find((item) => item.id === teamId);
+  return team?.registrationTeamId ? registrations.listPlayers(team.registrationTeamId) : [];
+}
+
+/** `memberId` をそのチームの選手として確かめる。null は Unknown player。 */
+function resolveScorer(
+  store: Store,
+  registrations: RegistrationStore,
+  teamId: string,
+  memberId: unknown,
+  sampleData: boolean,
+): GoalScorer {
+  if (memberId === null || memberId === undefined) {
+    return { memberId: null, playerName: null, backNumber: null };
+  }
+  const player =
+    typeof memberId === "string"
+      ? playersOf(store, registrations, teamId, sampleData).find((item) => item.id === memberId)
+      : undefined;
+  if (!player) throw new StoreError("the player is not registered for this team", "INVALID_PLAYER");
+  return { memberId: player.id, playerName: player.name, backNumber: player.backNumber };
 }
 
 /** `/api/*`（WebSocket とログイン以外）を処理する。変更が成功したら broadcast を呼ぶ。 */
@@ -436,6 +472,60 @@ export async function handleApi(
       return mutated(store.replaceMatches(body.matches, sampleData));
     }
 
+    const playersTarget = path.match(/^\/api\/matches\/([^/]+)\/players$/);
+    if (playersTarget && request.method === "GET") {
+      const who = signedIn(identity);
+      const id = decodeURIComponent(playersTarget[1]);
+      assertCourt(store, who, id, sampleData);
+      const match = store.read(sampleData).matches.find((item) => item.id === id);
+      if (!match)
+        return jsonResponse(404, { error: `unknown match: ${id}`, code: "UNKNOWN_MATCH" });
+      return jsonResponse(200, {
+        home: playersOf(store, registrations, match.homeTeamId, sampleData),
+        away: playersOf(store, registrations, match.awayTeamId, sampleData),
+      });
+    }
+
+    const goalsTarget = path.match(/^\/api\/matches\/([^/]+)\/goals(\/last)?$/);
+    if (goalsTarget && (request.method === "POST" || request.method === "DELETE")) {
+      const who = signedIn(identity);
+      const id = decodeURIComponent(goalsTarget[1]);
+      assertCourt(store, who, id, sampleData);
+      if (request.method === "DELETE") {
+        if (!goalsTarget[2]) return jsonResponse(404, { error: `no route for DELETE ${path}` });
+        return mutated(store.removeLastGoal(id, url.searchParams.get("team") ?? "", sampleData));
+      }
+      if (goalsTarget[2]) return jsonResponse(404, { error: `no route for POST ${path}` });
+      const body = (await readJsonBody(request)) as { teamId?: unknown; memberId?: unknown };
+      const teamId = typeof body.teamId === "string" ? body.teamId : "";
+      return mutated(
+        store.addGoal(
+          id,
+          teamId,
+          resolveScorer(store, registrations, teamId, body.memberId, sampleData),
+          sampleData,
+        ),
+      );
+    }
+
+    const goalTarget = path.match(/^\/api\/goals\/([^/]+)$/);
+    if (goalTarget && request.method === "PATCH") {
+      const who = signedIn(identity);
+      const goalId = decodeURIComponent(goalTarget[1]);
+      const goal = store.read(sampleData).goals?.find((item) => item.id === goalId);
+      if (!goal)
+        return jsonResponse(404, { error: `unknown goal: ${goalId}`, code: "UNKNOWN_GOAL" });
+      assertCourt(store, who, goal.matchId, sampleData);
+      const body = (await readJsonBody(request)) as { memberId?: unknown };
+      return mutated(
+        store.changeGoalScorer(
+          goalId,
+          resolveScorer(store, registrations, goal.teamId, body.memberId, sampleData),
+          sampleData,
+        ),
+      );
+    }
+
     const patchTarget = path.match(/^\/api\/matches\/(.+)$/);
     if (patchTarget && request.method === "PATCH") {
       const who = signedIn(identity);
@@ -454,6 +544,7 @@ export async function handleApi(
       const status =
         error.code === "UNKNOWN_MATCH" ||
         error.code === "UNKNOWN_TEAM" ||
+        error.code === "UNKNOWN_GOAL" ||
         error.code === "UNKNOWN_ANNOUNCEMENT"
           ? 404
           : error.code === "DUPLICATE_TEAM" ||

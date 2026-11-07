@@ -154,6 +154,9 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
 
 - 試合の進行（2026-11-07）: 管理画面で全試合を選べる（コート・ステージ・状態で絞り込み）。グループの全試合が終わると1位・2位が Round of 16 へ自動で進み、決勝トーナメントの勝者も次へ自動で進む。PK戦の入力、同点の順番を Super Admin が決める「Tie decisions」、次の試合が始まった後の結果変更の禁止。「Seed knockout teams (for testing)」はテスト用に残した。詳細は `docs/試合進行_仕様書.md`・`docs/試合進行_設計書.md`。
 
+- 得点者（2026-11-07）: 準々決勝から「+」で得点者を選ぶ（Unknown player 可、「Change」で直せる）。試合の詳細・Live・Knockout の「Top scorers」に表示。テーブル `match_goals`。QF 以降の点数はゴールの API でだけ変わる。詳細は `docs/得点者_仕様書.md`・`docs/得点者_設計書.md`。
+- Teams 画面は Registered teams だけにした（Competition teams は削除）。
+
 ## 主な確認内容
 
 - `npm run build` 成功。

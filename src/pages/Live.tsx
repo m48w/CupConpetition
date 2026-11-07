@@ -32,7 +32,7 @@ export function Live({ matches }: { matches: Match[] }) {
             <span className="muted">{t("live.active", { count: live.length })}</span>
           </div>
           {live.map((match) => (
-            <MatchCard match={match} key={match.id} />
+            <MatchCard match={match} key={match.id} showScorers />
           ))}
           {!live.length && <Empty text={t("live.empty")} />}
         </section>

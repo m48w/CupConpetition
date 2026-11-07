@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { PageTitle } from "../components/ui/PageTitle";
 import {
   AnnouncementsPanel,
+  GoalList,
   MatchPicker,
   MatchStateBanner,
   PenaltyShootout,
   ResetButton,
   ScheduleCheck,
+  ScorerPicker,
   TieDecisions,
 } from "../features/admin";
 import { needsPenaltyWinner } from "../features/tournament/progression";
@@ -15,11 +17,13 @@ import {
   isOnPitch,
   statusPatch,
   TeamBadge,
+  tracksScorers,
   type ConnectionState,
   useGroupOrders,
   useTeams,
 } from "../features/tournament";
 import type { Match, MatchStatus, SessionInfo, Team } from "../types";
+import { ApiError, requestJson } from "../utils/http";
 import { GroupBoard } from "../features/admin/grouping/GroupBoard";
 
 export function AdminSetup({
@@ -51,6 +55,10 @@ export function AdminSetup({
 }) {
   const [selectedId, setSelectedId] = useState(() => (matches.find(isOnPitch) ?? matches[0])?.id);
   const [signOutFailed, setSignOutFailed] = useState(false);
+  /** 「Who scored?」を出しているチーム（`goalId` があれば得点者の変更）。 */
+  const [scorerFor, setScorerFor] = useState<{ teamId: string; goalId?: string } | null>(null);
+  const [goalError, setGoalError] = useState("");
+  const closeScorer = useCallback(() => setScorerFor(null), []);
   const selected =
     matches.find((match) => match.id === selectedId) ?? matches.find(isOnPitch) ?? matches[0];
   const offline = connection !== "live";
@@ -64,6 +72,24 @@ export function AdminSetup({
   // Each tap is saved at once so spectators see the goal immediately.
   const changeScore = (side: "homeScore" | "awayScore", delta: number) => {
     if (!selected) return;
+    // 準々決勝からは得点者も記録する。「+」で選手を選び、「−」で最後のゴールを消す。
+    if (tracksScorers(selected)) {
+      const teamId = side === "homeScore" ? selected.homeTeamId : selected.awayTeamId;
+      setGoalError("");
+      if (delta > 0) {
+        setScorerFor({ teamId });
+        return;
+      }
+      void requestJson(
+        `/api/matches/${encodeURIComponent(selected.id)}/goals/last?team=${encodeURIComponent(teamId)}`,
+        { method: "DELETE" },
+      ).catch((reason: unknown) =>
+        setGoalError(
+          reason instanceof ApiError ? reason.message : "The goal could not be removed.",
+        ),
+      );
+      return;
+    }
     updateMatch(selected.id, { [side]: Math.max(0, selected[side] + delta) });
   };
 
@@ -111,7 +137,11 @@ export function AdminSetup({
             matches={matches}
             teams={currentTeams}
             selectedId={selected?.id}
-            onSelect={setSelectedId}
+            onSelect={(id) => {
+              setSelectedId(id);
+              setScorerFor(null);
+              setGoalError("");
+            }}
             fixedCourt={account.court}
           />
           {selected && (
@@ -144,6 +174,23 @@ export function AdminSetup({
                   <p className="muted">Start the match to record goals.</p>
                 )}
               </div>
+              {goalError && <div className="login-error">{goalError}</div>}
+              {tracksScorers(selected) && (
+                <GoalList
+                  match={selected}
+                  disabled={offline}
+                  onChange={(goal) => setScorerFor({ teamId: goal.teamId, goalId: goal.id })}
+                />
+              )}
+              {scorerFor && (
+                <ScorerPicker
+                  key={`${selected.id}:${scorerFor.teamId}:${scorerFor.goalId ?? "new"}`}
+                  match={selected}
+                  teamId={scorerFor.teamId}
+                  goalId={scorerFor.goalId}
+                  onClose={closeScorer}
+                />
+              )}
               <PenaltyShootout
                 match={selected}
                 disabled={offline}
