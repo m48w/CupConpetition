@@ -20,7 +20,6 @@ interface RegisteredTeam {
 
 export function Teams() {
   const { t } = useI18n();
-  const teams = useTeams();
   const [registeredTeams, setRegisteredTeams] = useState<RegisteredTeam[]>([]);
   const [registrationError, setRegistrationError] = useState<"teams.loadError" | "">("");
   const [selectedTeam, setSelectedTeam] = useState<RegisteredTeam | null>(null);
@@ -42,11 +41,7 @@ export function Teams() {
 
   return (
     <>
-      <PageTitle eyebrow={t("teams.eyebrow")} title={t("teams.title")}>
-        <span className="muted">
-          {t("teams.summary", { competing: teams.length, registered: registeredTeams.length })}
-        </span>
-      </PageTitle>
+      <PageTitle eyebrow={t("teams.eyebrow")} title={t("teams.title")} />
       <section className="team-directory-section">
         <div className="section-heading">
           <h2>{t("teams.registered.title")}</h2>
@@ -85,23 +80,6 @@ export function Teams() {
           <p className="empty-state">{t("teams.none")}</p>
         )}
       </section>
-      {teams.length > 0 && (
-        <section className="team-directory-section">
-          <div className="section-heading">
-            <h2>{t("teams.competition.title")}</h2>
-            <span className="muted">{t("common.teams", { count: teams.length })}</span>
-          </div>
-          <div className="team-directory">
-            {teams.map((team) => (
-              <Link className="team-directory-card" key={team.id} to={`/teams/${team.id}`}>
-                <TeamBadge id={team.id} showName={false} />
-                <strong>{team.name}</strong>
-                <span>{t("common.group", { id: team.groupId })}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
       {selectedTeam && (
         <div className="team-roster-overlay">
           <section

@@ -99,10 +99,6 @@ export const messages = {
   // ===== Teams =====
   "teams.eyebrow": { en: "THE CLUBS", my: "အသင်းများ" },
   "teams.title": { en: "Teams", my: "ပါဝင်သော အသင်းများ" },
-  "teams.summary": {
-    en: "{competing} competing · {registered} registered",
-    my: "ယှဉ်ပြိုင်မည် {competing} · စာရင်းသွင်းပြီး {registered}",
-  },
   "teams.registered.title": { en: "Registered teams", my: "စာရင်းသွင်းထားသော အသင်းများ" },
   "teams.loadError": {
     en: "Could not load the registered teams.",
@@ -113,7 +109,6 @@ export const messages = {
     my: "{team} နှင့် ကစားသမားများကို ကြည့်ရန်",
   },
   "teams.none": { en: "No teams have registered yet.", my: "စာရင်းသွင်းထားသော အသင်း မရှိသေးပါ။" },
-  "teams.competition.title": { en: "Competition teams", my: "ယှဉ်ပြိုင်မည့် အသင်းများ" },
   "teams.members.title": { en: "Registered players", my: "စာရင်းသွင်းထားသော ကစားသမားများ" },
   "teams.members.none": {
     en: "No players have registered yet.",
