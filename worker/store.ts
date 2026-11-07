@@ -16,6 +16,8 @@ import type {
   Goal,
   Match,
   MatchStatus,
+  Player,
+  Stage,
   Team,
   TournamentState,
 } from "../src/types";
@@ -162,6 +164,16 @@ export interface Store {
   removeLastGoal(matchId: string, teamId: string, sampleData?: boolean): TournamentState;
   /** ゴールの得点者を変える（点数は変わらない）。 */
   changeGoalScorer(goalId: string, scorer: GoalScorer, sampleData?: boolean): TournamentState;
+  /**
+   * テスト用。そのステージのまだ終わっていない試合（チームが決まっているもの）に
+   * ランダムな結果を入れて終わらせる。QF 以降は得点者もランダム。決勝トーナメントの同点は PK も入れる。
+   */
+  randomResults(
+    stage: Stage,
+    playersOf: (teamId: string) => Player[],
+    random?: () => number,
+    sampleData?: boolean,
+  ): { state: TournamentState; filled: number };
   /** 非表示も含めた全部のお知らせ（管理画面用）。 */
   listAnnouncements(): Announcement[];
   createAnnouncement(input: AnnouncementInput, sampleData?: boolean): TournamentState;
@@ -934,6 +946,88 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         bumpVersion();
       });
       return snapshot();
+    },
+
+    randomResults(stage, playersOf, random = Math.random, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const pick = (max: number) => Math.floor(random() * (max + 1));
+      const all = readMatches();
+      const targets = all.filter(
+        (match) =>
+          match.stage === stage &&
+          match.status !== "FINISHED" &&
+          match.homeTeamId !== TBD &&
+          match.awayTeamId !== TBD,
+      );
+      const goals: { match: Match; teamId: string; player: Player | null; minute: number }[] = [];
+      const finished = new Map<string, Match>();
+      for (const match of targets) {
+        // 試合中の点数より減らさない。0〜3点を足す。
+        const homeScore = match.homeScore + pick(3);
+        const awayScore = match.awayScore + pick(3);
+        const next: Match = {
+          ...match,
+          status: "FINISHED",
+          homeScore,
+          awayScore,
+          timerServerStartedAt: undefined,
+          timerElapsedSecondsAtPause: match.durationMinutes * 60,
+        };
+        if (stage !== "GROUP" && homeScore === awayScore) {
+          const winner = 3 + pick(2);
+          const loser = winner - 1 - pick(1);
+          const homeWins = random() < 0.5;
+          next.isPenaltyShootout = true;
+          next.penaltyHomeScore = homeWins ? winner : loser;
+          next.penaltyAwayScore = homeWins ? loser : winner;
+        }
+        if (tracksScorers(match)) {
+          for (const [teamId, added] of [
+            [match.homeTeamId, homeScore - match.homeScore],
+            [match.awayTeamId, awayScore - match.awayScore],
+          ] as const) {
+            const players = playersOf(teamId);
+            for (let index = 0; index < added; index += 1) {
+              goals.push({
+                match,
+                teamId,
+                player: players.length ? players[pick(players.length - 1)] : null,
+                minute: 1 + pick(Math.max(0, match.durationMinutes - 1)),
+              });
+            }
+          }
+        }
+        finished.set(match.id, next);
+      }
+      if (finished.size === 0) return { state: snapshot(), filled: 0 };
+      const after = withProgress(all.map((match) => finished.get(match.id) ?? match));
+      const base = Date.now();
+      goals.sort((a, b) => a.minute - b.minute);
+      storage.transactionSync(() => {
+        for (const match of after) {
+          const original = all.find((candidate) => candidate.id === match.id);
+          if (match !== original) {
+            sql.exec("UPDATE matches SET data = ? WHERE id = ?", JSON.stringify(match), match.id);
+          }
+        }
+        goals.forEach((goal, index) =>
+          sql.exec(
+            `INSERT INTO match_goals
+               (id, match_id, team_id, member_id, player_name, back_number, minute, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            crypto.randomUUID(),
+            goal.match.id,
+            goal.teamId,
+            goal.player?.id ?? null,
+            goal.player?.name ?? null,
+            goal.player?.backNumber ?? null,
+            goal.minute,
+            new Date(base + index).toISOString(),
+          ),
+        );
+        bumpVersion();
+      });
+      return { state: snapshot(), filled: finished.size };
     },
 
     listAnnouncements() {

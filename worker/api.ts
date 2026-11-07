@@ -1,4 +1,4 @@
-import type { Match, TournamentState } from "../src/types";
+import type { Match, Stage, TournamentState } from "../src/types";
 import type { Identity } from "./auth";
 import { registrationRows, toCsv } from "./csv";
 import { jsonResponse } from "./http";
@@ -108,6 +108,8 @@ export async function handleApi(
   broadcast: (state: TournamentState) => void,
   registrations: RegistrationStore,
   verification: RegistrationVerificationService,
+  /** テスト用の操作（ランダムな結果）を使えるか。テスト環境・ローカルだけ true。 */
+  options: { testTools?: boolean } = {},
 ): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -470,6 +472,29 @@ export async function handleApi(
         return jsonResponse(400, { error: "matches must be an array" });
       }
       return mutated(store.replaceMatches(body.matches, sampleData));
+    }
+
+    if (path === "/api/admin/test/random-results" && request.method === "POST") {
+      superadminOnly(identity);
+      if (!options.testTools) {
+        return jsonResponse(403, {
+          error: "random results are only available on the test site",
+          code: "TEST_ONLY",
+        });
+      }
+      const body = (await readJsonBody(request)) as { stage?: unknown };
+      const stages: Stage[] = ["GROUP", "R16", "QF", "SF", "FINAL"];
+      if (!stages.includes(body.stage as Stage)) {
+        return jsonResponse(400, { error: "unknown stage", code: "INVALID_STAGE" });
+      }
+      const { state, filled } = store.randomResults(
+        body.stage as Stage,
+        (teamId) => playersOf(store, registrations, teamId, sampleData),
+        Math.random,
+        sampleData,
+      );
+      if (filled > 0) broadcast(state);
+      return jsonResponse(200, { filled, state });
     }
 
     const playersTarget = path.match(/^\/api\/matches\/([^/]+)\/players$/);

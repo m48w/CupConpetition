@@ -2921,3 +2921,16 @@ footer span {
   width: 48px;
   text-align: center;
 }
+.random-results {
+  margin-bottom: 18px;
+  border-style: dashed;
+  border-color: rgba(245, 179, 1, 0.6);
+}
+.random-results-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.random-results-buttons .outline-button {
+  min-height: 44px;
+}

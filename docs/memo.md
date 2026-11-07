@@ -156,6 +156,7 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
 
 - 得点者（2026-11-07）: 準々決勝から「+」で得点者を選ぶ（Unknown player 可、「Change」で直せる）。試合の詳細・Live・Knockout の「Top scorers」に表示。テーブル `match_goals`。QF 以降の点数はゴールの API でだけ変わる。詳細は `docs/得点者_仕様書.md`・`docs/得点者_設計書.md`。
 - Teams 画面は Registered teams だけにした（Competition teams は削除）。
+- テスト用のランダム結果ボタン（2026-11-07）: 管理画面の「TEST TOOLS」。ステージごと（Group / R16 / QF / SF / Final）。テスト環境・ローカルだけ。
 
 ## 主な確認内容
 

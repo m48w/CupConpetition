@@ -1394,3 +1394,16 @@ test("得点者: QF から記録でき、点数とゴールの数が合い、Res
   expect(reset.goals).toEqual([]);
   await call("/api/initialize", asTournament("test", json("POST", {}, superadmin)));
 });
+
+test("ランダム結果: Super Admin だけ、ステージ名を確かめる", async () => {
+  const fill = (stage: unknown, cookie?: string) =>
+    call("/api/admin/test/random-results", json("POST", { stage }, cookie));
+  expect((await fill("GROUP")).status).toBe(401);
+  expect((await fill("GROUP", court1)).status).toBe(403);
+  const bad = await fill("XX", superadmin);
+  expect(bad.status).toBe(400);
+  expect(await bad.json()).toMatchObject({ code: "INVALID_STAGE" });
+  const ok = await fill("FINAL", superadmin);
+  expect(ok.status).toBe(200);
+  expect(await ok.json()).toMatchObject({ filled: expect.any(Number) });
+});

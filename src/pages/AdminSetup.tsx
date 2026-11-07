@@ -6,6 +6,7 @@ import {
   MatchPicker,
   MatchStateBanner,
   PenaltyShootout,
+  RandomResults,
   ResetButton,
   ScheduleCheck,
   ScorerPicker,
@@ -129,6 +130,7 @@ export function AdminSetup({
           disabled={offline}
         />
       )}
+      {setup && <RandomResults disabled={offline} />}
       {setup && <AnnouncementsPanel disabled={offline} />}
       <div className="admin-grid">
         <section className="admin-panel">

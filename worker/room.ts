@@ -46,6 +46,7 @@ export class TournamentRoom extends DurableObject<Env> {
       (state) => this.broadcast(state),
       this.registrations,
       this.registrationVerification,
+      { testTools: this.env.APP_ENV === "staging" },
     );
   }
 
