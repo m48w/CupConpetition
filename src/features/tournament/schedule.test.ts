@@ -3,6 +3,7 @@ import { teams } from "./data";
 import {
   buildTournamentSchedule,
   findCourtConflicts,
+  GROUP_IDS,
   GROUP_MATCH_MINUTES,
   matchEndMs,
   TBD,
@@ -122,4 +123,27 @@ describe("buildTournamentSchedule", () => {
   test("同じ入力から常に同じ出力を返す", () => {
     expect(buildTournamentSchedule(teams)).toEqual(schedule);
   });
+});
+
+test("チーム数が少なくても（16〜33チーム）、総当たりがそろいコートが重ならない", () => {
+  for (const sizes of [
+    [2, 2, 2, 2, 2, 2, 2, 2],
+    [3, 3, 3, 3, 3, 3, 3, 3],
+    [5, 4, 5, 4, 5, 4, 3, 3],
+  ]) {
+    const teams = sizes.flatMap((size, groupIndex) =>
+      Array.from({ length: size }, (_, index) => ({
+        id: `${GROUP_IDS[groupIndex]}${index + 1}`,
+        name: `${GROUP_IDS[groupIndex]}${index + 1}`,
+        groupId: GROUP_IDS[groupIndex],
+        color: "#000000",
+      })),
+    );
+    const matches = buildTournamentSchedule(teams);
+    const groupMatches = matches.filter((match) => match.stage === "GROUP");
+    const expected = sizes.reduce((sum, size) => sum + (size * (size - 1)) / 2, 0);
+    expect(groupMatches).toHaveLength(expected);
+    expect(matches).toHaveLength(expected + 15);
+    expect(findCourtConflicts(matches)).toEqual([]);
+  }
 });

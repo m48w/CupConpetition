@@ -2541,3 +2541,396 @@ footer span {
   margin: 22px 0 10px;
   font-size: 16px;
 }
+
+/* ===== グループ分け（Super Admin） ===== */
+.group-board {
+  margin-bottom: 18px;
+}
+.group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.group-actions button {
+  min-height: 44px;
+}
+.group-status {
+  margin: 4px 0 0;
+  color: #8a99b3;
+  font-size: 13px;
+}
+.group-status.dirty {
+  color: #fbbf24;
+  font-weight: 700;
+}
+.group-problems {
+  color: #fca5a5;
+  font-size: 13px;
+}
+.group-notice {
+  color: #86efac;
+  font-size: 13px;
+}
+.group-zone {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(17, 29, 45, 0.5);
+  margin-bottom: 14px;
+  min-height: 88px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.group-zone.can-drop {
+  border-color: rgba(249, 115, 22, 0.55);
+}
+.group-zone.over {
+  border-style: solid;
+  border-color: var(--orange);
+  background: rgba(249, 115, 22, 0.12);
+}
+.group-zone.blocked,
+.group-zone.full.over {
+  border-style: solid;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+.group-zone-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  pointer-events: auto;
+}
+.group-zone-heading span {
+  color: #8a99b3;
+  font-size: 13px;
+}
+.group-zone-heading .outline-button {
+  margin-left: auto;
+  min-height: 36px;
+  padding: 6px 10px;
+}
+.group-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.group-grid .group-zone {
+  margin-bottom: 0;
+  min-height: 180px;
+}
+.group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.group-grid .group-chips {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+.group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111d2d;
+  color: #edf4ff;
+  font-size: 13px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  max-width: 100%;
+}
+.group-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-chip img,
+.group-chip .team-crest {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex: none;
+}
+.group-chip.selected {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.35);
+}
+.group-chip.dragging {
+  opacity: 0.35;
+}
+.group-chip:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.group-chip-ghost {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-2deg);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  border-color: var(--orange);
+  cursor: grabbing;
+}
+@media (max-width: 1100px) {
+  .group-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .group-grid {
+    grid-template-columns: 1fr;
+  }
+  .group-actions {
+    justify-content: stretch;
+  }
+  .group-actions button {
+    flex: 1 1 45%;
+  }
+}
+.group-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+/* 順位表: 長いチーム名は「…」で切り、数字と重ならないようにする */
+.standings-row .team-badge {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.standings-row .team-badge span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== 試合の進行（管理画面・PK） ===== */
+.match-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.match-picker-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.match-picker-filters select,
+.match-picker-select {
+  min-height: 40px;
+}
+.match-picker-select {
+  width: 100%;
+}
+.penalty-shootout {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid rgba(249, 115, 22, 0.5);
+  border-radius: 10px;
+}
+.penalty-score {
+  display: flex;
+  justify-content: space-around;
+  gap: 12px;
+  margin-top: 8px;
+}
+.penalty-score > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.penalty-score button {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #111d2d;
+  color: #edf4ff;
+  font-size: 20px;
+}
+.penalty-score b {
+  font-size: 22px;
+  min-width: 24px;
+  text-align: center;
+}
+.penalty-note {
+  margin: 8px 0 0;
+  color: #fbbf24;
+  font-size: 13px;
+}
+.match-penalties {
+  margin: 4px 0 0;
+  color: #fbbf24;
+  font-size: 12px;
+  text-align: center;
+}
+.bracket-penalties {
+  display: block;
+  margin-top: 4px;
+  color: #fbbf24;
+}
+.tie-decisions {
+  border-color: rgba(245, 179, 1, 0.7);
+  margin-bottom: 18px;
+}
+.tie-group {
+  margin-top: 12px;
+}
+.tie-group ol {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+.tie-group li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+}
+.tie-group li.tied span:first-child {
+  color: #fbbf24;
+  font-weight: 700;
+}
+.tie-buttons button {
+  min-width: 40px;
+  min-height: 40px;
+  margin-left: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #111d2d;
+  color: #edf4ff;
+}
+/* 得点者 */
+.match-scorers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+.match-scorers ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: #c7d2e3;
+}
+.match-scorers ul:last-child {
+  text-align: right;
+}
+.match-scorers li {
+  padding: 1px 0;
+  overflow-wrap: anywhere;
+}
+.goal-list {
+  margin: 14px 0;
+}
+.goal-list ol {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.goal-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.goal-list li span {
+  flex: 1;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.goal-list .outline-button {
+  min-height: 40px;
+}
+.scorer-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(2 6 14 / 78%);
+}
+.scorer-dialog {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 560px);
+  max-height: 90vh;
+  overflow: auto;
+  padding: clamp(16px, 4vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #101827;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 45%);
+}
+.scorer-dialog header h2 {
+  margin: 0 0 4px;
+}
+.scorer-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.scorer-options button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #111d2d;
+  color: #edf4ff;
+  text-align: left;
+}
+.scorer-options button span {
+  overflow-wrap: anywhere;
+}
+.scorer-options .scorer-unknown {
+  grid-column: 1 / -1;
+  justify-content: center;
+  color: var(--muted);
+}
+.top-scorers table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.top-scorers th,
+.top-scorers td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.top-scorers th:first-child,
+.top-scorers td:first-child,
+.top-scorers th:last-child,
+.top-scorers td:last-child {
+  width: 48px;
+  text-align: center;
+}
+.random-results {
+  margin-bottom: 18px;
+  border-style: dashed;
+  border-color: rgba(245, 179, 1, 0.6);
+}
+.random-results-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.random-results-buttons .outline-button {
+  min-height: 44px;
+}

@@ -1,22 +1,31 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { PageTitle } from "../components/ui/PageTitle";
 import {
   AnnouncementsPanel,
+  GoalList,
+  MatchPicker,
   MatchStateBanner,
+  PenaltyShootout,
+  RandomResults,
   ResetButton,
   ScheduleCheck,
+  ScorerPicker,
+  TieDecisions,
 } from "../features/admin";
+import { needsPenaltyWinner } from "../features/tournament/progression";
 import { SIGN_OUT_FAILED } from "../features/auth";
 import {
   isOnPitch,
   statusPatch,
   TeamBadge,
+  tracksScorers,
   type ConnectionState,
+  useGroupOrders,
   useTeams,
 } from "../features/tournament";
 import type { Match, MatchStatus, SessionInfo, Team } from "../types";
-import { formatTime } from "../utils/format";
-import { TeamManager } from "./TeamManager";
+import { ApiError, requestJson } from "../utils/http";
+import { GroupBoard } from "../features/admin/grouping/GroupBoard";
 
 export function AdminSetup({
   eyebrow,
@@ -42,18 +51,20 @@ export function AdminSetup({
     resetTournament: () => void;
     initializeTournament: () => void;
     createSchedule: () => void;
-    addTeam: (team: Omit<Team, "id">) => Promise<void>;
-    updateTeam: (id: string, team: Omit<Team, "id">) => Promise<void>;
-    deleteTeam: (id: string) => Promise<void>;
   };
   connection: ConnectionState;
 }) {
   const [selectedId, setSelectedId] = useState(() => (matches.find(isOnPitch) ?? matches[0])?.id);
   const [signOutFailed, setSignOutFailed] = useState(false);
+  /** 「Who scored?」を出しているチーム（`goalId` があれば得点者の変更）。 */
+  const [scorerFor, setScorerFor] = useState<{ teamId: string; goalId?: string } | null>(null);
+  const [goalError, setGoalError] = useState("");
+  const closeScorer = useCallback(() => setScorerFor(null), []);
   const selected =
     matches.find((match) => match.id === selectedId) ?? matches.find(isOnPitch) ?? matches[0];
   const offline = connection !== "live";
   const currentTeams = useTeams();
+  const groupOrders = useGroupOrders();
 
   const handleSignOut = async () => {
     setSignOutFailed(!(await onSignOut()));
@@ -62,6 +73,24 @@ export function AdminSetup({
   // Each tap is saved at once so spectators see the goal immediately.
   const changeScore = (side: "homeScore" | "awayScore", delta: number) => {
     if (!selected) return;
+    // 準々決勝からは得点者も記録する。「+」で選手を選び、「−」で最後のゴールを消す。
+    if (tracksScorers(selected)) {
+      const teamId = side === "homeScore" ? selected.homeTeamId : selected.awayTeamId;
+      setGoalError("");
+      if (delta > 0) {
+        setScorerFor({ teamId });
+        return;
+      }
+      void requestJson(
+        `/api/matches/${encodeURIComponent(selected.id)}/goals/last?team=${encodeURIComponent(teamId)}`,
+        { method: "DELETE" },
+      ).catch((reason: unknown) =>
+        setGoalError(
+          reason instanceof ApiError ? reason.message : "The goal could not be removed.",
+        ),
+      );
+      return;
+    }
     updateMatch(selected.id, { [side]: Math.max(0, selected[side] + delta) });
   };
 
@@ -84,43 +113,39 @@ export function AdminSetup({
         </div>
       </PageTitle>
       {setup && (
-        <TeamManager
+        <GroupBoard
           teams={teams}
           matches={matches}
           tournamentId={setup.tournamentId}
           disabled={offline}
           onInitialize={setup.initializeTournament}
           onGenerateSchedule={setup.createSchedule}
-          onAddTeam={setup.addTeam}
-          onUpdateTeam={setup.updateTeam}
-          onDeleteTeam={setup.deleteTeam}
         />
       )}
+      {setup && (
+        <TieDecisions
+          teams={currentTeams}
+          matches={matches}
+          groupOrders={groupOrders}
+          disabled={offline}
+        />
+      )}
+      {setup && <RandomResults disabled={offline} />}
       {setup && <AnnouncementsPanel disabled={offline} />}
       <div className="admin-grid">
         <section className="admin-panel">
           <label>SELECT MATCH</label>
-          <select
-            value={selected?.id ?? ""}
-            disabled={matches.length === 0}
-            onChange={(event) => {
-              const next = matches.find((m) => m.id === event.target.value);
-              if (next) setSelectedId(next.id);
+          <MatchPicker
+            matches={matches}
+            teams={currentTeams}
+            selectedId={selected?.id}
+            onSelect={(id) => {
+              setSelectedId(id);
+              setScorerFor(null);
+              setGoalError("");
             }}
-          >
-            {matches.length === 0 && <option value="">No matches initialized</option>}
-            {matches
-              .filter((m) => m.status !== "FINISHED" || m.id === selectedId)
-              .slice(0, 20)
-              .map((m) => (
-                <option key={m.id} value={m.id}>
-                  {formatTime(m.scheduledStart)} ·{" "}
-                  {currentTeams.find((team) => team.id === m.homeTeamId)?.name ?? "TBD"} vs{" "}
-                  {currentTeams.find((team) => team.id === m.awayTeamId)?.name ?? "TBD"}
-                  {m.status !== "SCHEDULED" && ` · ${m.status}`}
-                </option>
-              ))}
-          </select>
+            fixedCourt={account.court}
+          />
           {selected && (
             <>
               <MatchStateBanner match={selected} />
@@ -151,6 +176,28 @@ export function AdminSetup({
                   <p className="muted">Start the match to record goals.</p>
                 )}
               </div>
+              {goalError && <div className="login-error">{goalError}</div>}
+              {tracksScorers(selected) && (
+                <GoalList
+                  match={selected}
+                  disabled={offline}
+                  onChange={(goal) => setScorerFor({ teamId: goal.teamId, goalId: goal.id })}
+                />
+              )}
+              {scorerFor && (
+                <ScorerPicker
+                  key={`${selected.id}:${scorerFor.teamId}:${scorerFor.goalId ?? "new"}`}
+                  match={selected}
+                  teamId={scorerFor.teamId}
+                  goalId={scorerFor.goalId}
+                  onClose={closeScorer}
+                />
+              )}
+              <PenaltyShootout
+                match={selected}
+                disabled={offline}
+                onChange={(patch) => updateMatch(selected.id, patch)}
+              />
               <div className="control-actions">
                 {selected.status === "SCHEDULED" && (
                   <button
@@ -186,7 +233,7 @@ export function AdminSetup({
                   <button
                     type="button"
                     className="danger-button"
-                    disabled={offline}
+                    disabled={offline || needsPenaltyWinner({ ...selected, status: "FINISHED" })}
                     onClick={() => changeStatus("FINISHED")}
                   >
                     ■ Finish match
@@ -199,11 +246,11 @@ export function AdminSetup({
         {setup && (
           <section className="admin-panel setup-panel">
             <label>SUPERADMIN SETUP</label>
-            <h3>Seed knockout teams</h3>
+            <h3>Seed knockout teams (for testing)</h3>
             <p>
-              Group fixtures run from 09:00 on courts 1–2, with court 3 joining at 12:15. Once the
-              group stage is final, this fills the Round of 16 from the standings without moving any
-              kick-off time.
+              Teams move into the knockout stage automatically when a group finishes and when a
+              knockout match ends. For testing, this button fills the Round of 16 from the current
+              standings even if the groups are not finished. Kick-off times do not change.
             </p>
             <ScheduleCheck matches={matches} />
             <button

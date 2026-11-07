@@ -99,10 +99,6 @@ export const messages = {
   // ===== Teams =====
   "teams.eyebrow": { en: "THE CLUBS", my: "အသင်းများ" },
   "teams.title": { en: "Teams", my: "ပါဝင်သော အသင်းများ" },
-  "teams.summary": {
-    en: "{competing} competing · {registered} registered",
-    my: "ယှဉ်ပြိုင်မည် {competing} · စာရင်းသွင်းပြီး {registered}",
-  },
   "teams.registered.title": { en: "Registered teams", my: "စာရင်းသွင်းထားသော အသင်းများ" },
   "teams.loadError": {
     en: "Could not load the registered teams.",
@@ -113,7 +109,6 @@ export const messages = {
     my: "{team} နှင့် ကစားသမားများကို ကြည့်ရန်",
   },
   "teams.none": { en: "No teams have registered yet.", my: "စာရင်းသွင်းထားသော အသင်း မရှိသေးပါ။" },
-  "teams.competition.title": { en: "Competition teams", my: "ယှဉ်ပြိုင်မည့် အသင်းများ" },
   "teams.members.title": { en: "Registered players", my: "စာရင်းသွင်းထားသော ကစားသမားများ" },
   "teams.members.none": {
     en: "No players have registered yet.",
@@ -133,6 +128,19 @@ export const messages = {
   "match.paused": { en: "PAUSED", my: "ခဏရပ်" },
   "match.finished": { en: "FULL TIME", my: "ပွဲပြီး" },
   "match.footer": { en: "Match {id} · Court {court}", my: "ပွဲစဉ် {id} · ကွင်း {court}" },
+  "match.penalties": { en: "PK {home}–{away}", my: "PK {home}–{away}" },
+  "match.goal": { en: "{minute}' #{number} {name}", my: "{minute}' #{number} {name}" },
+  "match.goalUnknown": { en: "{minute}' Unknown player", my: "{minute}' အမည်မသိ ကစားသမား" },
+  "match.scorers": { en: "Goal scorers", my: "ဂိုးသွင်းသူများ" },
+  "scorers.title": { en: "Top scorers", my: "ဂိုးသွင်းသူ ထိပ်ဆုံးများ" },
+  "scorers.note": {
+    en: "Goals from the quarter-finals onward. Penalty shoot-outs are not counted.",
+    my: "ကွာတားဖိုင်နယ်မှစ၍ သွင်းသော ဂိုးများ။ ပင်နယ်တီ ဖြေရှင်းပွဲ ဂိုးများ မပါဝင်ပါ။",
+  },
+  "scorers.empty": { en: "No goals yet.", my: "ဂိုး မရှိသေးပါ။" },
+  "scorers.player": { en: "Player", my: "ကစားသမား" },
+  "scorers.team": { en: "Team", my: "အသင်း" },
+  "scorers.goals": { en: "Goals", my: "ဂိုး" },
   "match.tbd": { en: "TBD", my: "မသတ်မှတ်ရသေး" },
   "matches.eyebrow": { en: "FULL TOURNAMENT SCHEDULE", my: "ပြိုင်ပွဲ အချိန်ဇယား" },
   "matches.title": { en: "All matches", my: "ပွဲစဉ်အားလုံး" },

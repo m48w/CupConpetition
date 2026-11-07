@@ -1,6 +1,7 @@
 import { useI18n } from "../../../i18n/useI18n";
 import type { Match, Team } from "../../../types";
 import { calculateStandings } from "../logic";
+import { useGroupOrders } from "../teamContext";
 import { TeamBadge } from "./TeamBadge";
 
 const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
@@ -21,7 +22,8 @@ export function StandingsTable({
   title?: string;
 }) {
   const { t } = useI18n();
-  const standings = calculateStandings(groupId, teams, matches);
+  const groupOrders = useGroupOrders();
+  const standings = calculateStandings(groupId, teams, matches, groupOrders);
   return (
     <section className="table-card standings-table">
       {title && (

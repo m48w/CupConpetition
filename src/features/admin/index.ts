@@ -1,4 +1,10 @@
 export { AnnouncementsPanel } from "./components/AnnouncementsPanel";
+export { MatchPicker } from "./components/MatchPicker";
 export { MatchStateBanner } from "./components/MatchStateBanner";
+export { PenaltyShootout } from "./components/PenaltyShootout";
+export { GoalList } from "./components/GoalList";
+export { ScorerPicker } from "./components/ScorerPicker";
+export { TieDecisions } from "./components/TieDecisions";
+export { RandomResults } from "./components/RandomResults";
 export { ResetButton } from "./components/ResetButton";
 export { ScheduleCheck } from "./components/ScheduleCheck";

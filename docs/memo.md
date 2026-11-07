@@ -4,6 +4,16 @@
 
 Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操作できる形で構築した。
 
+## 最新更新（2026-11-07）
+
+- Super Admin のグループ分けをドラッグ＆ドロップにした（`docs/グループ分け_仕様書.md`・`_設計書.md`）。登録チームを Group A〜H へ、マウス・指のドラッグ、または「タップ → Move here」で分ける。1グループ2〜5チーム。
+- 「Save groups」で試合用チームを登録チームの名前・ロゴで作り直す（`PUT /api/teams/groups`）。「Generate schedule」は 16〜40チームで作れる（グループ戦は総当たり、決勝トーナメントは15試合）。
+- 試合用チームにロゴが付くようになり、Groups・Matches・Knockout・Home でクラブのロゴが出る。
+- グループに入っている登録チームは削除できない（`409 TEAM_IN_GROUP`）。
+- 手でチーム名を入力する画面（`TeamManager.tsx`）は削除。
+- テスト環境の Admin ログインができなかった原因は、Secret の名前と値を逆に入れていたため（Cloudflare の画面から入れ直す）。
+- 確認：`vitest run`（185件）、`tsc -b`、`eslint .`、`prettier --check .` 成功。ローカルで PC（マウスのドラッグ）と iPad（タップ）を確認。
+
 ## 最新更新（2026-11-06）
 
 - スマホの下メニューで Live を真ん中にした（Home / Matches / Live / Groups / Knockout）。設計書に段階5を追加し、古い Info の章に「廃止」と書いた。
@@ -142,6 +152,12 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
 - 管理画面のSchedule checkを実際のコート重複判定・終了時刻計算に置き換え（従来は固定文言の `0 conflicts detected` 表示だった）。
 - vitestを導入し、スケジュール制約とファイルストア・APIをテストで担保（導入当時4ファイル・計35件。現在は Durable Object の SQLite・Worker API を含む）。
 
+- 試合の進行（2026-11-07）: 管理画面で全試合を選べる（コート・ステージ・状態で絞り込み）。グループの全試合が終わると1位・2位が Round of 16 へ自動で進み、決勝トーナメントの勝者も次へ自動で進む。PK戦の入力、同点の順番を Super Admin が決める「Tie decisions」、次の試合が始まった後の結果変更の禁止。「Seed knockout teams (for testing)」はテスト用に残した。詳細は `docs/試合進行_仕様書.md`・`docs/試合進行_設計書.md`。
+
+- 得点者（2026-11-07）: 準々決勝から「+」で得点者を選ぶ（Unknown player 可、「Change」で直せる）。試合の詳細・Live・Knockout の「Top scorers」に表示。テーブル `match_goals`。QF 以降の点数はゴールの API でだけ変わる。詳細は `docs/得点者_仕様書.md`・`docs/得点者_設計書.md`。
+- Teams 画面は Registered teams だけにした（Competition teams は削除）。
+- テスト用のランダム結果ボタン（2026-11-07）: 管理画面の「TEST TOOLS」。ステージごと（Group / R16 / QF / SF / Final）。テスト環境・ローカルだけ。
+
 ## 主な確認内容
 
 - `npm run build` 成功。
@@ -188,6 +204,5 @@ npm run dev -- --host 0.0.0.0 --port 4173
 - 問い合わせ先を `src/content/info.ts` に、ルールを Home のルール欄に記入。
 
 - 操作履歴・監査ログ。
-- 試合結果に応じたノックアウトチームの自動反映。
 - オンライン受付チームを既存の40試合枠へ割り当てる管理機能（運用方法の確定後）。
 - 試合時間、コート数を管理画面から編集可能にする。

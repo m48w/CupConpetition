@@ -155,3 +155,57 @@ test("reset は全試合を未開始に戻し、version を増やす", async () 
     true,
   );
 });
+
+test("randomResults: ステージごとに終わらせ、PK・得点者も入れ、2回目は何もしない", async () => {
+  await withStore((store) => {
+    store.read();
+    // 毎回同じ結果になる乱数。
+    let seed = 7;
+    const random = () => {
+      seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+      return seed / 2_147_483_648;
+    };
+    const players = (teamId: string) => [
+      { id: `${teamId}-p1`, name: `${teamId} One`, backNumber: 1 },
+      { id: `${teamId}-p2`, name: `${teamId} Two`, backNumber: 2 },
+    ];
+    const group = store.randomResults("GROUP", players, random);
+    expect(group.filled).toBe(80);
+    expect(
+      group.state.matches.filter((m) => m.stage === "GROUP").every((m) => m.status === "FINISHED"),
+    ).toBe(true);
+    expect(store.randomResults("GROUP", players, random).filled).toBe(0);
+
+    for (const stage of ["R16", "QF", "SF", "FINAL"] as const) {
+      const before = store.read().matches.filter((m) => m.stage === stage);
+      const ready = before.filter((m) => m.homeTeamId !== "TBD" && m.awayTeamId !== "TBD");
+      const { state, filled } = store.randomResults(stage, players, random);
+      expect(filled).toBe(ready.length);
+      for (const match of state.matches.filter((m) => ready.some((r) => r.id === m.id))) {
+        expect(match.status).toBe("FINISHED");
+        if (match.homeScore === match.awayScore) {
+          expect(match.isPenaltyShootout).toBe(true);
+          expect(match.penaltyHomeScore).not.toBe(match.penaltyAwayScore);
+        }
+        if (stage !== "R16") {
+          const goals = state.goals!.filter((goal) => goal.matchId === match.id);
+          expect(goals.filter((goal) => goal.teamId === match.homeTeamId)).toHaveLength(
+            match.homeScore,
+          );
+          expect(goals.filter((goal) => goal.teamId === match.awayTeamId)).toHaveLength(
+            match.awayScore,
+          );
+          expect(goals.every((goal) => goal.playerName?.startsWith(goal.teamId))).toBe(true);
+        }
+      }
+    }
+    // R16 は得点者を記録しない。
+    const r16Ids = new Set(
+      store
+        .read()
+        .matches.filter((m) => m.stage === "R16")
+        .map((m) => m.id),
+    );
+    expect(store.read().goals!.some((goal) => r16Ids.has(goal.matchId))).toBe(false);
+  });
+});

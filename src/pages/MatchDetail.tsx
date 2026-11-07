@@ -21,7 +21,7 @@ export function MatchDetail({ matches }: { matches: Match[] }) {
         </Link>
       </PageTitle>
       <div className="match-detail-card">
-        <MatchCard match={match} />
+        <MatchCard match={match} showScorers />
       </div>
     </>
   );

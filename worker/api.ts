@@ -1,4 +1,4 @@
-import type { Match, TournamentState } from "../src/types";
+import type { Match, Stage, TournamentState } from "../src/types";
 import type { Identity } from "./auth";
 import { registrationRows, toCsv } from "./csv";
 import { jsonResponse } from "./http";
@@ -9,7 +9,16 @@ import {
   RegistrationError,
   type RegistrationStore,
 } from "./registration";
-import { StoreError, type AnnouncementInput, type Store } from "./store";
+import { GROUP_IDS } from "../src/features/tournament/schedule";
+import {
+  StoreError,
+  type AnnouncementInput,
+  type GoalScorer,
+  type GroupedTeamInput,
+  type Store,
+} from "./store";
+
+type GroupId = (typeof GROUP_IDS)[number];
 
 /** JSON リクエストボディが壊れている場合に投げる。400 にマップされる。 */
 class BadRequestError extends Error {}
@@ -61,6 +70,36 @@ function assertCourt(store: Store, who: Identity, matchId: string, sampleData: b
   }
 }
 
+/** 試合用チームの登録選手。登録から作ったチームでなければ空。 */
+function playersOf(
+  store: Store,
+  registrations: RegistrationStore,
+  teamId: string,
+  sampleData: boolean,
+) {
+  const team = store.read(sampleData).teams.find((item) => item.id === teamId);
+  return team?.registrationTeamId ? registrations.listPlayers(team.registrationTeamId) : [];
+}
+
+/** `memberId` をそのチームの選手として確かめる。null は Unknown player。 */
+function resolveScorer(
+  store: Store,
+  registrations: RegistrationStore,
+  teamId: string,
+  memberId: unknown,
+  sampleData: boolean,
+): GoalScorer {
+  if (memberId === null || memberId === undefined) {
+    return { memberId: null, playerName: null, backNumber: null };
+  }
+  const player =
+    typeof memberId === "string"
+      ? playersOf(store, registrations, teamId, sampleData).find((item) => item.id === memberId)
+      : undefined;
+  if (!player) throw new StoreError("the player is not registered for this team", "INVALID_PLAYER");
+  return { memberId: player.id, playerName: player.name, backNumber: player.backNumber };
+}
+
 /** `/api/*`（WebSocket とログイン以外）を処理する。変更が成功したら broadcast を呼ぶ。 */
 export async function handleApi(
   request: Request,
@@ -69,6 +108,8 @@ export async function handleApi(
   broadcast: (state: TournamentState) => void,
   registrations: RegistrationStore,
   verification: RegistrationVerificationService,
+  /** テスト用の操作（ランダムな結果）を使えるか。テスト環境・ローカルだけ true。 */
+  options: { testTools?: boolean } = {},
 ): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -322,6 +363,63 @@ export async function handleApi(
       return mutated(store.generateSchedule(sampleData));
     }
 
+    if (path === "/api/admin/group-draft" && request.method === "GET") {
+      superadminOnly(identity);
+      const state = store.read(sampleData);
+      const groups = Object.fromEntries(GROUP_IDS.map((groupId) => [groupId, [] as string[]]));
+      for (const team of state.teams) {
+        if (team.registrationTeamId) groups[team.groupId]?.push(team.registrationTeamId);
+      }
+      return jsonResponse(200, {
+        candidates: registrations.listGroupCandidates(),
+        groups,
+        locked: store.hasStartedMatch(sampleData),
+        hasMatches: state.matches.length > 0,
+      });
+    }
+
+    if (path === "/api/teams/groups" && request.method === "PUT") {
+      superadminOnly(identity);
+      const body = (await readJsonBody(request)) as { groups?: unknown };
+      const groups = body.groups;
+      if (
+        !groups ||
+        typeof groups !== "object" ||
+        Array.isArray(groups) ||
+        Object.keys(groups).some((key) => !GROUP_IDS.includes(key as GroupId)) ||
+        Object.values(groups).some(
+          (ids) => !Array.isArray(ids) || ids.some((id) => typeof id !== "string"),
+        )
+      ) {
+        return jsonResponse(400, {
+          error: "groups must map A–H to lists of registered team ids",
+          code: "INVALID_GROUPS",
+        });
+      }
+      const candidates = new Map(
+        registrations.listGroupCandidates().map((candidate) => [candidate.id, candidate]),
+      );
+      const teams: GroupedTeamInput[] = [];
+      for (const [groupId, ids] of Object.entries(groups as Record<string, string[]>)) {
+        for (const id of ids) {
+          const candidate = candidates.get(id);
+          if (!candidate) {
+            return jsonResponse(400, {
+              error: `unknown registered team: ${id}`,
+              code: "UNKNOWN_REGISTRATION_TEAM",
+            });
+          }
+          teams.push({
+            registrationTeamId: id,
+            name: candidate.teamName,
+            logoId: candidate.logoId,
+            groupId,
+          });
+        }
+      }
+      return mutated(store.setGroups(teams, sampleData));
+    }
+
     if (path === "/api/announcements" && request.method === "GET") {
       return jsonResponse(200, { announcements: store.read(sampleData).announcements ?? [] });
     }
@@ -346,6 +444,18 @@ export async function handleApi(
       return mutated(store.updateAnnouncement(id, body, sampleData));
     }
 
+    const groupOrderTarget = path.match(/^\/api\/groups\/([A-H])\/order$/);
+    if (groupOrderTarget && request.method === "PUT") {
+      superadminOnly(identity);
+      const body = (await readJsonBody(request)) as { teamIds?: unknown };
+      if (!Array.isArray(body.teamIds) || body.teamIds.some((id) => typeof id !== "string")) {
+        return jsonResponse(400, { error: "teamIds must be a list", code: "INVALID_ORDER" });
+      }
+      return mutated(
+        store.setGroupOrder(groupOrderTarget[1], body.teamIds as string[], sampleData),
+      );
+    }
+
     if (path === "/api/state" && request.method === "GET") {
       return jsonResponse(200, store.read(sampleData));
     }
@@ -362,6 +472,83 @@ export async function handleApi(
         return jsonResponse(400, { error: "matches must be an array" });
       }
       return mutated(store.replaceMatches(body.matches, sampleData));
+    }
+
+    if (path === "/api/admin/test/random-results" && request.method === "POST") {
+      superadminOnly(identity);
+      if (!options.testTools) {
+        return jsonResponse(403, {
+          error: "random results are only available on the test site",
+          code: "TEST_ONLY",
+        });
+      }
+      const body = (await readJsonBody(request)) as { stage?: unknown };
+      const stages: Stage[] = ["GROUP", "R16", "QF", "SF", "FINAL"];
+      if (!stages.includes(body.stage as Stage)) {
+        return jsonResponse(400, { error: "unknown stage", code: "INVALID_STAGE" });
+      }
+      const { state, filled } = store.randomResults(
+        body.stage as Stage,
+        (teamId) => playersOf(store, registrations, teamId, sampleData),
+        Math.random,
+        sampleData,
+      );
+      if (filled > 0) broadcast(state);
+      return jsonResponse(200, { filled, state });
+    }
+
+    const playersTarget = path.match(/^\/api\/matches\/([^/]+)\/players$/);
+    if (playersTarget && request.method === "GET") {
+      const who = signedIn(identity);
+      const id = decodeURIComponent(playersTarget[1]);
+      assertCourt(store, who, id, sampleData);
+      const match = store.read(sampleData).matches.find((item) => item.id === id);
+      if (!match)
+        return jsonResponse(404, { error: `unknown match: ${id}`, code: "UNKNOWN_MATCH" });
+      return jsonResponse(200, {
+        home: playersOf(store, registrations, match.homeTeamId, sampleData),
+        away: playersOf(store, registrations, match.awayTeamId, sampleData),
+      });
+    }
+
+    const goalsTarget = path.match(/^\/api\/matches\/([^/]+)\/goals(\/last)?$/);
+    if (goalsTarget && (request.method === "POST" || request.method === "DELETE")) {
+      const who = signedIn(identity);
+      const id = decodeURIComponent(goalsTarget[1]);
+      assertCourt(store, who, id, sampleData);
+      if (request.method === "DELETE") {
+        if (!goalsTarget[2]) return jsonResponse(404, { error: `no route for DELETE ${path}` });
+        return mutated(store.removeLastGoal(id, url.searchParams.get("team") ?? "", sampleData));
+      }
+      if (goalsTarget[2]) return jsonResponse(404, { error: `no route for POST ${path}` });
+      const body = (await readJsonBody(request)) as { teamId?: unknown; memberId?: unknown };
+      const teamId = typeof body.teamId === "string" ? body.teamId : "";
+      return mutated(
+        store.addGoal(
+          id,
+          teamId,
+          resolveScorer(store, registrations, teamId, body.memberId, sampleData),
+          sampleData,
+        ),
+      );
+    }
+
+    const goalTarget = path.match(/^\/api\/goals\/([^/]+)$/);
+    if (goalTarget && request.method === "PATCH") {
+      const who = signedIn(identity);
+      const goalId = decodeURIComponent(goalTarget[1]);
+      const goal = store.read(sampleData).goals?.find((item) => item.id === goalId);
+      if (!goal)
+        return jsonResponse(404, { error: `unknown goal: ${goalId}`, code: "UNKNOWN_GOAL" });
+      assertCourt(store, who, goal.matchId, sampleData);
+      const body = (await readJsonBody(request)) as { memberId?: unknown };
+      return mutated(
+        store.changeGoalScorer(
+          goalId,
+          resolveScorer(store, registrations, goal.teamId, body.memberId, sampleData),
+          sampleData,
+        ),
+      );
     }
 
     const patchTarget = path.match(/^\/api\/matches\/(.+)$/);
@@ -382,9 +569,12 @@ export async function handleApi(
       const status =
         error.code === "UNKNOWN_MATCH" ||
         error.code === "UNKNOWN_TEAM" ||
+        error.code === "UNKNOWN_GOAL" ||
         error.code === "UNKNOWN_ANNOUNCEMENT"
           ? 404
-          : error.code === "DUPLICATE_TEAM" || error.code === "TEAM_IN_USE"
+          : error.code === "DUPLICATE_TEAM" ||
+              error.code === "TEAM_IN_USE" ||
+              error.code === "RESULT_LOCKED"
             ? 409
             : 400;
       return jsonResponse(status, {

@@ -58,9 +58,6 @@ function AdminConsole({
     resetTournament: () => void;
     initializeTournament: () => void;
     createSchedule: () => void;
-    addTeam: ReturnType<typeof useTournamentState>["addTeam"];
-    updateTeam: ReturnType<typeof useTournamentState>["updateTeam"];
-    deleteTeam: ReturnType<typeof useTournamentState>["deleteTeam"];
   };
 }) {
   return session.role === "superadmin" ? (
@@ -77,15 +74,14 @@ function App() {
     matches,
     teams,
     announcements,
+    groupOrders,
+    goals,
     connection,
     error,
     patchMatch,
     replaceMatches,
     reset,
     clearError,
-    addTeam,
-    updateTeam,
-    deleteTeam,
     initializeTournament,
     generateSchedule,
   } = useTournamentState({
@@ -111,13 +107,11 @@ function App() {
   };
   const setup = {
     tournamentId: getTournamentId(),
-    generateSchedule: () => void replaceMatches(seedKnockoutTeams(teams, matches)),
+    // テスト用: 今の順位で Round of 16 を埋める（グループが終わっていなくても）。
+    generateSchedule: () => void replaceMatches(seedKnockoutTeams(teams, matches, groupOrders)),
     resetTournament: () => void reset(),
     initializeTournament: () => void initializeTournament(),
     createSchedule: () => void generateSchedule(),
-    addTeam,
-    updateTeam,
-    deleteTeam,
   };
 
   return (
@@ -184,7 +178,7 @@ function App() {
             )}
           </div>
         </aside>
-        <TeamsProvider teams={teams}>
+        <TeamsProvider teams={teams} groupOrders={groupOrders} goals={goals}>
           <main className="main-content">
             <AnnouncementBar announcements={announcements} />
             <Routes>
