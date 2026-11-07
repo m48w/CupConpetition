@@ -2541,3 +2541,175 @@ footer span {
   margin: 22px 0 10px;
   font-size: 16px;
 }
+
+/* ===== グループ分け（Super Admin） ===== */
+.group-board {
+  margin-bottom: 18px;
+}
+.group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.group-actions button {
+  min-height: 44px;
+}
+.group-status {
+  margin: 4px 0 0;
+  color: #8a99b3;
+  font-size: 13px;
+}
+.group-status.dirty {
+  color: #fbbf24;
+  font-weight: 700;
+}
+.group-problems {
+  color: #fca5a5;
+  font-size: 13px;
+}
+.group-notice {
+  color: #86efac;
+  font-size: 13px;
+}
+.group-zone {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(17, 29, 45, 0.5);
+  margin-bottom: 14px;
+  min-height: 88px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.group-zone.can-drop {
+  border-color: rgba(249, 115, 22, 0.55);
+}
+.group-zone.over {
+  border-style: solid;
+  border-color: var(--orange);
+  background: rgba(249, 115, 22, 0.12);
+}
+.group-zone.blocked,
+.group-zone.full.over {
+  border-style: solid;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+.group-zone-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  pointer-events: auto;
+}
+.group-zone-heading span {
+  color: #8a99b3;
+  font-size: 13px;
+}
+.group-zone-heading .outline-button {
+  margin-left: auto;
+  min-height: 36px;
+  padding: 6px 10px;
+}
+.group-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.group-grid .group-zone {
+  margin-bottom: 0;
+  min-height: 180px;
+}
+.group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.group-grid .group-chips {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+.group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111d2d;
+  color: #edf4ff;
+  font-size: 13px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  max-width: 100%;
+}
+.group-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-chip img,
+.group-chip .team-crest {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex: none;
+}
+.group-chip.selected {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.35);
+}
+.group-chip.dragging {
+  opacity: 0.35;
+}
+.group-chip:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.group-chip-ghost {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-2deg);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  border-color: var(--orange);
+  cursor: grabbing;
+}
+@media (max-width: 1100px) {
+  .group-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .group-grid {
+    grid-template-columns: 1fr;
+  }
+  .group-actions {
+    justify-content: stretch;
+  }
+  .group-actions button {
+    flex: 1 1 45%;
+  }
+}
+.group-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+/* 順位表: 長いチーム名は「…」で切り、数字と重ならないようにする */
+.standings-row .team-badge {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.standings-row .team-badge span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

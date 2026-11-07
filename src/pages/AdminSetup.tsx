@@ -16,7 +16,7 @@ import {
 } from "../features/tournament";
 import type { Match, MatchStatus, SessionInfo, Team } from "../types";
 import { formatTime } from "../utils/format";
-import { TeamManager } from "./TeamManager";
+import { GroupBoard } from "../features/admin/grouping/GroupBoard";
 
 export function AdminSetup({
   eyebrow,
@@ -42,9 +42,6 @@ export function AdminSetup({
     resetTournament: () => void;
     initializeTournament: () => void;
     createSchedule: () => void;
-    addTeam: (team: Omit<Team, "id">) => Promise<void>;
-    updateTeam: (id: string, team: Omit<Team, "id">) => Promise<void>;
-    deleteTeam: (id: string) => Promise<void>;
   };
   connection: ConnectionState;
 }) {
@@ -84,16 +81,13 @@ export function AdminSetup({
         </div>
       </PageTitle>
       {setup && (
-        <TeamManager
+        <GroupBoard
           teams={teams}
           matches={matches}
           tournamentId={setup.tournamentId}
           disabled={offline}
           onInitialize={setup.initializeTournament}
           onGenerateSchedule={setup.createSchedule}
-          onAddTeam={setup.addTeam}
-          onUpdateTeam={setup.updateTeam}
-          onDeleteTeam={setup.deleteTeam}
         />
       )}
       {setup && <AnnouncementsPanel disabled={offline} />}

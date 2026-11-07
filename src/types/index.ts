@@ -7,6 +7,8 @@ export interface Team {
   groupId: string;
   color: string;
   logoId?: string | null;
+  /** グループ分けで登録チームから作ったときの、元の登録チームの ID。 */
+  registrationTeamId?: string | null;
 }
 
 export interface Match {

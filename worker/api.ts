@@ -9,7 +9,10 @@ import {
   RegistrationError,
   type RegistrationStore,
 } from "./registration";
-import { StoreError, type AnnouncementInput, type Store } from "./store";
+import { GROUP_IDS } from "../src/features/tournament/schedule";
+import { StoreError, type AnnouncementInput, type GroupedTeamInput, type Store } from "./store";
+
+type GroupId = (typeof GROUP_IDS)[number];
 
 /** JSON リクエストボディが壊れている場合に投げる。400 にマップされる。 */
 class BadRequestError extends Error {}
@@ -320,6 +323,63 @@ export async function handleApi(
     if (path === "/api/schedule" && request.method === "POST") {
       superadminOnly(identity);
       return mutated(store.generateSchedule(sampleData));
+    }
+
+    if (path === "/api/admin/group-draft" && request.method === "GET") {
+      superadminOnly(identity);
+      const state = store.read(sampleData);
+      const groups = Object.fromEntries(GROUP_IDS.map((groupId) => [groupId, [] as string[]]));
+      for (const team of state.teams) {
+        if (team.registrationTeamId) groups[team.groupId]?.push(team.registrationTeamId);
+      }
+      return jsonResponse(200, {
+        candidates: registrations.listGroupCandidates(),
+        groups,
+        locked: store.hasStartedMatch(sampleData),
+        hasMatches: state.matches.length > 0,
+      });
+    }
+
+    if (path === "/api/teams/groups" && request.method === "PUT") {
+      superadminOnly(identity);
+      const body = (await readJsonBody(request)) as { groups?: unknown };
+      const groups = body.groups;
+      if (
+        !groups ||
+        typeof groups !== "object" ||
+        Array.isArray(groups) ||
+        Object.keys(groups).some((key) => !GROUP_IDS.includes(key as GroupId)) ||
+        Object.values(groups).some(
+          (ids) => !Array.isArray(ids) || ids.some((id) => typeof id !== "string"),
+        )
+      ) {
+        return jsonResponse(400, {
+          error: "groups must map A–H to lists of registered team ids",
+          code: "INVALID_GROUPS",
+        });
+      }
+      const candidates = new Map(
+        registrations.listGroupCandidates().map((candidate) => [candidate.id, candidate]),
+      );
+      const teams: GroupedTeamInput[] = [];
+      for (const [groupId, ids] of Object.entries(groups as Record<string, string[]>)) {
+        for (const id of ids) {
+          const candidate = candidates.get(id);
+          if (!candidate) {
+            return jsonResponse(400, {
+              error: `unknown registered team: ${id}`,
+              code: "UNKNOWN_REGISTRATION_TEAM",
+            });
+          }
+          teams.push({
+            registrationTeamId: id,
+            name: candidate.teamName,
+            logoId: candidate.logoId,
+            groupId,
+          });
+        }
+      }
+      return mutated(store.setGroups(teams, sampleData));
     }
 
     if (path === "/api/announcements" && request.method === "GET") {

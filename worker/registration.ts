@@ -46,6 +46,14 @@ export interface AdminRegistrationTeam extends RegistrationTeamSummary {
   members: AdminRegisteredMember[];
 }
 
+/** グループ分けの候補になる登録チーム。 */
+export interface GroupCandidate {
+  id: string;
+  teamName: string;
+  clubName: string;
+  logoId: string | null;
+}
+
 export interface ClubRegistrationSummary {
   id: string;
   name: string;
@@ -926,12 +934,56 @@ export class RegistrationStore {
     }
   }
 
+  /** グループ分けの候補（登録チームとクラブのロゴ）。登録順。 */
+  listGroupCandidates(): GroupCandidate[] {
+    return this.sql
+      .exec<{ id: string; team_name: string; club_name: string; logo_id: string | null }>(
+        `SELECT t.id, t.name AS team_name, c.name AS club_name, c.logo_id
+         FROM registration_teams t JOIN registration_clubs c ON c.id = t.club_id
+         ORDER BY t.created_at, t.name COLLATE NOCASE`,
+      )
+      .toArray()
+      .map((row) => ({
+        id: row.id,
+        teamName: row.team_name,
+        clubName: row.club_name,
+        logoId: row.logo_id,
+      }));
+  }
+
+  /** グループに入っている（試合用チームになっている）登録チームか。 */
+  private isInGroup(teamId: string): boolean {
+    const hasTeamsTable = this.sql
+      .exec<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'teams'",
+      )
+      .toArray()[0];
+    if (!hasTeamsTable) return false;
+    const hasColumn = this.sql
+      .exec<{ name: string }>("PRAGMA table_info(teams)")
+      .toArray()
+      .some((column) => column.name === "registration_team_id");
+    if (!hasColumn) return false;
+    return (
+      this.sql
+        .exec<{ id: string }>("SELECT id FROM teams WHERE registration_team_id = ?", teamId)
+        .toArray().length > 0
+    );
+  }
+
   deleteTeam(teamId: string): void {
     this.transactionSync(() => {
       const team = this.sql
         .exec<{ club_id: string }>("SELECT club_id FROM registration_teams WHERE id = ?", teamId)
         .toArray()[0];
       if (!team) throw new RegistrationError("Team not found.", "TEAM_NOT_FOUND", 404);
+      if (this.isInGroup(teamId)) {
+        throw new RegistrationError(
+          "This team is in a group. Remove it from its group first.",
+          "TEAM_IN_GROUP",
+          409,
+        );
+      }
       const accessRows = this.sql
         .exec<{ token_hash: string; team_ids_json: string }>(
           "SELECT token_hash, team_ids_json FROM registration_access",

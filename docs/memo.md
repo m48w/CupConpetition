@@ -4,6 +4,16 @@
 
 Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操作できる形で構築した。
 
+## 最新更新（2026-11-07）
+
+- Super Admin のグループ分けをドラッグ＆ドロップにした（`docs/グループ分け_仕様書.md`・`_設計書.md`）。登録チームを Group A〜H へ、マウス・指のドラッグ、または「タップ → Move here」で分ける。1グループ2〜5チーム。
+- 「Save groups」で試合用チームを登録チームの名前・ロゴで作り直す（`PUT /api/teams/groups`）。「Generate schedule」は 16〜40チームで作れる（グループ戦は総当たり、決勝トーナメントは15試合）。
+- 試合用チームにロゴが付くようになり、Groups・Matches・Knockout・Home でクラブのロゴが出る。
+- グループに入っている登録チームは削除できない（`409 TEAM_IN_GROUP`）。
+- 手でチーム名を入力する画面（`TeamManager.tsx`）は削除。
+- テスト環境の Admin ログインができなかった原因は、Secret の名前と値を逆に入れていたため（Cloudflare の画面から入れ直す）。
+- 確認：`vitest run`（185件）、`tsc -b`、`eslint .`、`prettier --check .` 成功。ローカルで PC（マウスのドラッグ）と iPad（タップ）を確認。
+
 ## 最新更新（2026-11-06）
 
 - スマホの下メニューで Live を真ん中にした（Home / Matches / Live / Groups / Knockout）。設計書に段階5を追加し、古い Info の章に「廃止」と書いた。

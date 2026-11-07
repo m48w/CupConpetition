@@ -42,6 +42,8 @@ export type StoreErrorCode =
   | "DUPLICATE_TEAM"
   | "UNKNOWN_TEAM"
   | "TEAM_IN_USE"
+  | "INVALID_GROUPS"
+  | "GROUP_TOO_LARGE"
   | "INVALID_ANNOUNCEMENT"
   | "UNKNOWN_ANNOUNCEMENT";
 
@@ -49,6 +51,44 @@ export type StoreErrorCode =
 export const MAX_PUBLIC_ANNOUNCEMENTS = 3;
 const MAX_ANNOUNCEMENT_LENGTH = 300;
 const ANNOUNCEMENT_LEVELS: readonly AnnouncementLevel[] = ["info", "warning"];
+
+/** 1グループに入れられるチーム数。2チーム未満のグループがあると試合を作れない。 */
+export const MIN_TEAMS_PER_GROUP = 2;
+export const MAX_TEAMS_PER_GROUP = 5;
+
+/** グループ分けで作る試合用チーム（登録チームから作る）。 */
+export interface GroupedTeamInput {
+  registrationTeamId: string;
+  name: string;
+  logoId: string | null;
+  groupId: string;
+}
+
+/** グループごとの見分けやすい色（A〜H）。 */
+const GROUP_COLORS: Record<string, string> = {
+  A: "#f97316",
+  B: "#22c55e",
+  C: "#38bdf8",
+  D: "#a78bfa",
+  E: "#f43f5e",
+  F: "#eab308",
+  G: "#14b8a6",
+  H: "#ec4899",
+};
+
+/** 試合を作れないときの理由（例: "Group H needs at least 2 teams"）。空なら作れる。 */
+export function scheduleProblems(groupCounts: Record<string, number>): string[] {
+  const problems: string[] = [];
+  for (const groupId of GROUP_IDS) {
+    const count = groupCounts[groupId] ?? 0;
+    if (count < MIN_TEAMS_PER_GROUP) {
+      problems.push(`Group ${groupId} needs at least ${MIN_TEAMS_PER_GROUP} teams`);
+    } else if (count > MAX_TEAMS_PER_GROUP) {
+      problems.push(`Group ${groupId} can have at most ${MAX_TEAMS_PER_GROUP} teams`);
+    }
+  }
+  return problems;
+}
 
 export interface AnnouncementInput {
   bodyEn?: unknown;
@@ -79,6 +119,10 @@ export interface Store {
   deleteTeam(id: string, sampleData?: boolean): TournamentState;
   initialize(sampleData?: boolean): TournamentState;
   generateSchedule(sampleData?: boolean): TournamentState;
+  /** グループ分けを保存する。試合用チームを作り直し、試合は消す（試合開始後はできない）。 */
+  setGroups(teams: GroupedTeamInput[], sampleData?: boolean): TournamentState;
+  /** 試合が始まっているか（グループ分けを変えられないか）。 */
+  hasStartedMatch(sampleData?: boolean): boolean;
   /** 非表示も含めた全部のお知らせ（管理画面用）。 */
   listAnnouncements(): Announcement[];
   createAnnouncement(input: AnnouncementInput, sampleData?: boolean): TournamentState;
@@ -189,6 +233,7 @@ function validateAnnouncement(input: AnnouncementInput, partial: boolean) {
 }
 
 const SCHEDULE_DATE_MIGRATION = "schedule-date-2026-12-20";
+const TEAM_REGISTRATION_ID_MIGRATION = "teams-registration-team-id";
 const SCHEDULE_DATE_SHIFT_MS = 85 * 24 * 60 * 60 * 1_000;
 const PREVIOUS_EVENT_START_MS = Date.parse("2026-09-25T15:00:00.000Z");
 const NEXT_EVENT_START_MS = Date.parse("2026-09-26T15:00:00.000Z");
@@ -232,6 +277,27 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
     });
   }
 
+  const teamMigration = sql
+    .exec<{ id: string }>(
+      "SELECT id FROM store_migrations WHERE id = ?",
+      TEAM_REGISTRATION_ID_MIGRATION,
+    )
+    .toArray()[0];
+  if (!teamMigration) {
+    storage.transactionSync(() => {
+      const hasColumn = sql
+        .exec<{ name: string }>("PRAGMA table_info(teams)")
+        .toArray()
+        .some((column) => column.name === "registration_team_id");
+      if (!hasColumn) sql.exec("ALTER TABLE teams ADD COLUMN registration_team_id TEXT");
+      sql.exec(
+        "INSERT INTO store_migrations (id, applied_at) VALUES (?, ?)",
+        TEAM_REGISTRATION_ID_MIGRATION,
+        new Date().toISOString(),
+      );
+    });
+  }
+
   const readMeta = () =>
     sql
       .exec<{ version: number; updated_at: string }>(
@@ -253,7 +319,10 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         group_id: string;
         color: string;
         logo_id: string | null;
-      }>("SELECT id, name, group_id, color, logo_id FROM teams ORDER BY position")
+        registration_team_id: string | null;
+      }>(
+        "SELECT id, name, group_id, color, logo_id, registration_team_id FROM teams ORDER BY position",
+      )
       .toArray()
       .map((row): Team => ({
         id: row.id,
@@ -261,6 +330,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         groupId: row.group_id,
         color: row.color,
         logoId: row.logo_id,
+        registrationTeamId: row.registration_team_id,
       }));
 
   const readLogo = (id: string) =>
@@ -274,13 +344,15 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
   const insertTeams = (nextTeams: Team[]) =>
     nextTeams.forEach((team, position) =>
       sql.exec(
-        "INSERT INTO teams (id, position, name, group_id, color, logo_id) VALUES (?, ?, ?, ?, ?, ?)",
+        `INSERT INTO teams (id, position, name, group_id, color, logo_id, registration_team_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         team.id,
         position,
         team.name,
         team.groupId,
         team.color,
         team.logoId ?? null,
+        team.registrationTeamId ?? null,
       ),
     );
 
@@ -444,12 +516,11 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
     reset(sampleData = defaultSampleData) {
       ensureInitialized(sampleData);
       const currentTeams = readTeams();
-      const groupCounts = new Map<string, number>();
+      const groupCounts: Record<string, number> = {};
       for (const team of currentTeams) {
-        groupCounts.set(team.groupId, (groupCounts.get(team.groupId) ?? 0) + 1);
+        groupCounts[team.groupId] = (groupCounts[team.groupId] ?? 0) + 1;
       }
-      const scheduleReady =
-        currentTeams.length === 40 && GROUP_IDS.every((groupId) => groupCounts.get(groupId) === 5);
+      const scheduleReady = scheduleProblems(groupCounts).length === 0;
       return writeAll(scheduleReady ? buildTournamentSchedule(currentTeams) : [], sampleData);
     },
 
@@ -510,20 +581,61 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
     generateSchedule(sampleData = defaultSampleData) {
       ensureTeamsEditable(sampleData);
       const currentTeams = readTeams();
-      const groupCounts = new Map<string, number>();
+      const groupCounts: Record<string, number> = {};
       for (const team of currentTeams) {
-        groupCounts.set(team.groupId, (groupCounts.get(team.groupId) ?? 0) + 1);
+        groupCounts[team.groupId] = (groupCounts[team.groupId] ?? 0) + 1;
       }
-      if (
-        currentTeams.length !== 40 ||
-        GROUP_IDS.some((groupId) => groupCounts.get(groupId) !== 5)
-      ) {
+      const problems = scheduleProblems(groupCounts);
+      if (problems.length > 0) {
         throw new StoreError(
-          "the schedule requires 40 teams with exactly 5 teams in each group",
+          `the schedule needs 8 groups of ${MIN_TEAMS_PER_GROUP}–${MAX_TEAMS_PER_GROUP} teams: ${problems.join("; ")}`,
           "INVALID_TEAM",
         );
       }
       return writeAll(buildTournamentSchedule(currentTeams), sampleData);
+    },
+
+    hasStartedMatch(sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      return readMatches().some(
+        (match) => match.status !== "SCHEDULED" || match.homeScore > 0 || match.awayScore > 0,
+      );
+    },
+
+    setGroups(input, sampleData = defaultSampleData) {
+      const counts: Record<string, number> = {};
+      for (const team of input) {
+        if (!GROUP_IDS.includes(team.groupId as (typeof GROUP_IDS)[number])) {
+          throw new StoreError(`unknown group: ${team.groupId}`, "INVALID_GROUPS");
+        }
+        counts[team.groupId] = (counts[team.groupId] ?? 0) + 1;
+        if (counts[team.groupId] > MAX_TEAMS_PER_GROUP) {
+          throw new StoreError(
+            `group ${team.groupId} can have at most ${MAX_TEAMS_PER_GROUP} teams`,
+            "GROUP_TOO_LARGE",
+          );
+        }
+      }
+      const ids = new Set(input.map((team) => team.registrationTeamId));
+      if (ids.size !== input.length) {
+        throw new StoreError("a team appears in more than one place", "DUPLICATE_TEAM");
+      }
+      // グループ順・入れた順に並べる（画面と同じ順）。
+      const ordered = GROUP_IDS.flatMap((groupId) =>
+        input.filter((team) => team.groupId === groupId),
+      );
+      return replaceTeamsAndSchedule(
+        ordered.map((team) => ({
+          // 登録チームの ID をそのまま使う（保存し直しても同じ ID なので、マイチームが消えない）。
+          id: team.registrationTeamId,
+          name: team.name,
+          groupId: team.groupId,
+          color: GROUP_COLORS[team.groupId],
+          logoId: team.logoId,
+          registrationTeamId: team.registrationTeamId,
+        })),
+        sampleData,
+      );
     },
 
     listAnnouncements() {

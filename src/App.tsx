@@ -58,9 +58,6 @@ function AdminConsole({
     resetTournament: () => void;
     initializeTournament: () => void;
     createSchedule: () => void;
-    addTeam: ReturnType<typeof useTournamentState>["addTeam"];
-    updateTeam: ReturnType<typeof useTournamentState>["updateTeam"];
-    deleteTeam: ReturnType<typeof useTournamentState>["deleteTeam"];
   };
 }) {
   return session.role === "superadmin" ? (
@@ -83,9 +80,6 @@ function App() {
     replaceMatches,
     reset,
     clearError,
-    addTeam,
-    updateTeam,
-    deleteTeam,
     initializeTournament,
     generateSchedule,
   } = useTournamentState({
@@ -115,9 +109,6 @@ function App() {
     resetTournament: () => void reset(),
     initializeTournament: () => void initializeTournament(),
     createSchedule: () => void generateSchedule(),
-    addTeam,
-    updateTeam,
-    deleteTeam,
   };
 
   return (

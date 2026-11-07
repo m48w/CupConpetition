@@ -1067,3 +1067,124 @@ test("登録データのCSVは Super Admin だけがダウンロードでき、B
   expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
   expect(new TextDecoder().decode(bytes)).toContain("Club,Team,Representative,Email,Phone");
 });
+
+/** 登録チームを作って、その ID を返す（グループ分けのテスト用）。 */
+async function registerSampleTeams(count: number, tournamentId = "20261220"): Promise<string[]> {
+  const names = Array.from({ length: count }, (_, index) => `Grp ${index} ${crypto.randomUUID()}`);
+  const response = await call("/api/registration/teams", {
+    ...json("POST", {
+      clubName: `Group Club ${crypto.randomUUID()}`,
+      teamNames: names,
+      representativeName: "Rep",
+      email: `grp-${crypto.randomUUID()}@example.com`,
+      phone: "09033334444",
+      ...validLogo,
+    }),
+    headers: { "content-type": "application/json", "x-tournament-id": tournamentId },
+  });
+  expect(response.status).toBe(201);
+  const body = (await response.json()) as {
+    registrations?: { id: string }[];
+    registration?: { id: string };
+  };
+  return (body.registrations ?? [body.registration!]).map((team) => team.id);
+}
+
+const asTournament = (tournamentId: string, init: RequestInit) => ({
+  ...init,
+  headers: { ...(init.headers as Record<string, string>), "x-tournament-id": tournamentId },
+});
+
+test("グループ分け: Super Admin だけが保存でき、登録チームの名前・ロゴで試合用チームができる", async () => {
+  // 20261220 の部屋はほかのテストと共有しないよう、まず初期化する。
+  await call("/api/initialize", asTournament("20261220", json("POST", {}, superadmin)));
+  const ids = await registerSampleTeams(16);
+  const groups = Object.fromEntries(
+    ["A", "B", "C", "D", "E", "F", "G", "H"].map((groupId, index) => [
+      groupId,
+      ids.slice(index * 2, index * 2 + 2),
+    ]),
+  );
+  const put = (cookie?: string) =>
+    call("/api/teams/groups", asTournament("20261220", json("PUT", { groups }, cookie)));
+  expect((await put()).status).toBe(401);
+  expect((await put(court1)).status).toBe(403);
+
+  const saved = await put(superadmin);
+  expect(saved.status).toBe(200);
+  const state = (await saved.json()) as TournamentState;
+  expect(state.teams).toHaveLength(16);
+  expect(state.matches).toHaveLength(0);
+  const first = state.teams[0];
+  expect(first).toMatchObject({ id: ids[0], registrationTeamId: ids[0], groupId: "A" });
+  expect(first.name).toMatch(/^Grp 0 /);
+  expect(first.logoId).toBeTruthy();
+
+  const draft = (await (
+    await call(
+      "/api/admin/group-draft",
+      asTournament("20261220", { headers: { cookie: superadmin } }),
+    )
+  ).json()) as { groups: Record<string, string[]>; locked: boolean; candidates: unknown[] };
+  expect(draft.groups.A).toEqual(ids.slice(0, 2));
+  expect(draft.locked).toBe(false);
+  expect(draft.candidates.length).toBeGreaterThanOrEqual(16);
+
+  // 16チーム（各グループ2チーム）でも試合を作れる: グループ戦8試合 + 決勝トーナメント15試合。
+  const schedule = await call(
+    "/api/schedule",
+    asTournament("20261220", json("POST", {}, superadmin)),
+  );
+  expect(schedule.status).toBe(200);
+  const scheduled = (await schedule.json()) as TournamentState;
+  expect(scheduled.matches).toHaveLength(8 + 15);
+
+  // グループに入っている登録チームは削除できない。
+  const removed = await call(
+    `/api/admin/registrations/teams/${ids[0]}`,
+    asTournament("20261220", json("DELETE", {}, superadmin)),
+  );
+  expect(removed.status).toBe(409);
+  expect(await removed.json()).toMatchObject({ code: "TEAM_IN_GROUP" });
+
+  await call("/api/initialize", asTournament("20261220", json("POST", {}, superadmin)));
+});
+
+test("グループ分け: 1グループ6チーム以上・知らないチーム・重複は保存できない", async () => {
+  const ids = await registerSampleTeams(6);
+  const save = (groups: Record<string, string[]>) =>
+    call("/api/teams/groups", asTournament("20261220", json("PUT", { groups }, superadmin)));
+  const tooLarge = await save({ A: ids });
+  expect(tooLarge.status).toBe(400);
+  expect(await tooLarge.json()).toMatchObject({ code: "GROUP_TOO_LARGE" });
+  const unknown = await save({ A: ["no-such-team"] });
+  expect(await unknown.json()).toMatchObject({ code: "UNKNOWN_REGISTRATION_TEAM" });
+  const duplicate = await save({ A: [ids[0]], B: [ids[0]] });
+  expect(await duplicate.json()).toMatchObject({ code: "DUPLICATE_TEAM" });
+  const badShape = await save({ Z: [ids[0]] });
+  expect(await badShape.json()).toMatchObject({ code: "INVALID_GROUPS" });
+});
+
+test("グループ分け: 1チームしかないグループがあると試合を作れない", async () => {
+  await call("/api/initialize", asTournament("20261220", json("POST", {}, superadmin)));
+  const ids = await registerSampleTeams(15);
+  const groups: Record<string, string[]> = {};
+  ["A", "B", "C", "D", "E", "F", "G"].forEach((groupId, index) => {
+    groups[groupId] = ids.slice(index * 2, index * 2 + 2);
+  });
+  groups.H = [ids[14]];
+  const saved = await call(
+    "/api/teams/groups",
+    asTournament("20261220", json("PUT", { groups }, superadmin)),
+  );
+  expect(saved.status).toBe(200);
+  const schedule = await call(
+    "/api/schedule",
+    asTournament("20261220", json("POST", {}, superadmin)),
+  );
+  expect(schedule.status).toBe(400);
+  expect(((await schedule.json()) as { error: string }).error).toContain(
+    "Group H needs at least 2 teams",
+  );
+  await call("/api/initialize", asTournament("20261220", json("POST", {}, superadmin)));
+});
