@@ -10,6 +10,8 @@ export interface BracketGame {
   awayTeamId?: string;
   /** null until the match has kicked off. */
   homeScore: number | null;
+  /** PK 戦の点数（PK 戦があったときだけ）。 */
+  penalties?: { home: number; away: number };
   awayScore: number | null;
   scheduledStart?: string;
   court?: number;
@@ -58,6 +60,14 @@ export function bracketRounds(matches: Match[], teams: Team[] = defaultTeams): B
         homeTeamId: home.teamId,
         awayTeamId: away.teamId,
         homeScore: started ? match.homeScore : null,
+        ...(match?.isPenaltyShootout
+          ? {
+              penalties: {
+                home: match.penaltyHomeScore ?? 0,
+                away: match.penaltyAwayScore ?? 0,
+              },
+            }
+          : {}),
         awayScore: started ? match.awayScore : null,
         scheduledStart: match?.scheduledStart,
         court: match?.court,

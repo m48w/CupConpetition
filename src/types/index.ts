@@ -51,6 +51,8 @@ export interface TournamentState {
   matches: Match[];
   /** 表示中のお知らせ（新しい順、最大3件）。古いサーバーからは来ないことがある。 */
   announcements?: Announcement[];
+  /** 同点のとき Super Admin が手で決めた順番（今の結果に合うものだけ）。グループID → チームIDの並び。 */
+  groupOrders?: Record<string, string[]>;
 }
 
 /** WebSocket でサーバーが送るメッセージ。 */

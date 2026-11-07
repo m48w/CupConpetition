@@ -15,6 +15,7 @@
     "worker",
     "src/types/index.ts",
     "src/features/tournament/data.ts",
-    "src/features/tournament/schedule.ts"
+    "src/features/tournament/schedule.ts",
+    "src/features/tournament/progression.ts"
   ]
 }

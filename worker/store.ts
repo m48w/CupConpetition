@@ -1,4 +1,12 @@
 import { teams } from "../src/features/tournament/data";
+import {
+  dependentsOf,
+  isStarted,
+  needsPenaltyWinner,
+  progress,
+  resultsKey,
+  type GroupOrders,
+} from "../src/features/tournament/progression";
 import { buildTournamentSchedule, GROUP_IDS } from "../src/features/tournament/schedule";
 import type {
   Announcement,
@@ -43,6 +51,9 @@ export type StoreErrorCode =
   | "UNKNOWN_TEAM"
   | "TEAM_IN_USE"
   | "INVALID_GROUPS"
+  | "RESULT_LOCKED"
+  | "PENALTIES_REQUIRED"
+  | "INVALID_ORDER"
   | "GROUP_TOO_LARGE"
   | "INVALID_ANNOUNCEMENT"
   | "UNKNOWN_ANNOUNCEMENT";
@@ -121,6 +132,8 @@ export interface Store {
   generateSchedule(sampleData?: boolean): TournamentState;
   /** グループ分けを保存する。試合用チームを作り直し、試合は消す（試合開始後はできない）。 */
   setGroups(teams: GroupedTeamInput[], sampleData?: boolean): TournamentState;
+  /** 同点のチームの順番を手で決める（そのグループの全チームの並び）。 */
+  setGroupOrder(groupId: string, teamIds: string[], sampleData?: boolean): TournamentState;
   /** 試合が始まっているか（グループ分けを変えられないか）。 */
   hasStartedMatch(sampleData?: boolean): boolean;
   /** 非表示も含めた全部のお知らせ（管理画面用）。 */
@@ -162,6 +175,12 @@ const SCHEMA = [
      position INTEGER PRIMARY KEY,
      id TEXT NOT NULL UNIQUE,
      data TEXT NOT NULL
+   )`,
+  `CREATE TABLE IF NOT EXISTS group_orders (
+     group_id TEXT PRIMARY KEY,
+     team_ids TEXT NOT NULL,
+     results_key TEXT NOT NULL,
+     updated_at TEXT NOT NULL
    )`,
   `CREATE TABLE IF NOT EXISTS announcements (
      id TEXT PRIMARY KEY,
@@ -391,12 +410,36 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
     );
   };
 
-  const writeAll = (matches: Match[], sampleData: boolean) => {
+  /** 今の結果に合う、手で決めた順番だけ（結果が変わったものは使わない）。 */
+  const readGroupOrders = (matches: Match[]): GroupOrders => {
+    const orders: GroupOrders = {};
+    for (const row of sql
+      .exec<{ group_id: string; team_ids: string; results_key: string }>(
+        "SELECT group_id, team_ids, results_key FROM group_orders",
+      )
+      .toArray()) {
+      if (row.results_key !== resultsKey(row.group_id, matches)) continue;
+      try {
+        const ids = JSON.parse(row.team_ids) as unknown;
+        if (Array.isArray(ids)) orders[row.group_id] = ids.map(String);
+      } catch {
+        // 壊れた行は使わない。
+      }
+    }
+    return orders;
+  };
+
+  /** 決勝トーナメントのチームを埋めてから保存する（グループの順位・勝者の進出）。 */
+  const withProgress = (matches: Match[]) =>
+    progress(readTeams(), matches, readGroupOrders(matches));
+
+  const writeAll = (input: Match[], sampleData: boolean) => {
     ensureInitialized(sampleData);
-    const ids = new Set(matches.map((match) => match.id));
-    if (ids.size !== matches.length) {
+    const ids = new Set(input.map((match) => match.id));
+    if (ids.size !== input.length) {
       throw new StoreError("match ids must be unique", "INVALID_MATCHES");
     }
+    const matches = withProgress(input);
     storage.transactionSync(() => {
       sql.exec("DELETE FROM matches");
       insertMatches(matches);
@@ -424,6 +467,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       teams: readTeams(),
       matches: readMatches(),
       announcements: readAnnouncements(true),
+      groupOrders: readGroupOrders(readMatches()),
     };
   };
 
@@ -445,6 +489,8 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
     storage.transactionSync(() => {
       sql.exec("DELETE FROM matches");
       sql.exec("DELETE FROM teams");
+      // チームが変わったら、手で決めた順番も使えないので消す。
+      sql.exec("DELETE FROM group_orders");
       insertTeams(nextTeams);
       bumpVersion();
     });
@@ -501,9 +547,46 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         .toArray()[0];
       if (!row) throw new StoreError(`unknown match: ${id}`, "UNKNOWN_MATCH");
 
-      const next = { ...(JSON.parse(row.data) as Match), ...patch };
+      const current = JSON.parse(row.data) as Match;
+      const next = { ...current, ...patch };
+      const touchesPenalties = Object.keys(patch).some((field) =>
+        ["isPenaltyShootout", "penaltyHomeScore", "penaltyAwayScore"].includes(field),
+      );
+      if (current.stage === "GROUP" && touchesPenalties) {
+        throw new StoreError("group matches have no penalty shoot-out", "FIELD_NOT_PATCHABLE");
+      }
+      const touchesResult =
+        touchesPenalties ||
+        ["status", "homeScore", "awayScore"].some(
+          (field) =>
+            field in patch && patch[field as keyof Match] !== current[field as keyof Match],
+        );
+      const all = readMatches();
+      // 終わった試合の結果は、その結果でチームが決まる次の試合が始まったら変えられない。
+      if (current.status === "FINISHED" && touchesResult) {
+        const started = dependentsOf(current, all).find(isStarted);
+        if (started) {
+          throw new StoreError(
+            `the next match (${started.id}) has already started; this result can no longer be changed`,
+            "RESULT_LOCKED",
+          );
+        }
+      }
+      if (next.status === "FINISHED" && needsPenaltyWinner(next)) {
+        throw new StoreError(
+          "enter the penalty shoot-out result before finishing a drawn knockout match",
+          "PENALTIES_REQUIRED",
+        );
+      }
+      const before = all.map((match) => (match.id === id ? next : match));
+      const after = withProgress(before);
       storage.transactionSync(() => {
-        sql.exec("UPDATE matches SET data = ? WHERE id = ?", JSON.stringify(next), id);
+        for (const match of after) {
+          const original = all.find((candidate) => candidate.id === match.id);
+          if (match !== original) {
+            sql.exec("UPDATE matches SET data = ? WHERE id = ?", JSON.stringify(match), match.id);
+          }
+        }
         bumpVersion();
       });
       return snapshot();
@@ -573,6 +656,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       storage.transactionSync(() => {
         sql.exec("DELETE FROM matches");
         sql.exec("DELETE FROM teams");
+        sql.exec("DELETE FROM group_orders");
         bumpVersion();
       });
       return snapshot();
@@ -636,6 +720,34 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         })),
         sampleData,
       );
+    },
+
+    setGroupOrder(groupId, teamIds, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const inGroup = readTeams()
+        .filter((team) => team.groupId === groupId)
+        .map((team) => team.id);
+      if (
+        !GROUP_IDS.includes(groupId as (typeof GROUP_IDS)[number]) ||
+        teamIds.length !== inGroup.length ||
+        new Set(teamIds).size !== teamIds.length ||
+        teamIds.some((id) => !inGroup.includes(id))
+      ) {
+        throw new StoreError("teamIds must list every team in the group once", "INVALID_ORDER");
+      }
+      const matches = readMatches();
+      storage.transactionSync(() => {
+        sql.exec(
+          `INSERT INTO group_orders (group_id, team_ids, results_key, updated_at) VALUES (?, ?, ?, ?)
+           ON CONFLICT(group_id) DO UPDATE SET team_ids = excluded.team_ids,
+             results_key = excluded.results_key, updated_at = excluded.updated_at`,
+          groupId,
+          JSON.stringify(teamIds),
+          resultsKey(groupId, matches),
+          new Date().toISOString(),
+        );
+      });
+      return writeAll(matches, sampleData);
     },
 
     listAnnouncements() {

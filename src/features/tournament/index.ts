@@ -3,7 +3,7 @@ export { ConnectionBanner } from "./components/ConnectionBanner";
 export { MatchCard } from "./components/MatchCard";
 export { TeamBadge } from "./components/TeamBadge";
 export { TeamsProvider } from "./components/TeamsProvider";
-export { useTeams } from "./teamContext";
+export { useGroupOrders, useTeams } from "./teamContext";
 export { findTeam, initialMatches, teams } from "./data";
 export { useMatchClock } from "./hooks/useMatchClock";
 export { useTournamentState, type ConnectionState } from "./hooks/useTournamentState";

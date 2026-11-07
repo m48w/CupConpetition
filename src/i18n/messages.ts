@@ -133,6 +133,7 @@ export const messages = {
   "match.paused": { en: "PAUSED", my: "ခဏရပ်" },
   "match.finished": { en: "FULL TIME", my: "ပွဲပြီး" },
   "match.footer": { en: "Match {id} · Court {court}", my: "ပွဲစဉ် {id} · ကွင်း {court}" },
+  "match.penalties": { en: "PK {home}–{away}", my: "PK {home}–{away}" },
   "match.tbd": { en: "TBD", my: "မသတ်မှတ်ရသေး" },
   "matches.eyebrow": { en: "FULL TOURNAMENT SCHEDULE", my: "ပြိုင်ပွဲ အချိန်ဇယား" },
   "matches.title": { en: "All matches", my: "ပွဲစဉ်အားလုံး" },

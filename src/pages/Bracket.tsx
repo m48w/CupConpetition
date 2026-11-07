@@ -43,6 +43,11 @@ function BracketCard({ game }: { game: BracketGame }) {
       </small>
       <BracketSide name={game.home} teamId={game.homeTeamId} score={game.homeScore} />
       <BracketSide name={game.away} teamId={game.awayTeamId} score={game.awayScore} />
+      {game.penalties && (
+        <small className="bracket-penalties">
+          {t("match.penalties", { home: game.penalties.home, away: game.penalties.away })}
+        </small>
+      )}
     </div>
   );
 }

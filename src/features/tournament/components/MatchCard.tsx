@@ -36,6 +36,14 @@ export function MatchCard({ match, compact = false }: { match: Match; compact?: 
           <strong>{match.status === "SCHEDULED" ? "–" : match.awayScore}</strong>
         </div>
       </div>
+      {match.isPenaltyShootout && (
+        <p className="match-penalties">
+          {t("match.penalties", {
+            home: match.penaltyHomeScore ?? 0,
+            away: match.penaltyAwayScore ?? 0,
+          })}
+        </p>
+      )}
       <div className="match-card-foot">
         <span>{t("match.footer", { id: match.id, court: match.court })}</span>
         {onPitch && <span className={live ? "timer" : "timer paused"}>{clock}</span>}

@@ -2,20 +2,24 @@ import { useState } from "react";
 import { PageTitle } from "../components/ui/PageTitle";
 import {
   AnnouncementsPanel,
+  MatchPicker,
   MatchStateBanner,
+  PenaltyShootout,
   ResetButton,
   ScheduleCheck,
+  TieDecisions,
 } from "../features/admin";
+import { needsPenaltyWinner } from "../features/tournament/progression";
 import { SIGN_OUT_FAILED } from "../features/auth";
 import {
   isOnPitch,
   statusPatch,
   TeamBadge,
   type ConnectionState,
+  useGroupOrders,
   useTeams,
 } from "../features/tournament";
 import type { Match, MatchStatus, SessionInfo, Team } from "../types";
-import { formatTime } from "../utils/format";
 import { GroupBoard } from "../features/admin/grouping/GroupBoard";
 
 export function AdminSetup({
@@ -51,6 +55,7 @@ export function AdminSetup({
     matches.find((match) => match.id === selectedId) ?? matches.find(isOnPitch) ?? matches[0];
   const offline = connection !== "live";
   const currentTeams = useTeams();
+  const groupOrders = useGroupOrders();
 
   const handleSignOut = async () => {
     setSignOutFailed(!(await onSignOut()));
@@ -90,31 +95,25 @@ export function AdminSetup({
           onGenerateSchedule={setup.createSchedule}
         />
       )}
+      {setup && (
+        <TieDecisions
+          teams={currentTeams}
+          matches={matches}
+          groupOrders={groupOrders}
+          disabled={offline}
+        />
+      )}
       {setup && <AnnouncementsPanel disabled={offline} />}
       <div className="admin-grid">
         <section className="admin-panel">
           <label>SELECT MATCH</label>
-          <select
-            value={selected?.id ?? ""}
-            disabled={matches.length === 0}
-            onChange={(event) => {
-              const next = matches.find((m) => m.id === event.target.value);
-              if (next) setSelectedId(next.id);
-            }}
-          >
-            {matches.length === 0 && <option value="">No matches initialized</option>}
-            {matches
-              .filter((m) => m.status !== "FINISHED" || m.id === selectedId)
-              .slice(0, 20)
-              .map((m) => (
-                <option key={m.id} value={m.id}>
-                  {formatTime(m.scheduledStart)} ·{" "}
-                  {currentTeams.find((team) => team.id === m.homeTeamId)?.name ?? "TBD"} vs{" "}
-                  {currentTeams.find((team) => team.id === m.awayTeamId)?.name ?? "TBD"}
-                  {m.status !== "SCHEDULED" && ` · ${m.status}`}
-                </option>
-              ))}
-          </select>
+          <MatchPicker
+            matches={matches}
+            teams={currentTeams}
+            selectedId={selected?.id}
+            onSelect={setSelectedId}
+            fixedCourt={account.court}
+          />
           {selected && (
             <>
               <MatchStateBanner match={selected} />
@@ -145,6 +144,11 @@ export function AdminSetup({
                   <p className="muted">Start the match to record goals.</p>
                 )}
               </div>
+              <PenaltyShootout
+                match={selected}
+                disabled={offline}
+                onChange={(patch) => updateMatch(selected.id, patch)}
+              />
               <div className="control-actions">
                 {selected.status === "SCHEDULED" && (
                   <button
@@ -180,7 +184,7 @@ export function AdminSetup({
                   <button
                     type="button"
                     className="danger-button"
-                    disabled={offline}
+                    disabled={offline || needsPenaltyWinner({ ...selected, status: "FINISHED" })}
                     onClick={() => changeStatus("FINISHED")}
                   >
                     ■ Finish match
@@ -193,11 +197,11 @@ export function AdminSetup({
         {setup && (
           <section className="admin-panel setup-panel">
             <label>SUPERADMIN SETUP</label>
-            <h3>Seed knockout teams</h3>
+            <h3>Seed knockout teams (for testing)</h3>
             <p>
-              Group fixtures run from 09:00 on courts 1–2, with court 3 joining at 12:15. Once the
-              group stage is final, this fills the Round of 16 from the standings without moving any
-              kick-off time.
+              Teams move into the knockout stage automatically when a group finishes and when a
+              knockout match ends. For testing, this button fills the Round of 16 from the current
+              standings even if the groups are not finished. Kick-off times do not change.
             </p>
             <ScheduleCheck matches={matches} />
             <button

@@ -406,6 +406,18 @@ export async function handleApi(
       return mutated(store.updateAnnouncement(id, body, sampleData));
     }
 
+    const groupOrderTarget = path.match(/^\/api\/groups\/([A-H])\/order$/);
+    if (groupOrderTarget && request.method === "PUT") {
+      superadminOnly(identity);
+      const body = (await readJsonBody(request)) as { teamIds?: unknown };
+      if (!Array.isArray(body.teamIds) || body.teamIds.some((id) => typeof id !== "string")) {
+        return jsonResponse(400, { error: "teamIds must be a list", code: "INVALID_ORDER" });
+      }
+      return mutated(
+        store.setGroupOrder(groupOrderTarget[1], body.teamIds as string[], sampleData),
+      );
+    }
+
     if (path === "/api/state" && request.method === "GET") {
       return jsonResponse(200, store.read(sampleData));
     }
@@ -444,7 +456,9 @@ export async function handleApi(
         error.code === "UNKNOWN_TEAM" ||
         error.code === "UNKNOWN_ANNOUNCEMENT"
           ? 404
-          : error.code === "DUPLICATE_TEAM" || error.code === "TEAM_IN_USE"
+          : error.code === "DUPLICATE_TEAM" ||
+              error.code === "TEAM_IN_USE" ||
+              error.code === "RESULT_LOCKED"
             ? 409
             : 400;
       return jsonResponse(status, {

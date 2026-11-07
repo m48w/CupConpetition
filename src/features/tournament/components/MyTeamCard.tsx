@@ -2,6 +2,7 @@ import { useI18n } from "../../../i18n/useI18n";
 import type { Match, Team } from "../../../types";
 import { formatTime } from "../../../utils/format";
 import { calculateStandings, isOnPitch, nextMatchFor } from "../logic";
+import { useGroupOrders } from "../teamContext";
 import { GROUP_IDS } from "../schedule";
 import { MatchCard } from "./MatchCard";
 
@@ -54,6 +55,7 @@ export function MyTeamCard({
   onChoose: (id: string | null) => void;
 }) {
   const { t } = useI18n();
+  const groupOrders = useGroupOrders();
   if (teams.length === 0) return null;
 
   if (!myTeam) {
@@ -67,7 +69,7 @@ export function MyTeamCard({
   }
 
   const next = nextMatchFor(myTeam.id, matches);
-  const standings = calculateStandings(myTeam.groupId, teams, matches);
+  const standings = calculateStandings(myTeam.groupId, teams, matches, groupOrders);
   const positionIndex = standings.findIndex((row) => row.team.id === myTeam.id);
   const row = standings[positionIndex];
   const opponentId = next && (next.homeTeamId === myTeam.id ? next.awayTeamId : next.homeTeamId);

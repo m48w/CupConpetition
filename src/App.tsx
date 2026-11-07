@@ -74,6 +74,7 @@ function App() {
     matches,
     teams,
     announcements,
+    groupOrders,
     connection,
     error,
     patchMatch,
@@ -105,7 +106,8 @@ function App() {
   };
   const setup = {
     tournamentId: getTournamentId(),
-    generateSchedule: () => void replaceMatches(seedKnockoutTeams(teams, matches)),
+    // テスト用: 今の順位で Round of 16 を埋める（グループが終わっていなくても）。
+    generateSchedule: () => void replaceMatches(seedKnockoutTeams(teams, matches, groupOrders)),
     resetTournament: () => void reset(),
     initializeTournament: () => void initializeTournament(),
     createSchedule: () => void generateSchedule(),
@@ -175,7 +177,7 @@ function App() {
             )}
           </div>
         </aside>
-        <TeamsProvider teams={teams}>
+        <TeamsProvider teams={teams} groupOrders={groupOrders}>
           <main className="main-content">
             <AnnouncementBar announcements={announcements} />
             <Routes>

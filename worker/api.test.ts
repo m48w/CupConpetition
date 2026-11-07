@@ -1188,3 +1188,86 @@ test("グループ分け: 1チームしかないグループがあると試合�
   );
   await call("/api/initialize", asTournament("20261220", json("POST", {}, superadmin)));
 });
+
+// 20261220 の部屋は前のテストで登録が定員に近いので、ここからは test の部屋を使う。
+test("試合の進行: グループが終わると R16 に入り、次の試合が始まったら前の結果は直せない", async () => {
+  await call("/api/initialize", asTournament("test", json("POST", {}, superadmin)));
+  const ids = await registerSampleTeams(16, "test");
+  const groups = Object.fromEntries(
+    ["A", "B", "C", "D", "E", "F", "G", "H"].map((groupId, index) => [
+      groupId,
+      ids.slice(index * 2, index * 2 + 2),
+    ]),
+  );
+  await call("/api/teams/groups", asTournament("test", json("PUT", { groups }, superadmin)));
+  const state = (await (
+    await call("/api/schedule", asTournament("test", json("POST", {}, superadmin)))
+  ).json()) as TournamentState;
+  const patchIn = (id: string, body: Partial<Match>) =>
+    call(`/api/matches/${id}`, asTournament("test", json("PATCH", body, superadmin)));
+
+  // Group A の1試合（2チームなので1試合だけ）を終わらせると、R16-1 と R16-2 に入る。
+  const groupA = state.matches.find((m) => m.stage === "GROUP" && m.groupId === "A")!;
+  await patchIn(groupA.id, { status: "LIVE" });
+  await patchIn(groupA.id, { homeScore: 2 });
+  const finished = (await (
+    await patchIn(groupA.id, { status: "FINISHED" })
+  ).json()) as TournamentState;
+  const r16 = (id: string) => finished.matches.find((m) => m.id === id)!;
+  expect(r16("R16-1").homeTeamId).toBe(groupA.homeTeamId);
+  expect(r16("R16-2").awayTeamId).toBe(groupA.awayTeamId);
+
+  // ほかのグループも終わらせると、R16-1 は A1 vs H2 になる。
+  for (const match of finished.matches.filter((m) => m.stage === "GROUP" && m.groupId !== "A")) {
+    await patchIn(match.id, { status: "LIVE" });
+    await patchIn(match.id, { homeScore: 1 });
+    await patchIn(match.id, { status: "FINISHED" });
+  }
+
+  // グループの試合に PK は入れられない。
+  expect((await patchIn(groupA.id, { penaltyHomeScore: 1 })).status).toBe(400);
+
+  // R16-1 が始まったら、Group A の結果は直せない。
+  await patchIn("R16-1", { status: "LIVE" });
+  const locked = await patchIn(groupA.id, { homeScore: 3 });
+  expect(locked.status).toBe(409);
+  expect(await locked.json()).toMatchObject({ code: "RESULT_LOCKED" });
+
+  // 決勝トーナメントの同点は、PK の勝者がないと終われない。
+  const draw = await patchIn("R16-1", { status: "FINISHED" });
+  expect(draw.status).toBe(400);
+  expect(await draw.json()).toMatchObject({ code: "PENALTIES_REQUIRED" });
+  const pk = await patchIn("R16-1", {
+    isPenaltyShootout: true,
+    penaltyHomeScore: 4,
+    penaltyAwayScore: 3,
+  });
+  expect(pk.status).toBe(200);
+  expect((await patchIn("R16-1", { status: "FINISHED" })).status).toBe(200);
+
+  await call("/api/initialize", asTournament("test", json("POST", {}, superadmin)));
+});
+
+test("同点の順番を手で決める: Super Admin だけ、グループの全チームを1回ずつ", async () => {
+  await call("/api/initialize", asTournament("test", json("POST", {}, superadmin)));
+  // 前のテストで登録したチームを使う（部屋の定員のため）。
+  const draft = (await (
+    await call("/api/admin/group-draft", asTournament("test", { headers: { cookie: superadmin } }))
+  ).json()) as { candidates: { id: string }[] };
+  const ids = draft.candidates.slice(0, 16).map((candidate) => candidate.id);
+  const groups = Object.fromEntries(
+    ["A", "B", "C", "D", "E", "F", "G", "H"].map((groupId, index) => [
+      groupId,
+      ids.slice(index * 2, index * 2 + 2),
+    ]),
+  );
+  await call("/api/teams/groups", asTournament("test", json("PUT", { groups }, superadmin)));
+  const order = (teamIds: string[], cookie?: string) =>
+    call("/api/groups/A/order", asTournament("test", json("PUT", { teamIds }, cookie)));
+  expect((await order([ids[1], ids[0]], court1)).status).toBe(403);
+  expect((await order([ids[1]], superadmin)).status).toBe(400);
+  const saved = await order([ids[1], ids[0]], superadmin);
+  expect(saved.status).toBe(200);
+  expect(((await saved.json()) as TournamentState).groupOrders?.A).toEqual([ids[1], ids[0]]);
+  await call("/api/initialize", asTournament("test", json("POST", {}, superadmin)));
+});
