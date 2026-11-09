@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { PageTitle } from "../components/ui/PageTitle";
 import { TeamBadge, useTeams } from "../features/tournament";
 import { MatchCard } from "../features/tournament";
-import { tournamentScopedUrl } from "../config";
+import { ClubLogo } from "../features/registration/ClubLogo";
 import type { Match } from "../types";
 import { requestJson } from "../utils/http";
 import { useI18n } from "../i18n/useI18n";
@@ -61,17 +61,12 @@ export function Teams() {
                 aria-label={t("teams.view", { team: team.teamName })}
                 onClick={() => setSelectedTeam(team)}
               >
-                {team.logoId ? (
-                  <img
-                    className="registered-team-logo"
-                    src={tournamentScopedUrl(
-                      `/api/registration/clubs/${encodeURIComponent(team.clubId)}/logo`,
-                    )}
-                    alt={t("common.logoAlt", { name: team.clubName })}
-                  />
-                ) : (
-                  <span className="team-crest">FC</span>
-                )}
+                <ClubLogo
+                  className="registered-team-logo"
+                  clubId={team.clubId}
+                  logoId={team.logoId}
+                  alt={t("common.logoAlt", { name: team.clubName })}
+                />
                 <strong>{team.teamName}</strong>
               </button>
             ))}
@@ -109,17 +104,12 @@ export function Teams() {
               </div>
             </header>
             <div className="team-roster-content">
-              {selectedTeam.logoId ? (
-                <img
-                  className="team-roster-logo"
-                  src={tournamentScopedUrl(
-                    `/api/registration/clubs/${encodeURIComponent(selectedTeam.clubId)}/logo`,
-                  )}
-                  alt={t("common.logoAlt", { name: selectedTeam.teamName })}
-                />
-              ) : (
-                <span className="team-crest team-roster-logo">FC</span>
-              )}
+              <ClubLogo
+                className="team-roster-logo"
+                clubId={selectedTeam.clubId}
+                logoId={selectedTeam.logoId}
+                alt={t("common.logoAlt", { name: selectedTeam.teamName })}
+              />
               <section className="team-roster-list">
                 <h3>{t("teams.members.title")}</h3>
                 {selectedTeam.members.length ? (
