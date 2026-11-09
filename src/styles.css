@@ -2934,3 +2934,61 @@ footer span {
 .random-results-buttons .outline-button {
   min-height: 44px;
 }
+
+/* 登録チームのロゴが無い・読み込めないときの「FC」バッジ */
+.team-crest.registered-team-logo,
+.team-crest.team-roster-logo {
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  border-radius: 12px;
+  background: #1c2940;
+  color: #cad3e1;
+  font: 700 16px "DM Mono";
+}
+.team-crest.team-roster-logo {
+  font-size: 40px;
+}
+
+/* スマホ: 順位表のチーム名を読めるようにする（数字の列を狭め、名前は2行まで） */
+@media (max-width: 600px) {
+  .table-card.standings-table {
+    padding: 16px 12px;
+  }
+  .standings-row {
+    grid-template-columns: 18px minmax(0, 1fr) 40px 44px 40px;
+    gap: 6px;
+  }
+  .standings-head {
+    font-size: 10px;
+  }
+  .standings-head > span {
+    line-height: 1.2;
+  }
+  .standings-row .team-badge {
+    gap: 6px;
+  }
+  .standings-row .team-badge img,
+  .standings-row .team-badge .team-crest {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+  }
+  .standings-row .team-badge span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.25;
+  }
+}
+
+/* スマホ・タブレット: ボタンとリンクは高さ44px以上 */
+@media (max-width: 900px) {
+  .outline-button,
+  .filter-bar select,
+  .filter-bar button {
+    min-height: 44px;
+  }
+}
