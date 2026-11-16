@@ -3,9 +3,10 @@ import type { Match, Stage, Team } from "../../../types";
 import { formatTime } from "../../../utils/format";
 import { stageLabel } from "../../tournament";
 
-type StatusFilter = "ALL" | "NOT_STARTED" | "PLAYING" | "FINISHED";
+type StatusFilter = "UNFINISHED" | "ALL" | "NOT_STARTED" | "PLAYING" | "FINISHED";
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: "UNFINISHED", label: "Not finished" },
   { value: "ALL", label: "Status · All" },
   { value: "NOT_STARTED", label: "Not started" },
   { value: "PLAYING", label: "Playing" },
@@ -14,12 +15,13 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 
 const matchesStatus = (match: Match, filter: StatusFilter) =>
   filter === "ALL" ||
+  (filter === "UNFINISHED" && match.status !== "FINISHED") ||
   (filter === "NOT_STARTED" && match.status === "SCHEDULED") ||
   (filter === "PLAYING" && (match.status === "LIVE" || match.status === "PAUSED")) ||
   (filter === "FINISHED" && match.status === "FINISHED");
 
 /**
- * 管理画面の試合選び。全試合（終わった試合も）を時間の順に出し、コート・ステージ・状態で絞り込む。
+ * 管理画面の試合選び。最初は終わっていない試合だけを時間の順に出す（Status で Finished を選べば終わった試合も）。
  * `fixedCourt` があるとき（SubAdmin）は、コートの絞り込みを出さない。
  */
 export function MatchPicker({
@@ -37,7 +39,7 @@ export function MatchPicker({
 }) {
   const [court, setCourt] = useState("ALL");
   const [stage, setStage] = useState<Stage | "ALL">("ALL");
-  const [status, setStatus] = useState<StatusFilter>("ALL");
+  const [status, setStatus] = useState<StatusFilter>("UNFINISHED");
   const name = (id: string) => teams.find((team) => team.id === id)?.name ?? "TBD";
 
   const shown = [...matches]

@@ -5,30 +5,19 @@ import { TeamBadge, useTeams } from "../features/tournament";
 import { MatchCard } from "../features/tournament";
 import { ClubLogo } from "../features/registration/ClubLogo";
 import type { Match } from "../types";
-import { requestJson } from "../utils/http";
+import {
+  useRegisteredTeams,
+  type RegisteredTeam,
+} from "../features/registration/useRegisteredTeams";
 import { useI18n } from "../i18n/useI18n";
 import { NotFound } from "./NotFound";
 
-interface RegisteredTeam {
-  id: string;
-  clubId: string;
-  clubName: string;
-  teamName: string;
-  logoId: string | null;
-  members: { name: string; backNumber: number }[];
-}
-
 export function Teams() {
   const { t } = useI18n();
-  const [registeredTeams, setRegisteredTeams] = useState<RegisteredTeam[]>([]);
-  const [registrationError, setRegistrationError] = useState<"teams.loadError" | "">("");
+  const { teams: loaded, failed } = useRegisteredTeams();
+  const registeredTeams = loaded ?? [];
+  const registrationError = failed ? ("teams.loadError" as const) : "";
   const [selectedTeam, setSelectedTeam] = useState<RegisteredTeam | null>(null);
-
-  useEffect(() => {
-    void requestJson<{ teams: RegisteredTeam[] }>("/api/registration/teams")
-      .then(({ teams: registrations }) => setRegisteredTeams(registrations))
-      .catch(() => setRegistrationError("teams.loadError"));
-  }, []);
 
   useEffect(() => {
     if (!selectedTeam) return;
@@ -86,13 +75,6 @@ export function Teams() {
             <header className="team-roster-header">
               <h2 id="team-roster-title">{selectedTeam.teamName}</h2>
               <div>
-                <button
-                  className="outline-button"
-                  type="button"
-                  onClick={() => setSelectedTeam(null)}
-                >
-                  {t("common.back")}
-                </button>
                 <button
                   className="team-roster-close"
                   type="button"

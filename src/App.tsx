@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { NavLink, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { useSession } from "./features/auth";
 import {
@@ -88,6 +89,20 @@ function App() {
     onUnauthorized: refresh,
   });
   const navigate = useNavigate();
+  // 試合中（LIVE）の試合があれば、メニューの Live を緑にする。
+  const hasLive = matches.some((match) => match.status === "LIVE");
+  // PC の左メニューをヘッダーの下に固定するため、ヘッダーの高さを CSS に渡す。
+  const header = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = header.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const update = () =>
+      document.documentElement.style.setProperty("--header-h", `${element.offsetHeight}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   const consoleProps = {
     signIn: async (username: string, password: string) => {
@@ -116,7 +131,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <div className="app-header">
+      <div className="app-header" ref={header}>
         <ConnectionBanner connection={connection} error={error} />
         <header className="topbar">
           <img
@@ -147,23 +162,17 @@ function App() {
               key={item.to}
               to={item.to}
               end={item.to === "/"}
-              className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}
+              className={({ isActive }) =>
+                ["nav-item", isActive && "active", item.to === "/live" && hasLive && "has-live"]
+                  .filter(Boolean)
+                  .join(" ")
+              }
             >
               <span>{item.icon}</span>
               {t(item.label)}
             </NavLink>
           ))}
           <div className="sidebar-bottom">
-            <div className="mini-event">
-              <div className="mini-ball">⚽</div>
-              <div>
-                <strong>Velocity Cup 2026</strong>
-                <small>
-                  {t("common.teams", { count: teams.length })} ·{" "}
-                  {t("app.matchCount", { count: matches.length })}
-                </small>
-              </div>
-            </div>
             {session && (
               <>
                 <NavLink to="/admin/dashboard" className="nav-item admin-link">
@@ -259,16 +268,18 @@ function App() {
               key={item.to}
               to={item.to}
               end={item.to === "/"}
-              className={({ isActive }) => (isActive ? "active" : "")}
+              className={({ isActive }) =>
+                [isActive && "active", item.to === "/live" && hasLive && "has-live"]
+                  .filter(Boolean)
+                  .join(" ")
+              }
             >
               <span>{item.icon}</span>
               {t(item.label)}
             </NavLink>
           ))}
       </nav>
-      <footer>
-        © 2026 VELOCITY CUP <span>•</span> {t("app.footer")}
-      </footer>
+      <footer>Copyright © 2026 M48W</footer>
     </div>
   );
 }

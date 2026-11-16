@@ -79,7 +79,7 @@ function RegistrationLayout({ children }: { children: ReactNode }) {
       </header>
       <AnnouncementBar announcements={announcements} />
       {children}
-      <footer>{t("reg.footer")}</footer>
+      <footer>Copyright © 2026 M48W</footer>
     </main>
   );
 }

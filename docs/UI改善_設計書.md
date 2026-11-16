@@ -1,6 +1,6 @@
 # 設計書: UI改善（白黒のデザイン・Matches のカード・各画面の調整）
 
-- **文書バージョン**: 0.1.0（レビュー待ち）
+- **文書バージョン**: 1.0.0（確定・実装済み）
 - **作成日**: 2026-11-16
 - **関連文書**: `docs/UI改善_仕様書.md`（何を作るか）
 
@@ -12,6 +12,8 @@
 - 色は CSS 変数にまとめてから白黒に置き換える。今の `src/styles.css` は約3,000行で、色が直接 約240か所に書いてある。
 
 ## 2. 色（`src/styles.css`）
+
+実装では、色の置き換えをスクリプトで行った（プロパティと明るさ・色相で変数に振り分け）。そのあと画面を見て、飾りの金色（カウントダウンの数字・Final の見出しと枠）を黒にそろえた。
 
 ### 2.1 変数
 
@@ -46,7 +48,7 @@
 
 | ファイル | 変更 |
 |---|---|
-| `src/App.tsx` | 左メニューの `.mini-event`（大会名・チーム数・試合数）を消す。フッターを `Copyright © 2026 M48W` だけにする。Live のメニューに `has-live` クラス（`matches.some(isOnPitch)`）を付ける |
+| `src/App.tsx` | 左メニューの `.mini-event`（大会名・チーム数・試合数）を消す。フッターを `Copyright © 2026 M48W` だけにする。Live のメニューに `has-live` クラス（`matches.some(m => m.status === "LIVE")`）を付ける。ヘッダーの高さを ResizeObserver で `--header-h` に入れ、PC の `.sidebar` を `position: sticky; top: var(--header-h)` にする |
 | `src/pages/Registration.tsx` | フッターを同じ文にする |
 | `src/i18n/messages.ts` | `app.footer`・`reg.footer` を消す（使わなくなる）。フッターは翻訳しない固定文 |
 | `src/styles.css` | `.nav-item.has-live span`・`.bottom-nav a.has-live span` を緑 |
@@ -63,9 +65,8 @@
 |---|---|
 | `src/pages/Matches.tsx` | 作り直す。並び替えボタン・チーム選択・一覧（Group / Time） |
 | `src/features/tournament/components/FixtureCard.tsx`（新規） | Matchday XI 形のカード。Details の開閉 |
-| `src/features/tournament/components/FixturePlayers.tsx`（新規） | Details の中身（両チームの選手） |
 | `src/features/tournament/fixtures.ts`（新規） | 並び替え・グループ分けの純粋な関数（`sortByTime`、`groupByGroup`） |
-| `src/features/registration/useRegisteredTeams.ts`（新規） | `GET /api/registration/teams` を1回だけ読んで、登録チームID → 選手 の表を返す（Teams 画面と共通にする） |
+| `src/features/registration/useRegisteredTeams.ts`（新規） | `GET /api/registration/teams` を1回だけ読む（Teams 画面と共通） |
 
 - 既存の `MatchCard` は Home・Live・試合の詳細で使っているので残す。
 
@@ -96,11 +97,11 @@ const [openIds, setOpenIds] = useState<Set<string>>();     // Details を開い�
 ## 6. Groups（`StandingsTable.tsx`・`styles.css`）
 
 - スマホのときに `.standings-wide` を隠すのをやめる。
-- 表を `overflow-x: auto` の箱に入れ、チーム名の列を `position: sticky; left: 0` にする。数字の列は 36px ほどの固定幅。
+- 行を `.standings-scroll`（`overflow-x: auto`）に入れ、幅700px以下では順位とチーム名の列を `position: sticky` にする。数字の列は 46px の固定幅。
 
 ## 7. Knockout（`styles.css`）
 
-- R16 の1枠の高さ（今 116px）を広げ、`.bracket-slot` に上下の余白（8px）を付ける。PK の行があるカードでも重ならない高さにする。線（`::before`・`::after`）の位置はそのまま使えることを確認する。
+- R16 の1枠の高さを 116px → 132px にし、`.bracket-slot` に上下の余白（8px）を付ける。PK の行があるカードでも重ならない高さにする。線（`::before`・`::after`）の位置はそのまま使えることを確認する。
 
 ## 8. Teams（`src/pages/Teams.tsx`）
 

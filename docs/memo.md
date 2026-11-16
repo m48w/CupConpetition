@@ -158,6 +158,8 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
 - Teams 画面は Registered teams だけにした（Competition teams は削除）。
 - テスト用のランダム結果ボタン（2026-11-07）: 管理画面の「TEST TOOLS」。ステージごと（Group / R16 / QF / SF / Final）。テスト環境・ローカルだけ。
 
+- UI改善（2026-11-16）: 全画面を白黒に（Matchday XI 風）。Matches を作り直し（［Group］［Time］・チーム選択・Details で選手）。Live アイコンは LIVE のとき緑。Groups はスマホでも全項目。Knockout の R16 の間隔。Teams の Back 削除。管理画面は Not finished が初期。PC の左メニュー固定。フッターは `Copyright © 2026 M48W`。詳細は `docs/UI改善_仕様書.md`・`docs/UI改善_設計書.md`。
+
 ## 主な確認内容
 
 - `npm run build` 成功。
