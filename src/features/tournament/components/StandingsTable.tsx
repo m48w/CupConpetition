@@ -32,28 +32,30 @@ export function StandingsTable({
           <span>{t("common.teams", { count: standings.length })}</span>
         </div>
       )}
-      <div className="standings-row standings-head">
-        <span>#</span>
-        <span>{t("standings.team")}</span>
-        <span title={t("standings.playedHint")}>{t("standings.played")}</span>
-        <span className="standings-wide">{t("standings.won")}</span>
-        <span className="standings-wide">{t("standings.drawn")}</span>
-        <span className="standings-wide">{t("standings.lost")}</span>
-        <span title={t("standings.goalDiffHint")}>{t("standings.goalDiff")}</span>
-        <span>{t("standings.points")}</span>
-      </div>
-      {standings.map((row, index) => (
-        <div className="standings-row" key={row.team.id}>
-          <b className={index === 0 ? "rank qualified" : "rank"}>{index + 1}</b>
-          <TeamBadge id={row.team.id} />
-          <span>{row.played}</span>
-          <span className="standings-wide">{row.won}</span>
-          <span className="standings-wide">{row.drawn}</span>
-          <span className="standings-wide">{row.lost}</span>
-          <span>{signed(row.goalsFor - row.goalsAgainst)}</span>
-          <strong>{row.points}</strong>
+      <div className="standings-scroll">
+        <div className="standings-row standings-head">
+          <span>#</span>
+          <span>{t("standings.team")}</span>
+          <span title={t("standings.playedHint")}>{t("standings.played")}</span>
+          <span className="standings-wide">{t("standings.won")}</span>
+          <span className="standings-wide">{t("standings.drawn")}</span>
+          <span className="standings-wide">{t("standings.lost")}</span>
+          <span title={t("standings.goalDiffHint")}>{t("standings.goalDiff")}</span>
+          <span>{t("standings.points")}</span>
         </div>
-      ))}
+        {standings.map((row, index) => (
+          <div className="standings-row" key={row.team.id}>
+            <b className={index === 0 ? "rank qualified" : "rank"}>{index + 1}</b>
+            <TeamBadge id={row.team.id} />
+            <span>{row.played}</span>
+            <span className="standings-wide">{row.won}</span>
+            <span className="standings-wide">{row.drawn}</span>
+            <span className="standings-wide">{row.lost}</span>
+            <span>{signed(row.goalsFor - row.goalsAgainst)}</span>
+            <strong>{row.points}</strong>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

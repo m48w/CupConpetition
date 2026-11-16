@@ -1,6 +1,6 @@
 # Velocity Cup 2026 — Cross Test Cases / 相互テスト書
 
-- **Version / 版**: 1.0.0
+- **Version / 版**: 1.1.0 (2026-11-16: UI refresh — Matches, colours, menu, Groups, Teams, admin list / UI改善に合わせて更新)
 - **Date / 作成日**: 2026-11-07
 - **Target / 対象**: Velocity Cup 2026 web app (public pages, team & player registration, admin console) / 大会Webアプリ（公開ページ・チーム登録・選手登録・管理画面）
 - **Related / 関連文書**: `docs/仕様書.md`, `docs/試合進行_仕様書.md`, `docs/得点者_仕様書.md`, `docs/グループ分け_仕様書.md`
@@ -82,6 +82,10 @@ Run the phases in this order. Phases 3–5 depend on the data made in earlier ph
 | A-12 | (iPhone/iPad Safari) ☰ → "Add to home screen".<br>（iPhone・iPad Safari）☰ →「Add to home screen」。 | Instructions "Share → Add to Home Screen" are shown.<br>「共有 → ホーム画面に追加」の手順が出る。 | iPhone, iPad | | |
 | A-13 | Open the site from the installed home-screen icon, then open ☰.<br>ホーム画面のアイコンから開き、☰ を開く。 | It shows that the app is already added.<br>「追加済み」と出る。 | Android, iPhone | | |
 | A-14 | (PC) Click "Register" at the top right.<br>（PC）右上の「Register」を押す。 | The team registration page opens.<br>チーム登録画面が開く。 | PC | | |
+| A-15 | (PC) Scroll a long page (Matches).<br>（PC）長いページ（Matches）をスクロールする。 | The left menu stays in place under the header.<br>左メニューはヘッダーの下で動かない。 | PC | | |
+| A-16 | Look at the colours of every page, admin and registration.<br>全ページ・管理画面・登録画面の色を見る。 | White background and black text. Colour only for meaning: green (LIVE), red (errors), yellow (warnings, PK, test-site bar).<br>白い背景と黒い文字。色は意味のあるところだけ。 | All | | |
+| A-17 | Look at the bottom of the page and the bottom of the PC left menu.<br>ページの一番下と、PC の左メニューの下を見る。 | Footer is only "Copyright © 2026 M48W" (also on the registration page). No "Velocity Cup 2026 / 40 teams · 95 matches" in the left menu.<br>フッターは「Copyright © 2026 M48W」だけ（登録画面も）。左メニューの下に大会名・チーム数・試合数は無い。 | All | | |
+| A-18 | Start a match (LIVE), then pause it, then finish it.<br>試合を開始（LIVE）→一時停止→終了する。 | The Live icon in the menu is green only while a match is LIVE.<br>LIVE の試合があるときだけ、メニューの Live アイコンが緑。 | All | | |
 
 ### B. Language / 言語
 
@@ -145,7 +149,7 @@ Precondition: the team you registered in C-07. / 前提: C-07 で登録したチ
 |---|---|---|---|---|---|
 | E-01 | Open Teams.<br>Teams を開く。 | Only the "Registered teams" list is shown, with logo and team name cards. (There is no "Competition teams" list.)<br>「Registered teams」の一覧だけが出る。ロゴとチーム名のカード（「Competition teams」は無い）。 | All | | |
 | E-02 | Select a team card.<br>チームのカードを押す。 | A dialog opens with the logo, name and registered players (or "no players" text).<br>ダイアログにロゴ・名前・登録選手（いなければその旨）が出る。 | All | | |
-| E-03 | Close the dialog with "Back", "×", and (PC) Esc.<br>「Back」・「×」・（PC）Esc で閉じる。 | The dialog closes each time.<br>どれでも閉じる。 | All | | |
+| E-03 | Close the dialog with "×" and (PC) Esc.<br>「×」・（PC）Esc で閉じる。 | The dialog closes each time. There is no "Back" button.<br>どちらでも閉じる。「Back」ボタンは無い。 | All | | |
 | E-04 | A team without a logo, or a broken logo.<br>ロゴの無い・壊れたロゴのチーム。 | A badge ("FC" or the initial) is shown instead.<br>代わりにバッジ（「FC」や頭文字）が出る。 | PC | | |
 
 ---
@@ -207,17 +211,18 @@ Tell the other testers before starting. / 始める前にほかのテスター�
 | I-03 | Check the bottom of Home.<br>Home の一番下を見る。 | Date, time, venue, address (EN/JA), Google Maps button and Contact.<br>日付・時間・会場・住所（英語・日本語）・Google マップのボタン・問い合わせ先。 | All | | |
 | I-04 | Choose a team in "My team".<br>「My team」でチームを選ぶ。 | Its next match (time, court, opponent) and its group position are shown.<br>次の試合（時間・コート・相手）とグループの順位が出る。 | All | | |
 | I-05 | Reload / reopen the browser.<br>再読み込み／開き直す。 | The chosen team is kept on this device.<br>この端末では選んだチームのまま。 | All | | |
-| I-06 | Matches → "My team only".<br>Matches →「My team only」。 | Only the chosen team's matches are shown.<br>そのチームの試合だけが出る。 | All | | |
+| I-06 | With "My team" chosen on Home, open Matches.<br>Home でマイチームを選んでから Matches を開く。 | The team selector already shows that team, and only its matches are shown.<br>チーム選択にそのチームが入っていて、その試合だけ出る。 | All | | |
 | I-07 | While the chosen team is playing (LIVE).<br>選んだチームが試合中のとき。 | The live score is shown in "My team".<br>「My team」に試合中のスコアが出る。 | PC | | |
+| I-08 | (Organiser) Set the device clock to 2026-12-20 09:00 JST or later and open Home.<br>（担当者）端末の時計を 2026-12-20 9:00 JST 以降にして Home を開く。 | The countdown is not shown.<br>カウントダウンが出ない。 | PC | | |
 
 ### J. Matches page / Matches 画面
 
 | ID | Steps / 手順 | Expected / 期待結果 | Device | Result / 結果 | Note / メモ |
 |---|---|---|---|---|---|
-| J-01 | Open Matches.<br>Matches を開く。 | All 95 matches. Each card: round, group, time or state, teams, score, match ID, court. Knockout teams show TBD until decided.<br>95試合。各カードにラウンド・グループ・時間か状態・チーム・点数・試合ID・コート。決勝トーナメントは決まるまで TBD。 | All | | |
-| J-02 | Filter by Round, Team, Group and Court at the same time.<br>Round・Team・Group・Court を同時に絞り込む。 | Only matching matches are shown.<br>条件に合う試合だけ出る。 | PC | | |
-| J-03 | "Reset" the filters.<br>フィルターを「Reset」。 | All filters return to All.<br>全部 All に戻る。 | PC | | |
-| J-04 | Open a match card (match detail).<br>試合カードを開く（試合の詳細）。 | The detail page `/20261220/matches/<ID>` opens. "All matches" goes back.<br>詳細ページが開く。「All matches」で戻る。 | All | | |
+| J-01 | Open Matches.<br>Matches を開く。 | [Group] [Time] buttons (Time selected) and a team selector ("All teams"). All 95 matches in time order. Each card: home ｜ time · court, "vs" or score, group/stage, state ｜ away. No old filters (Round/Group/Court/Reset).<br>［Group］［Time］（Time が選ばれている）とチーム選択。95試合が時間の順。カードは ホーム ｜ 時間・コート／vs か点数／グループ／状態 ｜ アウェイ。古い絞り込みは無い。 | All | | |
+| J-02 | Press [Group]. Press a group heading, then press it again.<br>［Group］を押す。グループの見出しを押し、もう一度押す。 | Matches are grouped A–H (each in time order) and "Knockout" is last, with match counts. The heading folds and opens the group.<br>A〜H ごとにまとまり、最後に Knockout。見出しに試合数。見出しで折りたたみ・開く。 | All | | |
+| J-03 | Choose a team in the team selector. Reload the page.<br>チーム選択でチームを選び、再読み込みする。 | Only that team's matches are shown (in [Group]: only its group and knockout). The sort and the team are kept after reload.<br>そのチームの試合だけ出る。再読み込みしても並び替えとチームはそのまま。 | All | | |
+| J-04 | Press "Details" on a card (and on a quarter-final after goals were recorded). Press "Match details".<br>カードの「Details」を押す（得点を記録した準々決勝でも）。「Match details」を押す。 | Both teams' registered players (#number name) are shown side by side; scorers have ⚽ from the quarter-finals. Teams without players show "No players registered." "Match details" opens `/20261220/matches/<ID>`.<br>両チームの登録選手が左右に並ぶ。準々決勝からは得点者に ⚽。選手がいないチームは「No players registered.」。「Match details」で詳細ページが開く。 | All | | |
 
 ### K. Match control / 試合操作
 
@@ -225,7 +230,7 @@ Assign one tester per court as Sub Admin, and one as Super Admin. / コートご
 
 | ID | Steps / 手順 | Expected / 期待結果 | Device | Result / 結果 | Note / メモ |
 |---|---|---|---|---|---|
-| K-01 | Super Admin: open the match list in "SELECT MATCH".<br>Super Admin:「SELECT MATCH」の一覧を開く。 | **All** matches (including finished ones) in time order. "x of y matches" is shown.<br>**全試合**（終わった試合も）が時間の順に出る。「x of y matches」が出る。 | PC | | |
+| K-01 | Super Admin: open the match list in "SELECT MATCH".<br>Super Admin:「SELECT MATCH」の一覧を開く。 | Status is "Not finished" at first: only matches that are not finished, in time order. "x of y matches" is shown. Choosing "Finished" or "All" shows finished matches too.<br>最初は Status が「Not finished」で、終わっていない試合だけ。「Finished」「All」を選ぶと終わった試合も出る。 | PC | | |
 | K-02 | Use the Court, Stage and Status filters.<br>Court・Stage・Status で絞り込む。 | The list and the count change. The selected match stays selectable even if it does not match the filter.<br>一覧と数が変わる。選んでいる試合は、条件に合わなくても選べるまま。 | PC | | |
 | K-03 | Choose a group match and press "▶ Start match".<br>グループの試合を選び「▶ Start match」。 | State becomes ● LIVE, the timer starts from 00:00. Score +/− become usable.<br>● LIVE になり、タイマーが 00:00 から進む。点数の ＋／− が使える。 | PC, iPad | | |
 | K-04 | Before starting, try +/−.<br>開始前に ＋／− を押す。 | Disabled. "Start the match to record goals." is shown.<br>押せない。「Start the match to record goals.」と出る。 | PC | | |
@@ -250,7 +255,7 @@ Assign one tester per court as Sub Admin, and one as Super Admin. / コートご
 
 | ID | Steps / 手順 | Expected / 期待結果 | Device | Result / 結果 | Note / メモ |
 |---|---|---|---|---|---|
-| M-01 | Open Groups and one group.<br>Groups とグループ1つを開く。 | Columns: Played, Won, Drawn, Lost, Goal diff., Points (narrow screen: Played, Goal diff., Points). Group page also lists its matches.<br>列が正しい（狭い画面は Played・Goal diff.・Points）。グループのページに試合も出る。 | All | | |
+| M-01 | Open Groups and one group (also on a phone).<br>Groups とグループ1つを開く（スマホでも）。 | All columns on every device: #, Team, Played, Won, Drawn, Lost, Goal diff., Points. On a phone the table scrolls sideways inside its box and the # and Team columns stay on the left. Group page also lists its matches.<br>どの端末でも全部の列。スマホは表の中だけ横にスクロールし、# とチーム名は左に残る。 | All | | |
 | M-02 | Finish matches with win / draw / loss.<br>勝ち・引き分け・負けで試合を終える。 | Win 3, draw 1, loss 0 points. Only finished matches count.<br>勝ち3・引き分け1・負け0。終わった試合だけ数える。 | PC | | |
 | M-03 | Make two teams equal on points but different goal difference.<br>勝ち点は同じで得失点差が違う2チームを作る。 | Better goal difference ranks higher. Then goals scored, then head-to-head.<br>得失点差 → 総得点 → 直接対決の順で上になる。 | PC | | |
 | M-04 | Finish a whole group so that teams are still level after head-to-head on 1st/2nd or 2nd/3rd place (for example a 3-team cycle of 1–0 wins).<br>直接対決でも1・2位、2・3位で同じになるようにグループを終える（例: 3チームが1-0 で順番に勝つ）。 | "TIE DECISIONS" appears in the console for that group. The R16 places for that group stay empty (TBD).<br>管理画面にそのグループの「TIE DECISIONS」が出る。その R16 の枠は TBD のまま。 | PC | | |
@@ -272,6 +277,7 @@ Assign one tester per court as Sub Admin, and one as Super Admin. / コートご
 | N-07 | After the next match has started, change the result of the previous match (for example a group match after its R16 started).<br>次の試合が始まったあとで、前の試合の結果を直す（例: R16 開始後のグループの試合）。 | Refused: "The next match has already started. This result can no longer be changed."<br>断られる（次の試合が始まったので直せない）。 | PC | | |
 | N-08 | Change an R16 result before its QF starts.<br>QF が始まる前に R16 の結果を直す。 | The QF team changes to the new winner.<br>QF のチームが新しい勝者に変わる。 | PC | | |
 | N-09 | Knockout page before the group stage finishes.<br>グループ戦が終わる前の Knockout。 | A note that the knockout is not decided yet.<br>まだ決まっていない旨が出る。 | PC | | |
+| N-10 | Open Knockout after R16 matches with a PK finished.<br>PK のある R16 が終わってから Knockout を開く。 | Every R16 card has space above and below; cards with a PK line do not touch the next card.<br>R16 のカードの上下に間がある。PK の行があっても隣とくっつかない。 | PC, iPhone | | |
 
 ### O. Goal scorers (from the quarter-finals) / 得点者（準々決勝から）
 
@@ -383,7 +389,7 @@ Copy this table for each `NG`. / `NG` ごとにこの表をコピーして書く
 
 | Section / 章 | Cases / 件数 | OK | NG | Skip | Tester / テスター |
 |---|---|---|---|---|---|
-| A. Common layout | 14 | | | | |
+| A. Common layout | 18 | | | | |
 | B. Language | 7 | | | | |
 | C. Team registration | 16 | | | | |
 | D. Player registration | 14 | | | | |
@@ -391,12 +397,12 @@ Copy this table for each `NG`. / `NG` ごとにこの表をコピーして書く
 | F. Sign-in and permissions | 9 | | | | |
 | G. Team registrations | 8 | | | | |
 | H. Groups and schedule | 12 | | | | |
-| I. Home / My team | 7 | | | | |
+| I. Home / My team | 8 | | | | |
 | J. Matches | 4 | | | | |
 | K. Match control | 11 | | | | |
 | L. Real-time | 4 | | | | |
 | M. Standings / ties | 8 | | | | |
-| N. Knockout / PK | 9 | | | | |
+| N. Knockout / PK | 10 | | | | |
 | O. Goal scorers | 12 | | | | |
 | P. Test tools | 6 | | | | |
 | Q. Announcements | 8 | | | | |

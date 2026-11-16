@@ -1,21 +1,33 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+Myanmar:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 :root {
   font-family: "Space Grotesk", sans-serif;
-  color: #e8edf6;
-  background: #080d17;
+  color: var(--text);
+  background: var(--bg);
   font-synthesis: none;
-  --panel: #101827;
-  --muted: #8692a8;
-  --line: #223047;
-  --orange: #ff7143;
-  --green: #53d18b;
+  /* 白黒のデザイン（docs/UI改善_設計書.md）。色は意味のあるところだけ。 */
+  --bg: #f6f6f3;
+  --surface: #ffffff;
+  --subtle: #fafaf8;
+  --subtle-2: #f1f1ee;
+  --line: #e5e5e0;
+  --line-strong: #d0d0c8;
+  --text: #111827;
+  --text-2: #3f3f46;
+  --muted: #71717a;
+  --ink: #111111;
+  --live: #15803d;
+  --danger: #b91c1c;
+  --warn: #92400e;
+  --panel: var(--surface);
+  --orange: var(--ink);
+  --green: var(--live);
 }
 * {
   box-sizing: border-box;
 }
 body {
   margin: 0;
-  background: radial-gradient(circle at 80% -10%, #16263d 0, transparent 35%), #080d17;
+  background: var(--bg);
 }
 button,
 select {
@@ -36,7 +48,7 @@ button {
   align-items: center;
   padding: 0 42px;
   gap: 20px;
-  background: rgba(8, 13, 23, 0.88);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
   position: sticky;
   top: 0;
@@ -73,7 +85,7 @@ button {
   height: 30px;
   background: var(--orange);
   border-radius: 9px;
-  color: #111;
+  color: #ffffff;
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0;
@@ -86,7 +98,7 @@ button {
 }
 .event-meta b {
   margin-left: 18px;
-  color: #d9e0ed;
+  color: var(--text);
 }
 .live-dot {
   display: inline-block;
@@ -103,7 +115,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 14px;
-  color: #cad3e1;
+  color: var(--text);
   font-size: 13px;
   text-decoration: none;
   display: inline-flex;
@@ -112,14 +124,14 @@ button {
   line-height: 1;
 }
 .admin-toggle.header-reg-btn {
-  background: rgba(249, 115, 22, 0.12);
-  border-color: rgba(249, 115, 22, 0.45);
-  color: #fed7aa;
+  background: #f4f4f5;
+  border-color: #d4d4d8;
+  color: var(--ink);
 }
 .admin-toggle.header-reg-btn:hover {
-  background: rgba(249, 115, 22, 0.22);
-  border-color: rgba(249, 115, 22, 0.85);
-  color: #fff;
+  background: #f4f4f5;
+  border-color: #d4d4d8;
+  color: var(--text);
 }
 .layout {
   display: flex;
@@ -138,7 +150,7 @@ button {
 .eyebrow,
 label {
   font: 10px "DM Mono";
-  color: #65758f;
+  color: var(--muted);
   letter-spacing: 1.5px;
 }
 .nav-item {
@@ -147,7 +159,7 @@ label {
   align-items: center;
   padding: 12px 14px;
   border-radius: 8px;
-  color: #8490a6;
+  color: var(--text-2);
   text-decoration: none;
   font-size: 14px;
   margin-top: 6px;
@@ -158,8 +170,8 @@ label {
   font-size: 18px;
 }
 .nav-item.active {
-  background: #17243a;
-  color: #fff;
+  background: var(--subtle-2);
+  color: var(--text);
 }
 .sidebar-bottom {
   margin-top: auto;
@@ -218,7 +230,7 @@ label {
 .next-panel {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: linear-gradient(145deg, #16243a, #0e1727);
+  background: linear-gradient(145deg, #f4f4f5, var(--surface));
   padding: 28px;
 }
 .hero-card {
@@ -232,18 +244,18 @@ label {
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  border: 1px solid #315075;
+  border: 1px solid var(--line);
   right: -100px;
   bottom: -120px;
   box-shadow:
-    0 0 0 25px #ffffff05,
-    0 0 0 50px #ffffff03;
+    0 0 0 25px transparent,
+    0 0 0 50px transparent;
 }
 .overview-countdown,
 .overview-section {
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: linear-gradient(145deg, #16243a, #0e1727);
+  background: linear-gradient(145deg, #f4f4f5, var(--surface));
   padding: 30px;
 }
 .overview-countdown {
@@ -257,7 +269,7 @@ label {
 }
 .countdown-date {
   margin: 10px 0 26px;
-  color: #c3cede;
+  color: var(--text);
   font-size: 16px;
 }
 .countdown-clock {
@@ -268,16 +280,16 @@ label {
 .countdown-unit {
   min-width: 92px;
   padding: 15px 12px;
-  border: 1px solid #344661;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #0c1421;
+  background: var(--surface);
 }
 .countdown-unit strong,
 .countdown-unit span {
   display: block;
 }
 .countdown-unit strong {
-  color: #f4c747;
+  color: var(--warn);
   font: 600 30px "DM Mono";
 }
 .countdown-unit span {
@@ -286,7 +298,7 @@ label {
   font-size: 11px;
 }
 .countdown-started {
-  color: #f4c747;
+  color: var(--warn);
   font-size: 22px;
   font-weight: 700;
 }
@@ -305,7 +317,7 @@ label {
   gap: 12px;
   overflow-x: auto;
   padding: 4px 2px 12px;
-  scrollbar-color: #40516c #111b2b;
+  scrollbar-color: #d4d4d8 #f4f4f5;
   scrollbar-width: thin;
 }
 .team-logo-tile {
@@ -317,9 +329,9 @@ label {
   justify-content: center;
   gap: 9px;
   padding: 12px 8px;
-  border: 1px solid #26354c;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #111b2b;
+  background: var(--subtle-2);
 }
 .team-logo-tile .team-badge {
   justify-content: center;
@@ -331,18 +343,18 @@ label {
   flex-basis: 48px;
 }
 .team-logo-tile > span {
-  color: #d6dfed;
+  color: var(--text);
   font-size: 12px;
 }
 .rules-section {
   margin-bottom: 12px;
 }
 .rules-placeholder {
-  border: 1px dashed #344661;
+  border: 1px dashed var(--line);
   border-radius: 10px;
   padding: 24px;
   text-align: center;
-  color: #aab5c7;
+  color: var(--text-2);
 }
 .rules-placeholder p {
   margin: 0;
@@ -393,7 +405,7 @@ label {
 .registration-back-btn {
   text-decoration: none;
   font-size: 13px;
-  color: #cad3e1;
+  color: var(--text);
   padding: 8px 14px;
 }
 .registration-shell > footer {
@@ -410,7 +422,7 @@ label {
   padding: clamp(20px, 5vw, 36px);
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: #101827;
+  background: var(--surface);
 }
 .registration-card h1,
 .registration-card p {
@@ -433,7 +445,7 @@ label {
 .registration-logo-upload {
   display: grid;
   gap: 7px;
-  color: #cbd5e1;
+  color: var(--text);
   font-size: 13px;
 }
 .registration-form input,
@@ -442,10 +454,10 @@ label {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  border: 1px solid #334155;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0b1220;
-  color: #f8fafc;
+  background: var(--surface);
+  color: var(--text);
   font: inherit;
 }
 .registration-form input:focus,
@@ -476,7 +488,7 @@ label {
   padding: 13px 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #0d1624;
+  background: var(--surface);
   cursor: pointer;
 }
 .registration-form .registration-multiple-toggle input[type="checkbox"] {
@@ -487,9 +499,9 @@ label {
   min-height: 19px;
   margin: 0;
   padding: 0;
-  border: 1px solid #52627a;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  background: #0b1220;
+  background: var(--surface);
   cursor: pointer;
 }
 .registration-form .registration-multiple-toggle input[type="checkbox"]:checked {
@@ -498,7 +510,7 @@ label {
 }
 .registration-form .registration-multiple-toggle input[type="checkbox"]:checked::after {
   display: block;
-  color: #101827;
+  color: #ffffff;
   content: "✓";
   font-size: 14px;
   font-weight: 700;
@@ -523,22 +535,22 @@ label {
   flex: 0 0 44px;
   width: 44px;
   min-height: 44px;
-  border: 1px solid #334155;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #172338;
-  color: #f8fafc;
+  background: var(--subtle-2);
+  color: var(--text);
   font-size: 23px;
 }
 .registration-add-team {
   border-color: var(--orange);
   background: var(--orange);
-  color: #101827;
+  color: #ffffff;
   font-weight: 700;
 }
 .registration-logo-field {
   display: grid;
   gap: 9px;
-  color: #cbd5e1;
+  color: var(--text);
   font-size: 13px;
 }
 .registration-logo-heading {
@@ -572,9 +584,9 @@ label {
   gap: 14px;
   min-height: 104px;
   padding: 14px;
-  border: 1px dashed #43516a;
+  border: 1px dashed var(--line);
   border-radius: 10px;
-  background: #0b1220;
+  background: var(--surface);
 }
 .registration-logo-picker > img,
 .registration-logo-placeholder {
@@ -585,13 +597,13 @@ label {
   object-fit: contain;
 }
 .registration-logo-picker > img {
-  background: #fff;
+  background: var(--ink);
 }
 .registration-logo-placeholder {
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
-  background: #111c2d;
+  background: #f4f4f5;
   color: var(--orange);
   font-size: 26px;
 }
@@ -633,7 +645,7 @@ label {
   border: 0;
   border-radius: 8px;
   background: var(--orange);
-  color: #101827;
+  color: #ffffff;
   font-weight: 700;
   text-align: center;
   text-decoration: none;
@@ -651,10 +663,10 @@ label {
 }
 .registration-error {
   margin: 0;
-  color: #fca5a5;
+  color: var(--danger);
 }
 .registration-notice {
-  color: #86efac;
+  color: var(--live);
 }
 .registration-complete {
   text-align: center;
@@ -666,8 +678,8 @@ label {
   height: 54px;
   margin: 0 auto;
   border-radius: 50%;
-  background: #14532d;
-  color: #bbf7d0;
+  background: #dcfce7;
+  color: var(--live);
   font-size: 28px;
 }
 .registration-complete dl,
@@ -737,7 +749,7 @@ label {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #101827;
+  background: var(--surface);
 }
 .registration-admin-club > header {
   display: flex;
@@ -775,7 +787,7 @@ label {
 .registration-admin-team-edit label {
   display: grid;
   gap: 6px;
-  color: #cbd5e1;
+  color: var(--text);
   font-size: 13px;
 }
 .registration-admin-club-edit input,
@@ -784,10 +796,10 @@ label {
   min-width: 0;
   min-height: 42px;
   padding: 9px 11px;
-  border: 1px solid #334155;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0b1220;
-  color: #f8fafc;
+  background: var(--surface);
+  color: var(--text);
   font: inherit;
 }
 .registration-admin-actions {
@@ -818,7 +830,7 @@ label {
   margin: 0;
 }
 .not-found h1 {
-  color: #f4c747;
+  color: var(--warn);
   font: 700 clamp(64px, 12vw, 110px) "DM Mono";
 }
 .not-found h2 {
@@ -841,7 +853,7 @@ label {
 .registered-team-card {
   width: 100%;
   min-width: 0;
-  color: #e8edf6;
+  color: var(--text);
   font: inherit;
   cursor: pointer;
 }
@@ -852,7 +864,7 @@ label {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgb(2 6 14 / 78%);
+  background: rgba(17, 24, 39, 0.45);
 }
 .team-roster-dialog {
   width: min(100%, 760px);
@@ -861,8 +873,8 @@ label {
   padding: clamp(18px, 4vw, 28px);
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: #101827;
-  box-shadow: 0 24px 80px rgb(0 0 0 / 45%);
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.06);
 }
 .team-roster-header {
   display: flex;
@@ -885,10 +897,10 @@ label {
 .team-roster-close {
   width: 42px;
   height: 42px;
-  border: 1px solid #334155;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #172338;
-  color: #f8fafc;
+  background: var(--subtle-2);
+  color: var(--text);
   font-size: 26px;
   cursor: pointer;
 }
@@ -935,8 +947,8 @@ label {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: #101827;
-  color: #e8edf6;
+  background: var(--surface);
+  color: var(--text);
   text-align: center;
   text-decoration: none;
 }
@@ -964,7 +976,7 @@ label {
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #101827;
+  background: var(--surface);
 }
 .team-profile .team-badge img,
 .team-profile .team-badge .team-crest {
@@ -1005,11 +1017,11 @@ label {
   letter-spacing: -2px;
 }
 .hero-card h2 em {
-  color: #f6a484;
+  color: var(--danger);
   font-style: normal;
 }
 .hero-card p {
-  color: #aab5c7;
+  color: var(--text-2);
   font-size: 14px;
 }
 .hero-stats {
@@ -1045,11 +1057,11 @@ label {
   text-decoration: none;
 }
 .today-card {
-  background: #101827;
+  background: var(--surface);
 }
 .match-card {
-  background: #151f31;
-  border: 1px solid #26354c;
+  background: var(--subtle-2);
+  border: 1px solid var(--line);
   border-radius: 9px;
   padding: 15px 17px;
   min-width: 0;
@@ -1061,7 +1073,7 @@ label {
 .match-card-foot {
   display: flex;
   justify-content: space-between;
-  color: #70819a;
+  color: var(--muted);
   font: 10px "DM Mono";
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -1070,14 +1082,14 @@ label {
   color: var(--green);
 }
 .status.finished {
-  color: #98a7bb;
+  color: var(--text-2);
 }
 .status.scheduled {
   color: var(--orange);
 }
 .status.paused,
 .timer.paused {
-  color: #f5c451;
+  color: var(--warn);
 }
 .match-teams {
   padding: 12px 0;
@@ -1096,7 +1108,7 @@ label {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #e2e8f2;
+  color: var(--text);
 }
 .team-badge img,
 .team-badge .team-crest {
@@ -1137,14 +1149,14 @@ label {
   white-space: nowrap;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0f1726;
+  background: var(--surface);
   padding: 10px 14px;
   color: var(--muted);
   font-size: 12px;
 }
 .filter-bar button.selected {
-  background: #e9eef7;
-  color: #0c1422;
+  background: #f4f4f5;
+  color: #ffffff;
 }
 .muted {
   color: var(--muted);
@@ -1198,7 +1210,7 @@ label {
 }
 .table-card {
   padding: 20px;
-  background: #101827;
+  background: var(--surface);
 }
 .table-title {
   display: flex;
@@ -1222,7 +1234,7 @@ label {
   align-items: center;
 }
 .table-head {
-  color: #65758f;
+  color: var(--muted);
   font: 9px "DM Mono";
   padding-bottom: 8px;
   border-bottom: 1px solid var(--line);
@@ -1232,7 +1244,7 @@ label {
 }
 .table-row {
   padding: 11px 0;
-  border-bottom: 1px solid #1c2940;
+  border-bottom: 1px solid var(--line);
   font-size: 12px;
 }
 .table-row .team-badge {
@@ -1243,7 +1255,7 @@ label {
   text-align: right;
 }
 .rank {
-  color: #718099;
+  color: var(--muted);
 }
 .rank.qualified {
   color: var(--green);
@@ -1255,7 +1267,7 @@ label {
 .admin-pill {
   font: 10px "DM Mono";
   color: var(--orange);
-  border: 1px solid #7c402e;
+  border: 1px solid #fca5a5;
   padding: 7px 10px;
   border-radius: 5px;
 }
@@ -1270,9 +1282,9 @@ label {
 }
 .admin-panel select {
   width: 100%;
-  background: #0d1625;
+  background: var(--surface);
   border: 1px solid var(--line);
-  color: #dfe7f3;
+  color: var(--text-2);
   border-radius: 7px;
   padding: 13px;
 }
@@ -1285,7 +1297,7 @@ label {
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0d1625;
+  background: var(--surface);
   font: 13px "DM Mono";
   letter-spacing: 0.4px;
 }
@@ -1293,17 +1305,17 @@ label {
   font-size: 20px;
 }
 .match-state.live {
-  border-color: #2f5a3c;
-  background: #12261b;
+  border-color: #86efac;
+  background: var(--surface);
   color: var(--green);
 }
 .match-state.paused {
-  border-color: #6b5520;
-  background: #2a2413;
-  color: #f5c451;
+  border-color: #fcd34d;
+  background: var(--subtle-2);
+  color: var(--warn);
 }
 .match-state.finished {
-  color: #98a7bb;
+  color: var(--text-2);
 }
 .control-score button:disabled {
   opacity: 0.35;
@@ -1320,8 +1332,8 @@ label {
   margin: 15px 0;
 }
 .control-score button {
-  background: #1a2a42;
-  border: 1px solid #2c405e;
+  background: var(--subtle-2);
+  border: 1px solid var(--line);
   border-radius: 6px;
   height: 32px;
 }
@@ -1343,11 +1355,11 @@ label {
 }
 .primary-button {
   background: var(--orange);
-  color: #151015;
+  color: #ffffff;
 }
 .danger-button {
-  background: #7d3034;
-  color: #ffe0df;
+  background: #fee2e2;
+  color: var(--danger);
 }
 .setup-panel h3 {
   margin-top: 4px;
@@ -1395,10 +1407,10 @@ label {
 .team-editor select {
   width: 100%;
   min-width: 0;
-  background: #0d1625;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 7px;
-  color: #dfe7f3;
+  color: var(--text-2);
   padding: 11px;
 }
 .team-editor input[type="color"] {
@@ -1407,7 +1419,7 @@ label {
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0d1625;
+  background: var(--surface);
 }
 .team-editor-actions,
 .team-manager-footer {
@@ -1425,7 +1437,7 @@ label {
   align-items: center;
   gap: 10px;
   padding: 10px 0;
-  border-bottom: 1px solid #1c2940;
+  border-bottom: 1px solid var(--line);
   font-size: 12px;
 }
 .team-manager-row > span:nth-child(3) {
@@ -1453,12 +1465,12 @@ label {
   margin-top: 12px;
 }
 .warning-box {
-  background: #29251b;
-  border: 1px solid #5b4b26;
+  background: var(--subtle-2);
+  border: 1px solid #fcd34d;
   padding: 12px;
   border-radius: 6px;
   font-size: 11px;
-  color: #e0bd65;
+  color: var(--warn);
   margin: 22px 0;
 }
 .empty-state {
@@ -1480,7 +1492,7 @@ label {
 footer {
   text-align: center;
   padding: 30px;
-  color: #536078;
+  color: var(--muted);
   font: 10px "DM Mono";
   letter-spacing: 0.8px;
 }
@@ -1512,7 +1524,7 @@ footer span {
     left: 0;
     right: 0;
     height: 64px;
-    background: #0d1523;
+    background: var(--surface);
     border-top: 1px solid var(--line);
     z-index: 4;
     justify-content: space-around;
@@ -1521,7 +1533,7 @@ footer span {
   .bottom-nav a {
     flex: 1 0 0;
     min-width: 0;
-    color: #718099;
+    color: var(--muted);
     text-decoration: none;
     font-size: 9px;
     display: flex;
@@ -1714,11 +1726,11 @@ footer span {
   }
 }
 .admin-gate-card {
-  background: #0d1624;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 28px 26px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.06);
 }
 .admin-gate-card h1 {
   margin: 6px 0 0;
@@ -1730,21 +1742,21 @@ footer span {
   gap: 12px;
 }
 .admin-gate-card input {
-  background: #111d2d;
+  background: #f4f4f5;
   border: 1px solid var(--line);
   border-radius: 8px;
-  color: #edf4ff;
+  color: var(--text-2);
   padding: 13px 14px;
   outline: none;
 }
 .admin-gate-card input:focus {
-  border-color: #6f88bf;
-  box-shadow: 0 0 0 3px rgba(131, 169, 255, 0.12);
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 3px transparent;
 }
 .login-error {
-  background: #2b1a1c;
-  border: 1px solid #673336;
-  color: #ffc8cc;
+  background: var(--subtle-2);
+  border: 1px solid #fca5a5;
+  color: var(--danger);
   border-radius: 7px;
   padding: 10px 12px;
   font-size: 12px;
@@ -1779,14 +1791,14 @@ footer span {
   white-space: nowrap;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0f1726;
+  background: var(--surface);
   padding: 10px 14px;
-  color: #dbe5f4;
+  color: var(--text-2);
   font-size: 12px;
   min-width: 145px;
 }
 .filter-bar select:focus {
-  outline: 2px solid #3a78a8;
+  outline: 2px solid #d4d4d8;
   outline-offset: 1px;
 }
 .tournament-banner {
@@ -1794,10 +1806,10 @@ footer span {
   overflow: hidden;
   margin-bottom: 28px;
   padding: 30px 34px;
-  border: 1px solid #2a6387;
+  border: 1px solid #d4d4d8;
   border-radius: 14px;
-  background: linear-gradient(110deg, #0d2338, #123f58 52%, #0b1b2d);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
+  background: linear-gradient(110deg, #f4f4f5, #f4f4f5 52%, var(--surface));
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.06);
 }
 .tournament-banner:after {
   content: "";
@@ -1806,11 +1818,11 @@ footer span {
   top: -120px;
   width: 300px;
   height: 300px;
-  border: 1px solid #75c5dc55;
+  border: 1px solid #d4d4d8;
   border-radius: 50%;
   box-shadow:
-    0 0 0 22px #75c5dc0d,
-    0 0 0 52px #75c5dc08;
+    0 0 0 22px transparent,
+    0 0 0 52px transparent;
 }
 .tournament-banner span,
 .tournament-banner b,
@@ -1820,7 +1832,7 @@ footer span {
   z-index: 1;
 }
 .tournament-banner span {
-  color: #7bd3e7;
+  color: var(--text-2);
   font: 11px "DM Mono";
   letter-spacing: 3px;
 }
@@ -1831,7 +1843,7 @@ footer span {
 }
 .tournament-banner small {
   margin-top: 8px;
-  color: #a9c7d8;
+  color: var(--text-2);
 }
 /* Knockout bracket, left to right. Every column is split into equal slots (8, 4, 2, 1), so
    each match sits exactly halfway between the two matches that feed it. The connectors are
@@ -1852,7 +1864,7 @@ footer span {
 .bracket-round h3 {
   margin: 0 0 12px;
   font-size: 13px;
-  color: #7bd3e7;
+  color: var(--text-2);
   text-transform: uppercase;
   letter-spacing: 0.8px;
 }
@@ -1897,15 +1909,15 @@ footer span {
   z-index: 1;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #2d5d79;
+  border: 1px solid #d4d4d8;
   border-radius: 8px;
-  background: linear-gradient(145deg, #172d43, #0e1b2b);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+  background: linear-gradient(145deg, #f4f4f5, var(--subtle-2));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
 }
 .bracket-game small {
   display: block;
   margin-bottom: 6px;
-  color: #7f97ad;
+  color: var(--text-2);
   font: 9px "DM Mono";
 }
 .bracket-side {
@@ -1914,7 +1926,7 @@ footer span {
   justify-content: space-between;
   gap: 8px;
   padding: 5px 0;
-  border-top: 1px solid #31566d;
+  border-top: 1px solid var(--line);
   font-size: 12px;
 }
 .bracket-side span {
@@ -1938,14 +1950,14 @@ footer span {
   font-family: "DM Mono";
 }
 .bracket-round:last-child h3 {
-  color: #e4b95d;
+  color: var(--warn);
 }
 .bracket-round:last-child .bracket-game {
-  border-color: #d0a64b;
-  background: linear-gradient(145deg, #392e1a, #171a1b);
+  border-color: #fcd34d;
+  background: linear-gradient(145deg, #fef3c7, var(--surface));
   box-shadow:
-    0 0 0 1px #d0a64b33,
-    0 12px 30px #d0a64b16;
+    0 0 0 1px transparent,
+    0 12px 30px transparent;
 }
 .app-header {
   position: sticky;
@@ -1962,13 +1974,13 @@ footer span {
   letter-spacing: 0.6px;
 }
 .connection-banner.connecting {
-  background: #1d2a3f;
-  color: #9fb4d4;
+  background: var(--subtle-2);
+  color: var(--text-2);
 }
 .connection-banner.offline,
 .connection-banner.error {
-  background: #3a1f22;
-  color: #ffc8cc;
+  background: #fee2e2;
+  color: var(--danger);
 }
 .control-actions button:disabled,
 .setup-panel button:disabled {
@@ -1977,9 +1989,9 @@ footer span {
   transform: none;
 }
 .warning-box.ok {
-  background: #1a2a20;
-  border-color: #2f5a3c;
-  color: #93d9ab;
+  background: var(--subtle-2);
+  border-color: #86efac;
+  color: var(--live);
 }
 .reset-button {
   margin-top: 10px;
@@ -1987,7 +1999,7 @@ footer span {
 }
 .reset-confirm {
   margin-top: 10px;
-  border: 1px solid #5b3336;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
   display: flex;
@@ -1996,7 +2008,7 @@ footer span {
 }
 .reset-confirm span {
   font-size: 12px;
-  color: #e6b9bc;
+  color: var(--danger);
   line-height: 1.6;
 }
 .admin-links {
@@ -2013,7 +2025,7 @@ footer span {
 .test-site-banner {
   padding: 8px 16px;
   background: #f5b301;
-  color: #0b1220;
+  color: var(--ink);
   font-weight: 700;
   font-size: 14px;
   text-align: center;
@@ -2061,7 +2073,7 @@ footer span {
   display: block;
 }
 .standings-link:hover .standings-table {
-  border-color: #33486b;
+  border-color: var(--line);
 }
 .standings-row {
   display: grid;
@@ -2069,7 +2081,7 @@ footer span {
   gap: 6px;
   align-items: center;
   padding: 11px 0;
-  border-bottom: 1px solid #1c2940;
+  border-bottom: 1px solid var(--line);
   font-size: 13px;
 }
 .standings-row > span:not(.team-badge),
@@ -2081,7 +2093,7 @@ footer span {
   font-size: 13px;
 }
 .standings-head {
-  color: #8a99b3;
+  color: var(--text-2);
   font-size: 11px;
   padding: 0 0 8px;
   border-bottom: 1px solid var(--line);
@@ -2089,18 +2101,10 @@ footer span {
 .standings-head > span:nth-child(2) {
   text-align: left !important;
 }
-@media (max-width: 1200px) {
-  .standings-row {
-    grid-template-columns: 24px minmax(0, 1fr) repeat(3, 64px);
-  }
-  .standings-wide {
-    display: none;
-  }
-}
 
 /* Home: 試合中の試合 */
 .live-now {
-  border-color: rgba(34, 197, 94, 0.4);
+  border-color: #86efac;
 }
 
 /* Admin ログイン: 入力欄の見出し */
@@ -2109,7 +2113,7 @@ footer span {
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
-  color: #cad3e1;
+  color: var(--text);
 }
 
 /* 小さすぎる文字を読みやすく */
@@ -2134,7 +2138,7 @@ footer span {
 .language-switch button {
   background: transparent;
   border: 0;
-  color: #9aa8bf;
+  color: var(--text-2);
   padding: 0 10px;
   font-size: 13px;
   cursor: pointer;
@@ -2144,8 +2148,8 @@ footer span {
   border-left: 1px solid var(--line);
 }
 .language-switch button.active {
-  background: rgba(249, 115, 22, 0.16);
-  color: #fed7aa;
+  background: #f4f4f5;
+  color: var(--ink);
   font-weight: 700;
 }
 .language-switch button[lang="my"] {
@@ -2230,16 +2234,16 @@ footer span {
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(17, 29, 45, 0.6);
+  background: #f4f4f5;
   font-size: 13px;
-  color: #b9c4d6;
+  color: var(--text-2);
 }
 .registration-status strong {
-  color: #edf4ff;
+  color: var(--text-2);
   font-size: 15px;
 }
 .registration-status-closed {
-  color: #fca5a5;
+  color: var(--danger);
   font-weight: 600;
 }
 .info-section {
@@ -2264,12 +2268,12 @@ footer span {
   display: contents;
 }
 .info-facts dt {
-  color: #8a99b3;
+  color: var(--text-2);
   font-size: 13px;
 }
 .info-facts dd {
   margin: 0;
-  color: #edf4ff;
+  color: var(--text-2);
 }
 .info-map {
   display: inline-flex;
@@ -2284,7 +2288,7 @@ footer span {
   display: flex;
   gap: 14px;
   padding: 8px 0;
-  border-bottom: 1px solid #1c2940;
+  border-bottom: 1px solid var(--line);
 }
 .info-schedule dt {
   min-width: 64px;
@@ -2324,9 +2328,9 @@ footer span {
   gap: 12px;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(96, 165, 250, 0.45);
-  background: rgba(30, 58, 95, 0.55);
-  color: #e6efff;
+  border: 1px solid #d4d4d8;
+  background: #f4f4f5;
+  color: var(--text-2);
 }
 .announcement p {
   margin: 0;
@@ -2335,9 +2339,9 @@ footer span {
   line-height: 1.6;
 }
 .announcement-warning {
-  border-color: rgba(245, 179, 1, 0.7);
-  background: rgba(92, 64, 0, 0.55);
-  color: #fff3cd;
+  border-color: #fcd34d;
+  background: #fef3c7;
+  color: var(--warn);
 }
 .announcement button {
   background: transparent;
@@ -2354,7 +2358,7 @@ footer span {
   margin: 16px 0 0;
 }
 .my-team {
-  border-color: rgba(249, 115, 22, 0.4);
+  border-color: #d4d4d8;
 }
 .my-team h2 {
   margin: 4px 0;
@@ -2362,10 +2366,10 @@ footer span {
 .my-team-select {
   min-height: 44px;
   max-width: 100%;
-  background: #111d2d;
+  background: #f4f4f5;
   border: 1px solid var(--line);
   border-radius: 8px;
-  color: #edf4ff;
+  color: var(--text-2);
   padding: 0 10px;
 }
 .my-team-next {
@@ -2379,7 +2383,7 @@ footer span {
 }
 .filter-bar .outline-button.active {
   border-color: var(--orange);
-  color: #fed7aa;
+  color: var(--ink);
 }
 .announcements-panel {
   margin-bottom: 18px;
@@ -2391,10 +2395,10 @@ footer span {
 }
 .announcement-form textarea,
 .announcement-form select {
-  background: #111d2d;
+  background: #f4f4f5;
   border: 1px solid var(--line);
   border-radius: 8px;
-  color: #edf4ff;
+  color: var(--text-2);
   padding: 10px;
   font: inherit;
 }
@@ -2410,7 +2414,7 @@ footer span {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
-  border-top: 1px solid #1c2940;
+  border-top: 1px solid var(--line);
 }
 .announcement-admin-list li.inactive {
   opacity: 0.6;
@@ -2452,7 +2456,7 @@ footer span {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: transparent;
-  color: #edf4ff;
+  color: var(--text-2);
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
@@ -2468,8 +2472,8 @@ footer span {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #0d1523;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  background: var(--surface);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06);
   z-index: 20;
 }
 .header-menu-register {
@@ -2485,7 +2489,7 @@ footer span {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  color: #b9c4d6;
+  color: var(--text-2);
   font-size: 14px;
 }
 .header-menu-install {
@@ -2494,7 +2498,7 @@ footer span {
   gap: 6px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
-  color: #edf4ff;
+  color: var(--text-2);
 }
 .header-menu-install .outline-button {
   min-height: 44px;
@@ -2503,7 +2507,7 @@ footer span {
 }
 .header-menu-note {
   margin: 0;
-  color: #8a99b3;
+  color: var(--text-2);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -2557,26 +2561,26 @@ footer span {
 }
 .group-status {
   margin: 4px 0 0;
-  color: #8a99b3;
+  color: var(--text-2);
   font-size: 13px;
 }
 .group-status.dirty {
-  color: #fbbf24;
+  color: var(--warn);
   font-weight: 700;
 }
 .group-problems {
-  color: #fca5a5;
+  color: var(--danger);
   font-size: 13px;
 }
 .group-notice {
-  color: #86efac;
+  color: var(--live);
   font-size: 13px;
 }
 .group-zone {
   border: 1px dashed var(--line);
   border-radius: 12px;
   padding: 12px;
-  background: rgba(17, 29, 45, 0.5);
+  background: #f4f4f5;
   margin-bottom: 14px;
   min-height: 88px;
   transition:
@@ -2584,18 +2588,18 @@ footer span {
     background 0.15s ease;
 }
 .group-zone.can-drop {
-  border-color: rgba(249, 115, 22, 0.55);
+  border-color: #d4d4d8;
 }
 .group-zone.over {
   border-style: solid;
   border-color: var(--orange);
-  background: rgba(249, 115, 22, 0.12);
+  background: #f4f4f5;
 }
 .group-zone.blocked,
 .group-zone.full.over {
   border-style: solid;
-  border-color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
+  border-color: #fca5a5;
+  background: #fee2e2;
 }
 .group-zone-heading {
   display: flex;
@@ -2605,7 +2609,7 @@ footer span {
   pointer-events: auto;
 }
 .group-zone-heading span {
-  color: #8a99b3;
+  color: var(--text-2);
   font-size: 13px;
 }
 .group-zone-heading .outline-button {
@@ -2639,8 +2643,8 @@ footer span {
   padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #111d2d;
-  color: #edf4ff;
+  background: #f4f4f5;
+  color: var(--text-2);
   font-size: 13px;
   cursor: grab;
   touch-action: none;
@@ -2662,7 +2666,7 @@ footer span {
 }
 .group-chip.selected {
   border-color: var(--orange);
-  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.35);
+  box-shadow: 0 0 0 2px transparent;
 }
 .group-chip.dragging {
   opacity: 0.35;
@@ -2676,7 +2680,7 @@ footer span {
   z-index: 50;
   pointer-events: none;
   transform: translate(-50%, -50%) rotate(-2deg);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
   border-color: var(--orange);
   cursor: grabbing;
 }
@@ -2736,7 +2740,7 @@ footer span {
 .penalty-shootout {
   margin: 12px 0;
   padding: 12px;
-  border: 1px solid rgba(249, 115, 22, 0.5);
+  border: 1px solid #d4d4d8;
   border-radius: 10px;
 }
 .penalty-score {
@@ -2755,8 +2759,8 @@ footer span {
   min-height: 44px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: #111d2d;
-  color: #edf4ff;
+  background: #f4f4f5;
+  color: var(--text-2);
   font-size: 20px;
 }
 .penalty-score b {
@@ -2766,22 +2770,22 @@ footer span {
 }
 .penalty-note {
   margin: 8px 0 0;
-  color: #fbbf24;
+  color: var(--warn);
   font-size: 13px;
 }
 .match-penalties {
   margin: 4px 0 0;
-  color: #fbbf24;
+  color: var(--warn);
   font-size: 12px;
   text-align: center;
 }
 .bracket-penalties {
   display: block;
   margin-top: 4px;
-  color: #fbbf24;
+  color: var(--warn);
 }
 .tie-decisions {
-  border-color: rgba(245, 179, 1, 0.7);
+  border-color: #fcd34d;
   margin-bottom: 18px;
 }
 .tie-group {
@@ -2799,7 +2803,7 @@ footer span {
   padding: 4px 0;
 }
 .tie-group li.tied span:first-child {
-  color: #fbbf24;
+  color: var(--warn);
   font-weight: 700;
 }
 .tie-buttons button {
@@ -2808,8 +2812,8 @@ footer span {
   margin-left: 4px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: #111d2d;
-  color: #edf4ff;
+  background: #f4f4f5;
+  color: var(--text-2);
 }
 /* 得点者 */
 .match-scorers {
@@ -2823,7 +2827,7 @@ footer span {
   padding: 0;
   list-style: none;
   font-size: 12px;
-  color: #c7d2e3;
+  color: var(--text);
 }
 .match-scorers ul:last-child {
   text-align: right;
@@ -2862,7 +2866,7 @@ footer span {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgb(2 6 14 / 78%);
+  background: rgba(17, 24, 39, 0.45);
 }
 .scorer-dialog {
   display: grid;
@@ -2873,8 +2877,8 @@ footer span {
   padding: clamp(16px, 4vw, 24px);
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: #101827;
-  box-shadow: 0 24px 80px rgb(0 0 0 / 45%);
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.06);
 }
 .scorer-dialog header h2 {
   margin: 0 0 4px;
@@ -2892,8 +2896,8 @@ footer span {
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #111d2d;
-  color: #edf4ff;
+  background: #f4f4f5;
+  color: var(--text-2);
   text-align: left;
 }
 .scorer-options button span {
@@ -2924,7 +2928,7 @@ footer span {
 .random-results {
   margin-bottom: 18px;
   border-style: dashed;
-  border-color: rgba(245, 179, 1, 0.6);
+  border-color: #fcd34d;
 }
 .random-results-buttons {
   display: flex;
@@ -2942,46 +2946,12 @@ footer span {
   place-items: center;
   margin: 0 auto;
   border-radius: 12px;
-  background: #1c2940;
-  color: #cad3e1;
+  background: var(--subtle-2);
+  color: var(--text);
   font: 700 16px "DM Mono";
 }
 .team-crest.team-roster-logo {
   font-size: 40px;
-}
-
-/* スマホ: 順位表のチーム名を読めるようにする（数字の列を狭め、名前は2行まで） */
-@media (max-width: 600px) {
-  .table-card.standings-table {
-    padding: 16px 12px;
-  }
-  .standings-row {
-    grid-template-columns: 18px minmax(0, 1fr) 40px 44px 40px;
-    gap: 6px;
-  }
-  .standings-head {
-    font-size: 10px;
-  }
-  .standings-head > span {
-    line-height: 1.2;
-  }
-  .standings-row .team-badge {
-    gap: 6px;
-  }
-  .standings-row .team-badge img,
-  .standings-row .team-badge .team-crest {
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
-  }
-  .standings-row .team-badge span {
-    white-space: normal;
-    overflow-wrap: anywhere;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-height: 1.25;
-  }
 }
 
 /* スマホ・タブレット: ボタンとリンクは高さ44px以上 */
@@ -2991,4 +2961,376 @@ footer span {
   .filter-bar button {
     min-height: 44px;
   }
+}
+
+/* ===== UI改善（docs/UI改善_設計書.md） ===== */
+
+/* 白黒: 飾りの色は黒・グレーにそろえる */
+.countdown-unit strong,
+.bracket-round:last-child h3,
+.bracket-round h3 {
+  color: var(--ink);
+}
+.bracket {
+  --bracket-line: var(--line-strong);
+}
+.admin-pill {
+  border-color: var(--line-strong);
+  color: var(--text-2);
+}
+
+/* PC: 左メニューを固定（ヘッダーの下に貼りつく） */
+@media (min-width: 901px) {
+  .sidebar {
+    position: sticky;
+    top: var(--header-h, 76px);
+    align-self: flex-start;
+    height: calc(100vh - var(--header-h, 76px));
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/* 試合中（LIVE）があるときの Live アイコン */
+.nav-item.has-live span,
+.bottom-nav a.has-live span {
+  color: var(--live);
+}
+
+/* フッター */
+footer {
+  color: var(--muted);
+  font: 11px "DM Mono";
+}
+
+/* Matches: 並び替え・チーム選択 */
+.fixtures-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 18px;
+}
+.fixtures-sort {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.fixtures-sort button {
+  min-width: 88px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+.fixtures-sort button.active {
+  background: var(--ink);
+  color: #ffffff;
+}
+.fixtures-team {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 260px;
+  font: 11px "DM Mono";
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+.fixtures-team select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font:
+    500 14px "Space Grotesk",
+    sans-serif;
+  letter-spacing: 0;
+}
+.fixtures-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fixtures-section {
+  margin-bottom: 14px;
+}
+.fixtures-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 8px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.fixtures-section-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+.fixtures-section-chevron {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  font-size: 16px;
+}
+
+/* Matches: 試合カード（Matchday XI と同じ形） */
+.fixture-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.fixture-card.is-live {
+  border-color: #86efac;
+}
+.fixture-row {
+  padding: 12px 16px 4px;
+  cursor: pointer;
+}
+.fixture-teams {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.fixture-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  text-align: center;
+}
+.fixture-team .team-badge img,
+.fixture-team .team-badge .team-crest {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+}
+.fixture-team-name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.fixture-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 96px;
+  text-align: center;
+}
+.fixture-time {
+  font: 500 12px "DM Mono";
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.fixture-score {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.fixture-meta {
+  font: 11px "DM Mono";
+  color: var(--muted);
+}
+.fixture-state {
+  font: 600 11px "DM Mono";
+  color: var(--text-2);
+}
+.fixture-state.live {
+  color: var(--live);
+}
+.fixture-pk {
+  font: 600 11px "DM Mono";
+  color: var(--warn);
+}
+.fixture-details-row {
+  display: flex;
+  justify-content: center;
+}
+.fixture-details {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.fixture-card.is-open .fixture-details {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.fixture-panel {
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--subtle);
+}
+.fixture-players-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+}
+.fixture-players h3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.fixture-players h3 span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fixture-players h3 small {
+  flex: none;
+  font: 10px "DM Mono";
+  color: var(--muted);
+}
+.fixture-players ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fixture-players li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.fixture-player-number {
+  flex: 0 0 28px;
+  font: 11px "DM Mono";
+  color: var(--muted);
+}
+.fixture-player-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fixture-player-goals {
+  margin-left: auto;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.fixture-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+@media (min-width: 768px) {
+  .fixture-team {
+    flex-direction: row;
+    text-align: left;
+    gap: 12px;
+  }
+  .fixture-teams > .fixture-team:last-child {
+    flex-direction: row;
+  }
+  .fixture-team-name {
+    font-size: 17px;
+  }
+  .fixture-center {
+    min-width: 140px;
+  }
+}
+@media (max-width: 767px) {
+  .fixtures-team {
+    width: 100%;
+  }
+  .fixtures-sort {
+    width: 100%;
+  }
+  .fixtures-sort button {
+    flex: 1;
+    min-height: 44px;
+  }
+  .fixture-row {
+    padding: 12px 10px 4px;
+  }
+  .fixture-players-grid {
+    gap: 12px;
+  }
+}
+
+/* Groups: スマホでも全部の項目。表の中だけ横にスクロールし、順位とチーム名は左に固定 */
+@media (max-width: 700px) {
+  .standings-scroll {
+    overflow-x: auto;
+    margin: 0 -4px;
+    padding: 0 4px;
+  }
+  .standings-row {
+    grid-template-columns: 22px 140px repeat(6, 46px);
+    min-width: calc(22px + 140px + 6 * 46px + 7 * 6px);
+  }
+  .standings-row > :nth-child(1),
+  .standings-row > :nth-child(2) {
+    position: sticky;
+    z-index: 1;
+    background: var(--surface);
+  }
+  .standings-row > :nth-child(1) {
+    left: 0;
+  }
+  .standings-row > :nth-child(2) {
+    left: 28px;
+    box-shadow: 6px 0 6px -6px rgba(0, 0, 0, 0.15);
+  }
+  .standings-row .team-badge span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+}
+
+/* Knockout: Round of 16 のカードの上下に間を取る（PK の行があっても重ならない） */
+.bracket-slots {
+  height: calc(8 * 132px);
+}
+.bracket-slot {
+  padding: 8px 0;
+}
+@media (max-width: 700px) {
+  /* 固定した順位の列とチーム名の列の間（gap）も隠す */
+  .standings-row > :nth-child(1) {
+    box-shadow: 6px 0 0 var(--surface);
+  }
+}
+/* 決勝のカード: 白黒（黒い枠で目立たせる） */
+.bracket-round:last-child .bracket-game {
+  border-color: var(--ink);
+  background: var(--surface);
+  box-shadow: none;
 }

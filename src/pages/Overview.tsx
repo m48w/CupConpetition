@@ -67,12 +67,11 @@ export function Overview({ matches }: { matches: Match[] }) {
         </section>
       )}
       <MyTeamCard teams={teams} matches={matches} myTeam={myTeam} onChoose={chooseMyTeam} />
-      <section className="overview-countdown">
-        <h1>{t("home.countdown.title")}</h1>
-        <p className="countdown-date">{t("home.countdown.date")}</p>
-        {countdown.started ? (
-          <p className="countdown-started">{t("home.countdown.started")}</p>
-        ) : (
+      {/* 大会が始まったら（2026-12-20 9:00 JST）カウントダウンは出さない。 */}
+      {!countdown.started && (
+        <section className="overview-countdown">
+          <h1>{t("home.countdown.title")}</h1>
+          <p className="countdown-date">{t("home.countdown.date")}</p>
           <div className="countdown-clock" aria-label={t("home.countdown.aria")}>
             {UNITS.map(([unit, label]) => (
               <div className="countdown-unit" key={unit}>
@@ -81,8 +80,8 @@ export function Overview({ matches }: { matches: Match[] }) {
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       <section className="overview-section">
         <div className="section-heading">
