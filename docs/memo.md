@@ -160,6 +160,8 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
 
 - UI改善（2026-11-16）: 全画面を白黒に（Matchday XI 風）。Matches を作り直し（［Group］［Time］・チーム選択・Details で選手）。Live アイコンは LIVE のとき緑。Groups はスマホでも全項目。Knockout の R16 の間隔。Teams の Back 削除。管理画面は Not finished が初期。PC の左メニュー固定。フッターは `Copyright © 2026 M48W`。詳細は `docs/UI改善_仕様書.md`・`docs/UI改善_設計書.md`。
 
+- カードUI改善（2026-11-18、Wiki「20261118」）: 全画面の試合カードを Matches と同じ `FixtureCard` に統一（`MatchCard` は削除）。Matches に Upcoming/All matches。Groups の色（8色・薄い色）・1位2位の緑の線・ページ全体の横スクロールを修正。管理画面は Finish 後に同じコートの次の試合を自動で選ぶ。詳細は `docs/カードUI改善_仕様書.md`。
+
 ## 主な確認内容
 
 - `npm run build` 成功。

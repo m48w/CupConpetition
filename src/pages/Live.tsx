@@ -1,6 +1,6 @@
 import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
-import { isOnPitch, MatchCard, TeamBadge } from "../features/tournament";
+import { FixtureCard, isOnPitch, TeamBadge } from "../features/tournament";
 import { useI18n } from "../i18n/useI18n";
 import type { Match } from "../types";
 import { formatTime } from "../utils/format";
@@ -31,9 +31,11 @@ export function Live({ matches }: { matches: Match[] }) {
             <h2>{t("live.onPitch")}</h2>
             <span className="muted">{t("live.active", { count: live.length })}</span>
           </div>
-          {live.map((match) => (
-            <MatchCard match={match} key={match.id} showScorers />
-          ))}
+          <div className="fixtures-list">
+            {live.map((match) => (
+              <FixtureCard match={match} key={match.id} />
+            ))}
+          </div>
           {!live.length && <Empty text={t("live.empty")} />}
         </section>
         <aside className="next-panel">

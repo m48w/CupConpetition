@@ -1,6 +1,12 @@
 import { describe, expect, test } from "vitest";
 import type { Match } from "../../types";
-import { filterByTeam, groupSections, KNOCKOUT_SECTION, sortByTime } from "./fixtures";
+import {
+  filterByTeam,
+  filterUpcoming,
+  groupSections,
+  KNOCKOUT_SECTION,
+  sortByTime,
+} from "./fixtures";
 
 const m = (
   id: string,
@@ -54,5 +60,14 @@ describe("fixtures", () => {
     expect(filterByTeam(matches, "a1").map((x) => x.id)).toEqual(["G-A-2", "G-A-1"]);
     expect(filterByTeam(matches, "ALL")).toHaveLength(5);
     expect(groupSections(filterByTeam(matches, "b2")).map((s) => s.id)).toEqual(["B"]);
+  });
+
+  test("Upcoming は終わった試合を出さない", () => {
+    const list = [
+      { ...matches[0], status: "FINISHED" as const },
+      matches[1],
+      { ...matches[2], status: "LIVE" as const },
+    ];
+    expect(filterUpcoming(list).map((x) => x.id)).toEqual(["G-B-1", "G-A-2"]);
   });
 });

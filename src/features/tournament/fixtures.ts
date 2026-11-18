@@ -37,3 +37,7 @@ export function groupSections(matches: readonly Match[]): FixtureSection[] {
   });
   return sections.filter((section) => section.matches.length > 0);
 }
+
+/** 終わっていない試合だけ（Matches の Upcoming）。 */
+export const filterUpcoming = (matches: readonly Match[]) =>
+  matches.filter((match) => match.status !== "FINISHED");

@@ -4,7 +4,7 @@ import { formatTime } from "../../../utils/format";
 import { calculateStandings, isOnPitch, nextMatchFor } from "../logic";
 import { useGroupOrders } from "../teamContext";
 import { GROUP_IDS } from "../schedule";
-import { MatchCard } from "./MatchCard";
+import { FixtureCard } from "./FixtureCard";
 
 /** グループごとにまとめたチームの選択肢（スマホでは端末のピッカーで選べる）。 */
 function TeamSelect({
@@ -103,7 +103,7 @@ export function MyTeamCard({
               {opponent && ` · ${t("myTeam.vs", { team: opponent.name })}`}
             </span>
           )}
-          <MatchCard match={next} compact />
+          <FixtureCard match={next} />
         </div>
       ) : (
         <p className="muted">{t("myTeam.noNext")}</p>

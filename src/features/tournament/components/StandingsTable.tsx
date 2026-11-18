@@ -8,7 +8,8 @@ const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
 
 /**
  * 1グループの順位表。列名は略さない（サッカーに詳しくない人にもわかるように）。
- * スマホでは Won・Drawn・Lost を隠し、Played・Goal diff.・Points だけ表示する（CSS）。
+ * スマホでも全部の列を出す。表の中だけ横にスクロールし、順位とチーム名は左に固定する（CSS）。
+ * 1位・2位の行には緑の線、見出しはグループごとの色（data-group）。
  */
 export function StandingsTable({
   groupId,
@@ -27,7 +28,7 @@ export function StandingsTable({
   return (
     <section className="table-card standings-table">
       {title && (
-        <div className="table-title">
+        <div className="table-title" data-group={groupId}>
           <h3>{title}</h3>
           <span>{t("common.teams", { count: standings.length })}</span>
         </div>
@@ -44,7 +45,10 @@ export function StandingsTable({
           <span>{t("standings.points")}</span>
         </div>
         {standings.map((row, index) => (
-          <div className="standings-row" key={row.team.id}>
+          <div
+            className={index < 2 ? "standings-row qualifies" : "standings-row"}
+            key={row.team.id}
+          >
             <b className={index === 0 ? "rank qualified" : "rank"}>{index + 1}</b>
             <TeamBadge id={row.team.id} />
             <span>{row.played}</span>

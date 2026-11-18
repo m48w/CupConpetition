@@ -1,6 +1,6 @@
 # 設計書: 試合カードの統一・Matches の切り替え・Groups の色・管理画面の次の試合
 
-- **文書バージョン**: 0.1.0（レビュー待ち）
+- **文書バージョン**: 1.0.0（確定・実装済み）
 - **作成日**: 2026-11-18
 - **関連文書**: `docs/カードUI改善_仕様書.md`
 
@@ -13,8 +13,8 @@
 
 ## 2. FixtureCard（`src/features/tournament/components/FixtureCard.tsx`）
 
-- `open`・`onToggle` を渡さないときは、カードの中で開閉の状態を持つ（Home・Live などで使う）。`defaultOpen` も受け取る（試合の詳細ページ）。
-- 選手は `useFixturePlayers()`（新規）で取る。`useRegisteredTeams` は**1回だけ通信する**ように、結果をモジュールの中で共有する（カードが多くても `/api/registration/teams` は1回）。
+- `open`・`onToggle` を渡さないときは、カードの中で開閉の状態を持つ（Home・Live などで使う）。`defaultOpen`（今は使っていない）と `showLink`（詳細ページでは false）も受け取る。
+- 選手は `useFixturePlayers()`（新規、`src/features/tournament/hooks/useFixturePlayers.ts`）で取る。`useRegisteredTeams` は**1回だけ通信する**ように、結果をモジュールの中で共有する（カードが多くても `/api/registration/teams` は1回）。
 - ゴールは `useGoals()` から、その試合の分だけ取る（`goals` を渡さなくてよい）。
 - 真ん中は状態ごとに出し分ける（仕様書 2.2）。アウェイは `fixture-team away`（`flex-direction: row-reverse`）。
 
@@ -35,7 +35,8 @@
 
 - `const [scope, setScope] = useState<"upcoming" | "all">("upcoming")`。
 - `fixtures.ts` に `filterUpcoming(matches)`（`status !== "FINISHED"`）を足してテストする。
-- ［Group］の見出しに `data-group` を付け、色は CSS 変数 `--group-color` で出す。
+- ［Group］の見出しに `data-group` を付け、色は CSS 変数 `--group-bg`・`--group-fg` で出す。Knockout は黒。
+- スマホでは `[Upcoming|All matches]` と `[Group|Time]` を1行に並べ、チーム選択を下の行にする。
 
 ## 4. Groups
 
@@ -47,7 +48,8 @@
 ### 4.2 1位・2位の緑の線・見出しの色
 
 - `StandingsTable` の行に `qualifies`（index < 2）を付け、順位のセルに `box-shadow: inset 3px 0 0 var(--live)`。
-- 見出し（`.table-title`）に `data-group={groupId}`。`[data-group="A"] { --group-color: #1d4ed8 }` …、背景を `--group-color`、文字を白。
+- 見出し（`.table-title`）に `data-group={groupId}`。`[data-group="A"] { --group-bg; --group-fg }` …（薄い背景・濃い文字）。グループの詳細ページの表にも見出しを付けた。
+- `.standings-grid` は `minmax(0, 1fr)` の1列（1600px以上は2列）。
 
 ## 5. 管理画面（`src/pages/AdminSetup.tsx`）
 

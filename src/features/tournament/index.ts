@@ -1,6 +1,6 @@
 export { bracketRounds, type BracketGame, type BracketRound } from "./bracket";
 export { ConnectionBanner } from "./components/ConnectionBanner";
-export { MatchCard } from "./components/MatchCard";
+export { FixtureCard } from "./components/FixtureCard";
 export { TeamBadge } from "./components/TeamBadge";
 export { TeamsProvider } from "./components/TeamsProvider";
 export { useGoals, useGroupOrders, useTeams } from "./teamContext";

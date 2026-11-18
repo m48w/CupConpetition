@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { PageTitle } from "../components/ui/PageTitle";
-import { MatchCard } from "../features/tournament";
+import { FixtureCard } from "../features/tournament";
 import { useI18n } from "../i18n/useI18n";
 import type { Match } from "../types";
 import { NotFound } from "./NotFound";
@@ -21,7 +21,7 @@ export function MatchDetail({ matches }: { matches: Match[] }) {
         </Link>
       </PageTitle>
       <div className="match-detail-card">
-        <MatchCard match={match} showScorers />
+        <FixtureCard match={match} showLink={false} />
       </div>
     </>
   );
