@@ -37,8 +37,11 @@ export function LoginForm({
   return (
     <div className="admin-gate">
       <div className="admin-gate-card">
-        <div className="eyebrow">{eyebrow}</div>
-        <h1>{title}</h1>
+        {/* 見出しの文字は画面に出さず、読み上げ用にだけ残す */}
+        <div className="sr-only">
+          <div>{eyebrow}</div>
+          <h1>{title}</h1>
+        </div>
         <p>{description}</p>
         <form onSubmit={submit}>
           {!fixedUsername && (

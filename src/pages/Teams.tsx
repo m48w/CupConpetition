@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PageTitle } from "../components/ui/PageTitle";
 import { TeamBadge, useTeams } from "../features/tournament";
-import { MatchCard } from "../features/tournament";
+import { FixtureCard } from "../features/tournament";
 import { ClubLogo } from "../features/registration/ClubLogo";
 import type { Match } from "../types";
 import {
@@ -142,15 +142,9 @@ export function TeamDetail({ matches }: { matches: Match[] }) {
         <div className="section-heading">
           <h2>{t("teams.matches")}</h2>
         </div>
-        <div className="list-grid">
+        <div className="fixtures-list">
           {teamMatches.map((match) => (
-            <Link
-              className="match-detail-link"
-              key={match.id}
-              to={`/matches/${encodeURIComponent(match.id)}`}
-            >
-              <MatchCard match={match} compact />
-            </Link>
+            <FixtureCard match={match} key={match.id} />
           ))}
         </div>
       </section>

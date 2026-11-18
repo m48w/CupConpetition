@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
 import { getTournamentId } from "../config";
-import { useRegisteredTeams } from "../features/registration/useRegisteredTeams";
-import { goalsOf, useGoals, useTeams } from "../features/tournament";
-import { FixtureCard, type FixturePlayer } from "../features/tournament/components/FixtureCard";
+import { useTeams } from "../features/tournament";
+import { FixtureCard } from "../features/tournament/components/FixtureCard";
 import {
   filterByTeam,
+  filterUpcoming,
   groupSections,
   KNOCKOUT_SECTION,
   sortByTime,
@@ -36,19 +36,19 @@ function writeStorage(key: string, value: string) {
 }
 
 /**
- * 全試合。並び替え［Group］［Time］とチーム選択。カードは Matchday XI と同じ形で、
- * 「Details」で両チームの登録選手を開く。
+ * 全試合。スイッチ「Groups」（オフ: 時間の順・オン: グループごと）と「All matches」
+ * （オフ: 終わっていない試合だけ・オン: 全部）、チーム選択。カードを押すと両チームの登録選手を開く。
  */
 export function Matches({ matches }: { matches: Match[] }) {
   const { t } = useI18n();
   const teams = useTeams();
-  const goals = useGoals();
   const { myTeam } = useMyTeam(teams);
-  const { teams: registered } = useRegisteredTeams();
 
   const [sort, setSortState] = useState<SortMode>(() =>
     readStorage(SORT_KEY) === "group" ? "group" : "time",
   );
+  // Upcoming（終わっていない試合だけ）が最初。保存はしない（開くたびに Upcoming）。
+  const [scope, setScope] = useState<"upcoming" | "all">("upcoming");
   const [storedTeam, setStoredTeam] = useState<string | null>(() => readStorage(teamKey()));
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
@@ -72,19 +72,8 @@ export function Matches({ matches }: { matches: Match[] }) {
     return next;
   };
 
-  const playersByRegistration = useMemo(
-    () => new Map((registered ?? []).map((team) => [team.id, team.members])),
-    [registered],
-  );
-  const playersOf = useCallback(
-    (id: string): FixturePlayer[] | undefined => {
-      const registrationId = teams.find((team) => team.id === id)?.registrationTeamId;
-      return registrationId ? playersByRegistration.get(registrationId) : undefined;
-    },
-    [teams, playersByRegistration],
-  );
-
-  const visible = filterByTeam(matches, teamId);
+  const byTeam = filterByTeam(matches, teamId);
+  const visible = scope === "upcoming" ? filterUpcoming(byTeam) : byTeam;
   const sortedTeams = [...teams].sort((a, b) => a.name.localeCompare(b.name));
 
   const card = (match: Match) => (
@@ -93,8 +82,6 @@ export function Matches({ matches }: { matches: Match[] }) {
       match={match}
       open={openIds.has(match.id)}
       onToggle={() => setOpenIds((ids) => toggle(ids, match.id))}
-      playersOf={playersOf}
-      goals={goalsOf(goals, match.id)}
     />
   );
 
@@ -104,18 +91,27 @@ export function Matches({ matches }: { matches: Match[] }) {
       {matches.length === 0 && <Empty text={t("matches.empty")} />}
       {matches.length > 0 && (
         <div className="fixtures-toolbar">
-          <div className="fixtures-sort" role="group" aria-label={t("matches.sort")}>
-            {(["group", "time"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                aria-pressed={sort === mode}
-                className={sort === mode ? "active" : ""}
-                onClick={() => setSort(mode)}
-              >
-                {t(mode === "group" ? "matches.sort.group" : "matches.sort.time")}
-              </button>
-            ))}
+          <div className="fixtures-switches">
+            <label className="switch">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={sort === "group"}
+                onChange={(event) => setSort(event.target.checked ? "group" : "time")}
+              />
+              <span className="switch-track" aria-hidden="true" />
+              <span>{t("nav.groups")}</span>
+            </label>
+            <label className="switch">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={scope === "all"}
+                onChange={(event) => setScope(event.target.checked ? "all" : "upcoming")}
+              />
+              <span className="switch-track" aria-hidden="true" />
+              <span>{t("matches.scope.all")}</span>
+            </label>
           </div>
           <label className="fixtures-team">
             <span>{t("matches.team")}</span>
@@ -130,6 +126,9 @@ export function Matches({ matches }: { matches: Match[] }) {
           </label>
         </div>
       )}
+      {matches.length > 0 && visible.length === 0 && (
+        <Empty text={t(scope === "upcoming" ? "matches.noUpcoming" : "matches.noMatches")} />
+      )}
       {sort === "time" ? (
         <div className="fixtures-list">{sortByTime(visible).map(card)}</div>
       ) : (
@@ -140,7 +139,7 @@ export function Matches({ matches }: { matches: Match[] }) {
               ? t("nav.knockout")
               : t("common.group", { id: section.id });
           return (
-            <section className="fixtures-section" key={section.id}>
+            <section className="fixtures-section" key={section.id} data-group={section.id}>
               <button
                 type="button"
                 className="fixtures-section-head"

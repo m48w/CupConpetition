@@ -12,6 +12,7 @@ import {
   ScorerPicker,
   TieDecisions,
 } from "../features/admin";
+import { nextMatchOnCourt } from "../features/admin/nextMatch";
 import { needsPenaltyWinner } from "../features/tournament/progression";
 import { SIGN_OUT_FAILED } from "../features/auth";
 import {
@@ -97,6 +98,15 @@ export function AdminSetup({
   const changeStatus = (status: MatchStatus) => {
     if (!selected) return;
     updateMatch(selected.id, statusPatch(selected, status));
+    // 終わらせたら、同じコートの次の終わっていない試合を選ぶ。
+    if (status === "FINISHED") {
+      const next = nextMatchOnCourt(matches, selected);
+      if (next) {
+        setSelectedId(next.id);
+        setScorerFor(null);
+        setGoalError("");
+      }
+    }
   };
 
   return (

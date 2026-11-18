@@ -167,8 +167,11 @@ function RegistrationForm() {
 
   return (
     <section className="registration-card">
-      <div className="eyebrow">{t("reg.form.eyebrow")}</div>
-      <h1>{t("reg.form.title")}</h1>
+      {/* 見出しの文字は画面に出さず、読み上げ用にだけ残す */}
+      <div className="sr-only">
+        <div>{t("reg.form.eyebrow")}</div>
+        <h1>{t("reg.form.title")}</h1>
+      </div>
       <p>{t("reg.form.intro")}</p>
       <RegistrationStatusNote status={registrationStatus} />
       {accepting && (
@@ -442,8 +445,10 @@ function VerifyContacts() {
 
   return (
     <section className="registration-card">
-      <div className="eyebrow">{t("reg.verify.eyebrow")}</div>
-      <h1>{t("reg.verify.title")}</h1>
+      <div className="sr-only">
+        <div>{t("reg.verify.eyebrow")}</div>
+        <h1>{t("reg.verify.title")}</h1>
+      </div>
       <p>{t("reg.verify.intro")}</p>
       <form className="registration-form" onSubmit={submit}>
         <label>

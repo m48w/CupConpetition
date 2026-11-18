@@ -1,8 +1,9 @@
 import { Link, useParams } from "react-router-dom";
 import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
-import { MatchCard, useTeams } from "../features/tournament";
+import { FixtureCard, useTeams } from "../features/tournament";
 import { StandingsTable } from "../features/tournament/components/StandingsTable";
+import { byTime } from "../features/tournament/fixtures";
 import { GROUP_IDS } from "../features/tournament/schedule";
 import type { Match } from "../types";
 import { useI18n } from "../i18n/useI18n";
@@ -54,7 +55,12 @@ export function GroupDetail({ matches }: { matches: Match[] }) {
       {teams.length === 0 ? (
         <Empty text={t("groups.empty")} />
       ) : (
-        <StandingsTable groupId={selectedGroupId} teams={teams} matches={matches} />
+        <StandingsTable
+          groupId={selectedGroupId}
+          teams={teams}
+          matches={matches}
+          title={t("common.group", { id: selectedGroupId })}
+        />
       )}
       <section className="section-block">
         <div className="section-heading">
@@ -63,9 +69,9 @@ export function GroupDetail({ matches }: { matches: Match[] }) {
         {fixtures.length === 0 ? (
           <Empty text={t("matches.empty")} />
         ) : (
-          <div className="list-grid">
-            {fixtures.map((match) => (
-              <MatchCard match={match} key={match.id} />
+          <div className="fixtures-list">
+            {[...fixtures].sort(byTime).map((match) => (
+              <FixtureCard match={match} key={match.id} />
             ))}
           </div>
         )}

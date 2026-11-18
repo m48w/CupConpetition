@@ -3012,27 +3012,6 @@ footer {
   gap: 12px 16px;
   margin-bottom: 18px;
 }
-.fixtures-sort {
-  display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-}
-.fixtures-sort button {
-  min-width: 88px;
-  min-height: 40px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--text-2);
-  font-size: 14px;
-  font-weight: 600;
-}
-.fixtures-sort button.active {
-  background: var(--ink);
-  color: #ffffff;
-}
 .fixtures-team {
   display: flex;
   flex-direction: column;
@@ -3091,10 +3070,10 @@ footer {
   font-size: 16px;
 }
 
-/* Matches: 試合カード（Matchday XI と同じ形） */
+/* 試合カード（全部の画面で共通。Matchday XI と同じ形） */
 .fixture-card {
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--surface);
   overflow: hidden;
 }
@@ -3102,7 +3081,7 @@ footer {
   border-color: #86efac;
 }
 .fixture-row {
-  padding: 12px 16px 4px;
+  padding: 8px 14px 0;
   cursor: pointer;
 }
 .fixture-teams {
@@ -3110,25 +3089,23 @@ footer {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
 }
 .fixture-team {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   text-align: center;
 }
 .fixture-team .team-badge img,
 .fixture-team .team-badge .team-crest {
-  width: 40px;
-  height: 40px;
-  flex-basis: 40px;
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
 }
 .fixture-team-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.2;
   overflow-wrap: anywhere;
@@ -3137,23 +3114,24 @@ footer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  min-width: 96px;
+  gap: 1px;
+  min-width: 88px;
   text-align: center;
 }
 .fixture-time {
-  font: 500 12px "DM Mono";
-  color: var(--text-2);
-  white-space: nowrap;
-}
-.fixture-score {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.2;
+  font: 600 14px "DM Mono";
+  color: var(--text);
 }
 .fixture-meta {
   font: 11px "DM Mono";
   color: var(--muted);
+  white-space: nowrap;
+}
+.fixture-score {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 .fixture-state {
   font: 600 11px "DM Mono";
@@ -3166,43 +3144,25 @@ footer {
   font: 600 11px "DM Mono";
   color: var(--warn);
 }
-.fixture-details-row {
-  display: flex;
-  justify-content: center;
-}
-.fixture-details {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-.fixture-card.is-open .fixture-details {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
 .fixture-panel {
-  padding: 14px 16px 16px;
+  padding: 10px 14px 12px;
   border-top: 1px solid var(--line);
   background: var(--subtle);
 }
 .fixture-players-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 18px;
+  gap: 16px;
 }
 .fixture-players h3 {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
-  margin: 0 0 6px;
-  padding-bottom: 6px;
+  margin: 0 0 4px;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--line);
-  font-size: 14px;
+  font-size: 13px;
 }
 .fixture-players h3 span {
   min-width: 0;
@@ -3222,7 +3182,7 @@ footer {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 5px 0;
+  padding: 4px 0;
   border-bottom: 1px solid var(--line);
   font-size: 13px;
 }
@@ -3243,44 +3203,127 @@ footer {
 .fixture-link {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  margin-top: 6px;
+  min-height: 40px;
+  margin-top: 4px;
   color: var(--ink);
   font-size: 13px;
   font-weight: 600;
 }
+/* PC: [logo][ホーム] ｜ 真ん中 ｜ [アウェイ][logo] */
 @media (min-width: 768px) {
   .fixture-team {
     flex-direction: row;
+    gap: 10px;
     text-align: left;
-    gap: 12px;
   }
-  .fixture-teams > .fixture-team:last-child {
-    flex-direction: row;
+  .fixture-team.away {
+    flex-direction: row-reverse;
+    text-align: right;
   }
   .fixture-team-name {
-    font-size: 17px;
+    font-size: 16px;
   }
   .fixture-center {
-    min-width: 140px;
+    min-width: 120px;
   }
 }
 @media (max-width: 767px) {
   .fixtures-team {
     width: 100%;
   }
-  .fixtures-sort {
-    width: 100%;
-  }
-  .fixtures-sort button {
-    flex: 1;
-    min-height: 44px;
-  }
   .fixture-row {
-    padding: 12px 10px 4px;
+    padding: 8px 8px 0;
   }
   .fixture-players-grid {
     gap: 12px;
+  }
+}
+.match-detail-card {
+  max-width: 760px;
+}
+
+/* グループの色（8色・薄い色）。Groups の見出しと Matches の［Group］の見出し */
+[data-group="A"] {
+  --group-bg: #dbeafe;
+  --group-fg: #1e3a8a;
+}
+[data-group="B"] {
+  --group-bg: #fee2e2;
+  --group-fg: #7f1d1d;
+}
+[data-group="C"] {
+  --group-bg: #dcfce7;
+  --group-fg: #14532d;
+}
+[data-group="D"] {
+  --group-bg: #ede9fe;
+  --group-fg: #4c1d95;
+}
+[data-group="E"] {
+  --group-bg: #ffedd5;
+  --group-fg: #7c2d12;
+}
+[data-group="F"] {
+  --group-bg: #fce7f3;
+  --group-fg: #831843;
+}
+[data-group="G"] {
+  --group-bg: #cffafe;
+  --group-fg: #164e63;
+}
+[data-group="H"] {
+  --group-bg: #fef3c7;
+  --group-fg: #713f12;
+}
+.table-title[data-group] {
+  margin: -20px -20px 14px;
+  padding: 12px 20px;
+  background: var(--group-bg);
+  color: var(--group-fg);
+}
+.table-title[data-group] h3,
+.table-title[data-group] span {
+  color: var(--group-fg);
+}
+.fixtures-section[data-group] .fixtures-section-head {
+  padding: 0 12px;
+  border-bottom: 0;
+  border-radius: 10px;
+  background: var(--group-bg);
+  color: var(--group-fg);
+}
+.fixtures-section[data-group] .fixtures-section-head .muted {
+  color: var(--group-fg);
+}
+.fixtures-section[data-group="KO"] .fixtures-section-head {
+  background: var(--ink);
+  color: #ffffff;
+}
+.fixtures-section[data-group="KO"] .fixtures-section-head .muted,
+.fixtures-section[data-group="KO"] .fixtures-section-chevron {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+/* Groups: 1位・2位の行の左に緑の線 */
+.standings-row.qualifies > :first-child {
+  box-shadow: inset 3px 0 0 var(--live);
+  padding-left: 6px;
+}
+
+/* Groups: ページ全体が横に広がらないようにする（表の中だけスクロール） */
+.standings-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.standings-link,
+.table-card,
+.standings-scroll {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (max-width: 1100px) {
+  .standings-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -3333,4 +3376,134 @@ footer {
   border-color: var(--ink);
   background: var(--surface);
   box-shadow: none;
+}
+@media (max-width: 700px) {
+  .standings-row.qualifies > :first-child {
+    box-shadow:
+      inset 3px 0 0 var(--live),
+      6px 0 0 var(--surface);
+  }
+}
+
+/* Groups: 全部の列を出すので、2列に並べるのは広い画面だけ */
+.standings-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1600px) {
+  .standings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* スマホ: スイッチを1行、チーム選択を次の行に */
+@media (max-width: 767px) {
+  .fixtures-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .fixtures-toolbar .fixtures-team {
+    grid-column: 1 / -1;
+  }
+}
+
+/* 試合カード: カード全体がボタン（Details の文字は無し） */
+.fixture-row {
+  padding-bottom: 8px;
+}
+.fixture-row:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+  border-radius: 12px;
+}
+.fixture-card.is-open {
+  border-color: var(--line-strong);
+}
+
+/* Matches: オン・オフのスイッチ（Groups・All matches） */
+.fixtures-switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+  font:
+    600 14px "Space Grotesk",
+    sans-serif;
+  color: var(--text);
+  letter-spacing: 0;
+}
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.switch-track {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--line-strong);
+  transition: background 150ms ease;
+}
+.switch-track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 150ms ease;
+}
+.switch input:checked + .switch-track {
+  background: var(--ink);
+}
+.switch input:checked + .switch-track::after {
+  transform: translateX(18px);
+}
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+@media (max-width: 767px) {
+  .fixtures-toolbar .fixtures-switches {
+    grid-column: 1 / -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch-track,
+  .switch-track::after {
+    transition: none;
+  }
+}
+
+/* 見出しの文字は画面に出さず、読み上げ用にだけ残す */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.page-title {
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 18px;
+}
+.page-title.is-empty {
+  margin: 0;
 }

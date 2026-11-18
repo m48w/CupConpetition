@@ -1,24 +1,20 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../../../i18n/useI18n";
 import type { Goal, Match } from "../../../types";
 import { formatTime } from "../../../utils/format";
-import { tracksScorers } from "../goals";
+import { goalsOf, tracksScorers } from "../goals";
+import { useFixturePlayers, type FixturePlayer } from "../hooks/useFixturePlayers";
 import { useMatchClock } from "../hooks/useMatchClock";
 import { TBD } from "../schedule";
-import { useTeams } from "../teamContext";
+import { useGoals, useTeams } from "../teamContext";
 import { TeamBadge } from "./TeamBadge";
 
-/** Details に出す選手（登録チームの選手）。 */
-export interface FixturePlayer {
-  name: string;
-  backNumber: number;
-}
-
-function TeamSlot({ teamId }: { teamId: string }) {
+function TeamSlot({ teamId, side }: { teamId: string; side: "home" | "away" }) {
   const { t } = useI18n();
   const team = useTeams().find((item) => item.id === teamId);
   return (
-    <div className="fixture-team">
+    <div className={`fixture-team ${side}`}>
       <TeamBadge id={teamId} showName={false} />
       <span className="fixture-team-name">
         {teamId === TBD || !team ? t("match.tbd") : team.name}
@@ -77,79 +73,92 @@ function PlayersColumn({
   );
 }
 
+/** 真ん中: 始まる前は「時間・コート」、試合中は「点数・LIVE とタイマー」、終了後は「点数・Finished」。 */
+function FixtureCenter({ match }: { match: Match }) {
+  const { t } = useI18n();
+  const clock = useMatchClock(match);
+  if (match.status === "SCHEDULED") {
+    return (
+      <div className="fixture-center">
+        <span className="fixture-time">{formatTime(match.scheduledStart)}</span>
+        <span className="fixture-meta">{t("common.court", { court: match.court })}</span>
+      </div>
+    );
+  }
+  const live = match.status === "LIVE";
+  return (
+    <div className="fixture-center">
+      <span className="fixture-score">
+        {match.homeScore} – {match.awayScore}
+      </span>
+      <span className={live ? "fixture-state live" : "fixture-state"}>
+        {live
+          ? `${t("match.live")} ${clock}`
+          : match.status === "PAUSED"
+            ? `${t("match.paused")} ${clock}`
+            : t("match.finished")}
+      </span>
+      {match.isPenaltyShootout && (
+        <span className="fixture-pk">
+          {t("match.penalties", {
+            home: match.penaltyHomeScore ?? 0,
+            away: match.penaltyAwayScore ?? 0,
+          })}
+        </span>
+      )}
+    </div>
+  );
+}
+
 /**
- * Matches の試合カード（Matchday XI と同じ形）。
- * ホーム ｜ 時間・コート / vs か点数 / ステージ・状態 ｜ アウェイ。「Details」で両チームの選手を開く。
+ * 試合カード（全部の画面で共通。Matchday XI と同じ形）。
+ * [logo][ホーム] ｜ 真ん中 ｜ [アウェイ][logo]。カードを押すと両チームの選手を開く。
+ * `open`・`onToggle` を渡さないときは、カードの中で開閉を覚える。
  */
 export function FixtureCard({
   match,
-  open,
+  open: controlledOpen,
   onToggle,
-  playersOf,
-  goals,
+  defaultOpen = false,
+  showLink = true,
 }: {
   match: Match;
-  open: boolean;
-  onToggle: () => void;
-  playersOf: (teamId: string) => FixturePlayer[] | undefined;
-  /** この試合のゴール（準々決勝から）。 */
-  goals: Goal[];
+  open?: boolean;
+  onToggle?: () => void;
+  defaultOpen?: boolean;
+  /** Details の中に試合の詳細ページへのリンクを出すか（詳細ページ自身では出さない）。 */
+  showLink?: boolean;
 }) {
   const { t } = useI18n();
-  const clock = useMatchClock(match);
-  const started = match.status !== "SCHEDULED";
+  const [ownOpen, setOwnOpen] = useState(defaultOpen);
+  const open = controlledOpen ?? ownOpen;
+  const toggle = onToggle ?? (() => setOwnOpen((value) => !value));
+  const playersOf = useFixturePlayers();
+  const goals = useGoals();
+  const matchGoals = tracksScorers(match) ? goalsOf(goals, match.id) : [];
   const live = match.status === "LIVE";
   const panelId = `fixture-${match.id}`;
-  const stage = match.groupId
-    ? t("common.group", { id: match.groupId })
-    : t(`stage.${match.stage}`);
-  const state = live
-    ? `${t("match.live")} ${clock}`
-    : match.status === "PAUSED"
-      ? `${t("match.paused")} ${clock}`
-      : match.status === "FINISHED"
-        ? t("match.finished")
-        : "";
   return (
     <article className={`fixture-card${open ? " is-open" : ""}${live ? " is-live" : ""}`}>
-      <div className="fixture-row" onClick={onToggle}>
+      {/* カード（上の行）を押すと選手の一覧を開閉する。キーボードは Enter・Space。 */}
+      <div
+        className="fixture-row"
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={toggle}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggle();
+          }
+        }}
+      >
         <div className="fixture-teams">
-          <TeamSlot teamId={match.homeTeamId} />
-          <div className="fixture-center">
-            <span className="fixture-time">
-              {formatTime(match.scheduledStart)} · {t("common.court", { court: match.court })}
-            </span>
-            <span className="fixture-score">
-              {started ? `${match.homeScore} – ${match.awayScore}` : "vs"}
-            </span>
-            <span className="fixture-meta">{stage}</span>
-            {state && (
-              <span className={live ? "fixture-state live" : "fixture-state"}>{state}</span>
-            )}
-            {match.isPenaltyShootout && (
-              <span className="fixture-pk">
-                {t("match.penalties", {
-                  home: match.penaltyHomeScore ?? 0,
-                  away: match.penaltyAwayScore ?? 0,
-                })}
-              </span>
-            )}
-          </div>
-          <TeamSlot teamId={match.awayTeamId} />
-        </div>
-        <div className="fixture-details-row">
-          <button
-            type="button"
-            className="fixture-details"
-            aria-expanded={open}
-            aria-controls={panelId}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggle();
-            }}
-          >
-            {t("matches.details")}
-          </button>
+          <TeamSlot teamId={match.homeTeamId} side="home" />
+          <FixtureCenter match={match} />
+          <TeamSlot teamId={match.awayTeamId} side="away" />
         </div>
       </div>
       <div id={panelId} className="fixture-panel" hidden={!open}>
@@ -159,17 +168,19 @@ export function FixtureCard({
               <PlayersColumn
                 teamId={match.homeTeamId}
                 players={playersOf(match.homeTeamId)}
-                goals={tracksScorers(match) ? goals : []}
+                goals={matchGoals}
               />
               <PlayersColumn
                 teamId={match.awayTeamId}
                 players={playersOf(match.awayTeamId)}
-                goals={tracksScorers(match) ? goals : []}
+                goals={matchGoals}
               />
             </div>
-            <Link className="fixture-link" to={`/matches/${encodeURIComponent(match.id)}`}>
-              {t("matches.openMatch")} →
-            </Link>
+            {showLink && (
+              <Link className="fixture-link" to={`/matches/${encodeURIComponent(match.id)}`}>
+                {t("matches.openMatch")} →
+              </Link>
+            )}
           </>
         )}
       </div>

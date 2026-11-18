@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { isOnPitch, MatchCard, TeamBadge, useTeams } from "../features/tournament";
+import { FixtureCard, isOnPitch, TeamBadge, useTeams } from "../features/tournament";
 import { useI18n } from "../i18n/useI18n";
 import { MyTeamCard } from "../features/tournament/components/MyTeamCard";
 import { useMyTeam } from "../features/tournament/hooks/useMyTeam";
@@ -59,9 +59,9 @@ export function Overview({ matches }: { matches: Match[] }) {
               {t("home.live.all")}
             </Link>
           </div>
-          <div className="list-grid">
+          <div className="fixtures-list">
             {live.map((match) => (
-              <MatchCard match={match} key={match.id} />
+              <FixtureCard match={match} key={match.id} />
             ))}
           </div>
         </section>
