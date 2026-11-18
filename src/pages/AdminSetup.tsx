@@ -2,6 +2,8 @@ import { useCallback, useState } from "react";
 import { PageTitle } from "../components/ui/PageTitle";
 import {
   AnnouncementsPanel,
+  CardList,
+  CardPicker,
   GoalList,
   MatchPicker,
   MatchStateBanner,
@@ -24,7 +26,7 @@ import {
   useGroupOrders,
   useTeams,
 } from "../features/tournament";
-import type { Match, MatchStatus, SessionInfo, Team } from "../types";
+import type { CardColor, Match, MatchStatus, SessionInfo, Team } from "../types";
 import { ApiError, requestJson } from "../utils/http";
 import { GroupBoard } from "../features/admin/grouping/GroupBoard";
 
@@ -59,6 +61,7 @@ export function AdminSetup({
   const [signOutFailed, setSignOutFailed] = useState(false);
   /** 「Who scored?」を出しているチーム（`goalId` があれば得点者の変更）。 */
   const [scorerFor, setScorerFor] = useState<{ teamId: string; goalId?: string } | null>(null);
+  const [cardFor, setCardFor] = useState<{ teamId: string; color: CardColor } | null>(null);
   const [goalError, setGoalError] = useState("");
   const closeScorer = useCallback(() => setScorerFor(null), []);
   const selected =
@@ -152,6 +155,7 @@ export function AdminSetup({
             onSelect={(id) => {
               setSelectedId(id);
               setScorerFor(null);
+              setCardFor(null);
               setGoalError("");
             }}
             fixedCourt={account.court}
@@ -186,6 +190,41 @@ export function AdminSetup({
                   <p className="muted">Start the match to record goals.</p>
                 )}
               </div>
+              <div className="card-entry-controls">
+                {([selected.homeTeamId, selected.awayTeamId] as const).map((teamId) => (
+                  <div className="card-entry-team" key={teamId}>
+                    <TeamBadge id={teamId} />
+                    <div>
+                      <button
+                        type="button"
+                        className="yellow-card-button"
+                        disabled={offline || selected.status === "SCHEDULED"}
+                        onClick={() => setCardFor({ teamId, color: "YELLOW" })}
+                      >
+                        Yellow card
+                      </button>
+                      <button
+                        type="button"
+                        className="red-card-button"
+                        disabled={offline || selected.status === "SCHEDULED"}
+                        onClick={() => setCardFor({ teamId, color: "RED" })}
+                      >
+                        Red card
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <CardList match={selected} disabled={offline} />
+              {cardFor && (
+                <CardPicker
+                  key={`${selected.id}:${cardFor.teamId}:${cardFor.color}`}
+                  match={selected}
+                  teamId={cardFor.teamId}
+                  color={cardFor.color}
+                  onClose={() => setCardFor(null)}
+                />
+              )}
               {goalError && <div className="login-error">{goalError}</div>}
               {tracksScorers(selected) && (
                 <GoalList

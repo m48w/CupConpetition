@@ -3,7 +3,7 @@ import * as client from "../api/client";
 import { parseServerMessage, reconnectDelay, socketUrl } from "../api/socket";
 import { shouldApply } from "../api/version";
 import { applyMatchPatch } from "../logic";
-import type { Announcement, Goal, Match, Team, TournamentState } from "../../../types";
+import type { Announcement, Goal, Match, MatchCard, Team, TournamentState } from "../../../types";
 import { ApiError } from "../../../utils/http";
 import { getTournamentId } from "../../../config";
 
@@ -29,6 +29,7 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [groupOrders, setGroupOrders] = useState<Record<string, string[]>>({});
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [cards, setCards] = useState<MatchCard[]>([]);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [error, setError] = useState<string | null>(null);
   const versionRef = useRef(0);
@@ -43,6 +44,7 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
     setAnnouncements(state.announcements ?? []);
     setGroupOrders(state.groupOrders ?? {});
     setGoals(state.goals ?? []);
+    setCards(state.cards ?? []);
   }, []);
 
   /** A mutating call's response, which may land after a newer SSE push. */
@@ -139,6 +141,7 @@ export function useTournamentState({ onUnauthorized }: { onUnauthorized?: () => 
     announcements,
     groupOrders,
     goals,
+    cards,
     connection,
     error,
     /** Drops the error banner, e.g. after signing back in makes it stale. */

@@ -7,7 +7,7 @@ import { goalsOf, tracksScorers } from "../goals";
 import { useFixturePlayers, type FixturePlayer } from "../hooks/useFixturePlayers";
 import { useMatchClock } from "../hooks/useMatchClock";
 import { TBD } from "../schedule";
-import { useGoals, useTeams } from "../teamContext";
+import { useCards, useGoals, useTeams } from "../teamContext";
 import { TeamBadge } from "./TeamBadge";
 
 function TeamSlot({ teamId, side }: { teamId: string; side: "home" | "away" }) {
@@ -135,6 +135,8 @@ export function FixtureCard({
   const toggle = onToggle ?? (() => setOwnOpen((value) => !value));
   const playersOf = useFixturePlayers();
   const goals = useGoals();
+  const cards = useCards().filter((card) => card.matchId === match.id);
+  const teams = useTeams();
   const matchGoals = tracksScorers(match) ? goalsOf(goals, match.id) : [];
   const live = match.status === "LIVE";
   const panelId = `fixture-${match.id}`;
@@ -164,6 +166,26 @@ export function FixtureCard({
       <div id={panelId} className="fixture-panel" hidden={!open}>
         {open && (
           <>
+            {cards.length > 0 && (
+              <ul className="fixture-card-events" aria-label="Cards">
+                {cards.map((card) => (
+                  <li key={card.id}>
+                    <span
+                      className={card.color === "YELLOW" ? "yellow-card-mark" : "red-card-mark"}
+                    >
+                      {card.color === "YELLOW" ? "YELLOW CARD" : "RED CARD"}
+                    </span>
+                    <span>
+                      {teams.find((team) => team.id === card.teamId)?.name ?? card.teamId}:{" "}
+                      {card.minute}&apos; ·{" "}
+                      {card.playerName
+                        ? `#${card.backNumber ?? ""} ${card.playerName}`
+                        : "Unknown player"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="fixture-players-grid">
               <PlayersColumn
                 teamId={match.homeTeamId}

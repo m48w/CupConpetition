@@ -203,7 +203,7 @@ label {
 }
 .main-content {
   width: calc(100% - 230px);
-  padding: 50px 56px 70px;
+  padding: 18px 20px 32px;
   max-width: 1250px;
 }
 .page-title {
@@ -1506,7 +1506,7 @@ footer span {
   }
   .main-content {
     width: 100%;
-    padding: 34px 20px 80px;
+    padding: 12px 8px 64px;
   }
   .topbar {
     padding: 0 18px;
@@ -2858,6 +2858,93 @@ footer span {
 }
 .goal-list .outline-button {
   min-height: 40px;
+}
+.card-entry-controls {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+.card-entry-team {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.card-entry-team > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.yellow-card-button,
+.red-card-button {
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+}
+.yellow-card-button::before,
+.red-card-button::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 14px;
+  margin-right: 7px;
+  vertical-align: -2px;
+  border-radius: 2px;
+}
+.yellow-card-button::before,
+.yellow-card-mark {
+  background: #facc15;
+  color: #422006;
+}
+.red-card-button::before,
+.red-card-mark {
+  background: #dc2626;
+  color: #ffffff;
+}
+.card-list {
+  margin: 14px 0;
+}
+.card-list ol,
+.fixture-card-events {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.card-list li,
+.fixture-card-events li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.card-list-entry {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.yellow-card-mark,
+.red-card-mark {
+  display: inline-block;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font: 600 10px "DM Mono";
+  white-space: nowrap;
+}
+.fixture-card-events {
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.fixture-card-events li {
+  justify-content: flex-start;
+  border-bottom: 0;
+  font-size: 12px;
 }
 .scorer-overlay {
   position: fixed;

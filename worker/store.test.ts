@@ -88,6 +88,34 @@ test("patchMatch は対象の試合だけを書き換え、version を1つ増や
   expect(after.matches.slice(1)).toEqual(before.matches.slice(1));
 });
 
+test("全ステージでカードを時刻付きで記録・削除できる", async () => {
+  const result = await withStore((store) => {
+    let state = store.read();
+    for (const stage of ["GROUP", "R16", "QF", "SF", "FINAL"] as const) {
+      const match = state.matches.find((item) => item.stage === stage)!;
+      state = store.patchMatch(match.id, { status: "LIVE" });
+      state = store.addCard(match.id, match.homeTeamId, "YELLOW", {
+        memberId: null,
+        playerName: null,
+        backNumber: null,
+      });
+    }
+    const recorded = state.cards!;
+    return { recorded, afterRemove: store.removeCard(recorded[0].id).cards! };
+  });
+
+  expect(result.recorded.map((card) => card.color)).toEqual([
+    "YELLOW",
+    "YELLOW",
+    "YELLOW",
+    "YELLOW",
+    "YELLOW",
+  ]);
+  expect(new Set(result.recorded.map((card) => card.matchId))).toHaveProperty("size", 5);
+  expect(result.recorded.every((card) => card.minute >= 1 && card.createdAt.length > 0)).toBe(true);
+  expect(result.afterRemove).toHaveLength(4);
+});
+
 test("試合の並び順は保存後も変わらない", async () => {
   const ids = await withStore((store) => {
     const before = store.read().matches.map((m) => m.id);

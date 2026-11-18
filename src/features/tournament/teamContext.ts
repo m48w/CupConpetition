@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Goal, Team } from "../../types";
+import type { Goal, MatchCard, Team } from "../../types";
 
 export const TeamsContext = createContext<Team[]>([]);
 
@@ -14,3 +14,7 @@ export const useGroupOrders = () => useContext(GroupOrdersContext);
 export const GoalsContext = createContext<Goal[]>([]);
 
 export const useGoals = () => useContext(GoalsContext);
+
+export const CardsContext = createContext<MatchCard[]>([]);
+
+export const useCards = () => useContext(CardsContext);

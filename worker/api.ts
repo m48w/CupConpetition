@@ -1,4 +1,4 @@
-import type { Match, Stage, TournamentState } from "../src/types";
+import type { CardColor, Match, Stage, TournamentState } from "../src/types";
 import type { Identity } from "./auth";
 import { registrationRows, toCsv } from "./csv";
 import { jsonResponse } from "./http";
@@ -551,6 +551,45 @@ export async function handleApi(
       );
     }
 
+    const cardsTarget = path.match(/^\/api\/matches\/([^/]+)\/cards$/);
+    if (cardsTarget && request.method === "POST") {
+      const who = signedIn(identity);
+      const id = decodeURIComponent(cardsTarget[1]);
+      assertCourt(store, who, id, sampleData);
+      const body = (await readJsonBody(request)) as {
+        teamId?: unknown;
+        memberId?: unknown;
+        color?: unknown;
+      };
+      const color = body.color as CardColor;
+      return mutated(
+        store.addCard(
+          id,
+          typeof body.teamId === "string" ? body.teamId : "",
+          color,
+          resolveScorer(
+            store,
+            registrations,
+            typeof body.teamId === "string" ? body.teamId : "",
+            body.memberId,
+            sampleData,
+          ),
+          sampleData,
+        ),
+      );
+    }
+
+    const cardTarget = path.match(/^\/api\/cards\/([^/]+)$/);
+    if (cardTarget && request.method === "DELETE") {
+      const who = signedIn(identity);
+      const cardId = decodeURIComponent(cardTarget[1]);
+      const card = store.read(sampleData).cards?.find((item) => item.id === cardId);
+      if (!card)
+        return jsonResponse(404, { error: `unknown card: ${cardId}`, code: "UNKNOWN_CARD" });
+      assertCourt(store, who, card.matchId, sampleData);
+      return mutated(store.removeCard(cardId, sampleData));
+    }
+
     const patchTarget = path.match(/^\/api\/matches\/(.+)$/);
     if (patchTarget && request.method === "PATCH") {
       const who = signedIn(identity);
@@ -570,6 +609,7 @@ export async function handleApi(
         error.code === "UNKNOWN_MATCH" ||
         error.code === "UNKNOWN_TEAM" ||
         error.code === "UNKNOWN_GOAL" ||
+        error.code === "UNKNOWN_CARD" ||
         error.code === "UNKNOWN_ANNOUNCEMENT"
           ? 404
           : error.code === "DUPLICATE_TEAM" ||

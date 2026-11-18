@@ -44,6 +44,21 @@ export interface Goal {
   createdAt: string;
 }
 
+export type CardColor = "YELLOW" | "RED";
+
+/** A yellow or red card recorded during any match. */
+export interface MatchCard {
+  id: string;
+  matchId: string;
+  teamId: string;
+  memberId: string | null;
+  playerName: string | null;
+  backNumber: number | null;
+  color: CardColor;
+  minute: number;
+  createdAt: string;
+}
+
 /** 得点者を選ぶための登録選手。 */
 export interface Player {
   id: string;
@@ -75,6 +90,8 @@ export interface TournamentState {
   groupOrders?: Record<string, string[]>;
   /** 準々決勝から記録したゴール（記録した順）。 */
   goals?: Goal[];
+  /** Yellow and red cards recorded during matches. */
+  cards?: MatchCard[];
 }
 
 /** WebSocket でサーバーが送るメッセージ。 */

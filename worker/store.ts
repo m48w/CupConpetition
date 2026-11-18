@@ -14,6 +14,8 @@ import type {
   Announcement,
   AnnouncementLevel,
   Goal,
+  CardColor,
+  MatchCard,
   Match,
   MatchStatus,
   Player,
@@ -65,6 +67,8 @@ export type StoreErrorCode =
   | "INVALID_PLAYER"
   | "NO_GOAL"
   | "UNKNOWN_GOAL"
+  | "INVALID_CARD"
+  | "UNKNOWN_CARD"
   | "INVALID_ANNOUNCEMENT"
   | "UNKNOWN_ANNOUNCEMENT";
 
@@ -125,6 +129,12 @@ export interface GoalScorer {
   backNumber: number | null;
 }
 
+export interface CardPlayer {
+  memberId: string | null;
+  playerName: string | null;
+  backNumber: number | null;
+}
+
 export class StoreError extends Error {
   constructor(
     message: string,
@@ -164,6 +174,15 @@ export interface Store {
   removeLastGoal(matchId: string, teamId: string, sampleData?: boolean): TournamentState;
   /** ゴールの得点者を変える（点数は変わらない）。 */
   changeGoalScorer(goalId: string, scorer: GoalScorer, sampleData?: boolean): TournamentState;
+  /** Record or remove a yellow/red card for any started match. */
+  addCard(
+    matchId: string,
+    teamId: string,
+    color: CardColor,
+    player: CardPlayer,
+    sampleData?: boolean,
+  ): TournamentState;
+  removeCard(cardId: string, sampleData?: boolean): TournamentState;
   /**
    * テスト用。そのステージのまだ終わっていない試合（チームが決まっているもの）に
    * ランダムな結果を入れて終わらせる。QF 以降は得点者もランダム。決勝トーナメントの同点は PK も入れる。
@@ -227,6 +246,17 @@ const SCHEMA = [
      member_id TEXT,
      player_name TEXT,
      back_number INTEGER,
+     minute INTEGER NOT NULL,
+     created_at TEXT NOT NULL
+   )`,
+  `CREATE TABLE IF NOT EXISTS match_cards (
+     id TEXT PRIMARY KEY,
+     match_id TEXT NOT NULL,
+     team_id TEXT NOT NULL,
+     member_id TEXT,
+     player_name TEXT,
+     back_number INTEGER,
+     color TEXT NOT NULL CHECK (color IN ('YELLOW', 'RED')),
      minute INTEGER NOT NULL,
      created_at TEXT NOT NULL
    )`,
@@ -435,6 +465,35 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         createdAt: row.created_at,
       }));
 
+  const readCards = () =>
+    sql
+      .exec<{
+        id: string;
+        match_id: string;
+        team_id: string;
+        member_id: string | null;
+        player_name: string | null;
+        back_number: number | null;
+        color: CardColor;
+        minute: number;
+        created_at: string;
+      }>(
+        `SELECT id, match_id, team_id, member_id, player_name, back_number, color, minute, created_at
+         FROM match_cards ORDER BY created_at, rowid`,
+      )
+      .toArray()
+      .map((row): MatchCard => ({
+        id: row.id,
+        matchId: row.match_id,
+        teamId: row.team_id,
+        memberId: row.member_id,
+        playerName: row.player_name,
+        backNumber: row.back_number,
+        color: row.color,
+        minute: row.minute,
+        createdAt: row.created_at,
+      }));
+
   /** 試合が無くなったり、チームが変わったりしたゴールを消す。トランザクションの中で使う。 */
   const pruneGoals = (matches: Match[]) => {
     const byId = new Map(matches.map((match) => [match.id, match]));
@@ -446,6 +505,20 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         (goal.teamId !== match.homeTeamId && goal.teamId !== match.awayTeamId)
       ) {
         sql.exec("DELETE FROM match_goals WHERE id = ?", goal.id);
+      }
+    }
+  };
+
+  const pruneCards = (matches: Match[]) => {
+    const byId = new Map(matches.map((match) => [match.id, match]));
+    for (const card of readCards()) {
+      const match = byId.get(card.matchId);
+      if (
+        !match ||
+        match.status === "SCHEDULED" ||
+        (card.teamId !== match.homeTeamId && card.teamId !== match.awayTeamId)
+      ) {
+        sql.exec("DELETE FROM match_cards WHERE id = ?", card.id);
       }
     }
   };
@@ -535,6 +608,8 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       insertMatches(matches);
       if (clearGoals) sql.exec("DELETE FROM match_goals");
       else pruneGoals(matches);
+      if (clearGoals) sql.exec("DELETE FROM match_cards");
+      else pruneCards(matches);
       bumpVersion();
     });
     return snapshot();
@@ -561,6 +636,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       announcements: readAnnouncements(true),
       groupOrders: readGroupOrders(readMatches()),
       goals: readGoals(),
+      cards: readCards(),
     };
   };
 
@@ -585,6 +661,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       // チームが変わったら、手で決めた順番も使えないので消す。
       sql.exec("DELETE FROM group_orders");
       sql.exec("DELETE FROM match_goals");
+      sql.exec("DELETE FROM match_cards");
       insertTeams(nextTeams);
       bumpVersion();
     });
@@ -794,6 +871,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         sql.exec("DELETE FROM teams");
         sql.exec("DELETE FROM group_orders");
         sql.exec("DELETE FROM match_goals");
+        sql.exec("DELETE FROM match_cards");
         bumpVersion();
       });
       return snapshot();
@@ -943,6 +1021,51 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
           scorer.backNumber,
           goalId,
         );
+        bumpVersion();
+      });
+      return snapshot();
+    },
+
+    addCard(matchId, teamId, color, player, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const match = readMatch(matchId);
+      if (match.status === "SCHEDULED") {
+        throw new StoreError("start the match to record cards", "MATCH_NOT_STARTED");
+      }
+      if (teamId !== match.homeTeamId && teamId !== match.awayTeamId) {
+        throw new StoreError("the team is not playing in this match", "INVALID_PLAYER");
+      }
+      if (color !== "YELLOW" && color !== "RED") {
+        throw new StoreError("card color must be YELLOW or RED", "INVALID_CARD");
+      }
+      storage.transactionSync(() => {
+        sql.exec(
+          `INSERT INTO match_cards
+             (id, match_id, team_id, member_id, player_name, back_number, color, minute, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          crypto.randomUUID(),
+          matchId,
+          teamId,
+          player.memberId,
+          player.playerName,
+          player.backNumber,
+          color,
+          goalMinute(elapsedSeconds(match, Date.now())),
+          new Date().toISOString(),
+        );
+        bumpVersion();
+      });
+      return snapshot();
+    },
+
+    removeCard(cardId, sampleData = defaultSampleData) {
+      ensureInitialized(sampleData);
+      const exists = sql
+        .exec<{ id: string }>("SELECT id FROM match_cards WHERE id = ?", cardId)
+        .toArray()[0];
+      if (!exists) throw new StoreError(`unknown card: ${cardId}`, "UNKNOWN_CARD");
+      storage.transactionSync(() => {
+        sql.exec("DELETE FROM match_cards WHERE id = ?", cardId);
         bumpVersion();
       });
       return snapshot();

@@ -1388,6 +1388,17 @@ test("得点者: QF から記録でき、点数とゴールの数が合い、Res
   expect(removed.goals).toHaveLength(1);
   expect(await (await removeLast()).json()).toMatchObject({ code: "NO_GOAL" });
 
+  const booked = await call(
+    `/api/matches/${qf.id}/cards`,
+    json("POST", { teamId: ids[0], memberId: null, color: "YELLOW" }, superadmin),
+  );
+  expect(booked.status).toBe(200);
+  state = (await booked.json()) as TournamentState;
+  expect(state.cards).toHaveLength(1);
+  expect(state.cards![0]).toMatchObject({ matchId: qf.id, color: "YELLOW", playerName: null });
+  const unbooked = await call(`/api/cards/${state.cards![0].id}`, json("DELETE", {}, superadmin));
+  expect(((await unbooked.json()) as TournamentState).cards).toEqual([]);
+
   const reset = (await (
     await call("/api/reset", asTournament("test", json("POST", {}, superadmin)))
   ).json()) as TournamentState;
