@@ -1,6 +1,6 @@
 # Velocity Cup 2026 — Cross Test Cases / 相互テスト書
 
-- **Version / 版**: 1.2.1 (2026-11-18: same card everywhere, switches for Groups / All matches, no Details text, group colours, next match in admin / カードUI改善に合わせて更新)
+- **Version / 版**: 1.2.2 (2026-11-18: same card everywhere, switches for Groups / All matches, no Details text, no page heading text, group colours, next match in admin / カードUI改善に合わせて更新)
 - **Date / 作成日**: 2026-11-07
 - **Target / 対象**: Velocity Cup 2026 web app (public pages, team & player registration, admin console) / 大会Webアプリ（公開ページ・チーム登録・選手登録・管理画面）
 - **Related / 関連文書**: `docs/仕様書.md`, `docs/試合進行_仕様書.md`, `docs/得点者_仕様書.md`, `docs/グループ分け_仕様書.md`
@@ -86,6 +86,7 @@ Run the phases in this order. Phases 3–5 depend on the data made in earlier ph
 | A-16 | Look at the colours of every page, admin and registration.<br>全ページ・管理画面・登録画面の色を見る。 | White background and black text. Colour only for meaning: green (LIVE), red (errors), yellow (warnings, PK, test-site bar).<br>白い背景と黒い文字。色は意味のあるところだけ。 | All | | |
 | A-17 | Look at the bottom of the page and the bottom of the PC left menu.<br>ページの一番下と、PC の左メニューの下を見る。 | Footer is only "Copyright © 2026 M48W" (also on the registration page). No "Velocity Cup 2026 / 40 teams · 95 matches" in the left menu.<br>フッターは「Copyright © 2026 M48W」だけ（登録画面も）。左メニューの下に大会名・チーム数・試合数は無い。 | All | | |
 | A-18 | Start a match (LIVE), then pause it, then finish it.<br>試合を開始（LIVE）→一時停止→終了する。 | The Live icon in the menu is green only while a match is LIVE.<br>LIVE の試合があるときだけ、メニューの Live アイコンが緑。 | All | | |
+| A-19 | Open every page (public, admin, registration).<br>全部のページ（公開・管理・登録）を開く。 | No page heading text at the top (e.g. no "FULL TOURNAMENT SCHEDULE / All matches"). Buttons and short notes beside it stay: Sign out, "All matches"/"All groups"/"All teams", "Updates in real time".<br>ページの上に見出しの文字が無い。横のボタン・説明（Sign out、戻るボタン、Updates in real time など）は残っている。 | All | | |
 
 ### B. Language / 言語
 
@@ -390,7 +391,7 @@ Copy this table for each `NG`. / `NG` ごとにこの表をコピーして書く
 
 | Section / 章 | Cases / 件数 | OK | NG | Skip | Tester / テスター |
 |---|---|---|---|---|---|
-| A. Common layout | 18 | | | | |
+| A. Common layout | 19 | | | | |
 | B. Language | 7 | | | | |
 | C. Team registration | 16 | | | | |
 | D. Player registration | 14 | | | | |

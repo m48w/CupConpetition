@@ -159,8 +159,8 @@ export function AdminRegistrations({ session }: { session: SessionInfo }) {
   return (
     <section className="registration-admin">
       <div className="page-title">
-        <div>
-          <div className="eyebrow">TOURNAMENT ADMIN</div>
+        <div className="sr-only">
+          <div>TOURNAMENT ADMIN</div>
           <h1>Team registrations</h1>
         </div>
         <div className="console-account">

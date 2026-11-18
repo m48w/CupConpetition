@@ -1,6 +1,6 @@
 # 設計書: 試合カードの統一・Matches の切り替え・Groups の色・管理画面の次の試合
 
-- **文書バージョン**: 1.1.0（2026-11-18 追加の修正を反映・実装済み）
+- **文書バージョン**: 1.2.0（2026-11-18 追加の修正・見出しの削除を反映・実装済み）
 - **作成日**: 2026-11-18
 - **関連文書**: `docs/カードUI改善_仕様書.md`
 
@@ -74,3 +74,13 @@
 | `styles.css` | `.fixture-details*`・`.fixtures-sort*` を削除。`.switch`・`.switch-track`（44px、オンで黒）を追加 |
 
 - 上の 3章・6章の「Upcoming/All」「［Group］」「Details」は、このスイッチとカードの押下に置き換わった。
+
+## 8. ページの見出しの文字を消す
+
+| ファイル | 変更 |
+|---|---|
+| `src/components/ui/PageTitle.tsx` | eyebrow と `<h1>` を `.sr-only`（画面に出さない・読み上げは残す）の中に入れる。children（ボタン・説明）はそのまま右に出す。children が無いときは `.page-title.is-empty`（余白なし） |
+| `src/pages/Registration.tsx` | チーム登録・本人確認のカードの eyebrow と `<h1>` を `.sr-only` に |
+| `src/features/auth/components/LoginForm.tsx` | 管理者ログインの eyebrow と `<h1>` を `.sr-only` に |
+| `src/pages/AdminRegistrations.tsx` | 「TOURNAMENT ADMIN / Team registrations」を `.sr-only` に（件数・Download CSV は残す） |
+| `src/styles.css` | `.sr-only` を追加。`.page-title` は右寄せ・下の余白 18px |

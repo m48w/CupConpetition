@@ -3486,3 +3486,24 @@ footer {
     transition: none;
   }
 }
+
+/* 見出しの文字は画面に出さず、読み上げ用にだけ残す */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.page-title {
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 18px;
+}
+.page-title.is-empty {
+  margin: 0;
+}
