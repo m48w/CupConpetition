@@ -1,6 +1,6 @@
 # 設計書: 試合カードの統一・Matches の切り替え・Groups の色・管理画面の次の試合
 
-- **文書バージョン**: 1.0.0（確定・実装済み）
+- **文書バージョン**: 1.1.0（2026-11-18 追加の修正を反映・実装済み）
 - **作成日**: 2026-11-18
 - **関連文書**: `docs/カードUI改善_仕様書.md`
 
@@ -63,3 +63,14 @@
 | 単体 | `filterUpcoming`、`nextMatchOnCourt`（同じコート・後の時間・無ければ一番早い・終わった試合は選ばない） |
 | 画面 | PC・iPhone で全カードの見た目（始まる前・試合中・終了・PK）、Details、Upcoming/All、Groups のページが横スクロールしない（320〜700px）・表の中だけスクロール・緑の線・8色、管理画面で Finish → 次の試合 |
 | 相互テスト書 | J・K・M・I・L を直す |
+
+## 7. 追加の修正（2026-11-18、Push 前）
+
+| ファイル | 変更 |
+|---|---|
+| `FixtureCard.tsx` | 「Details」のボタンを消し、上の行（`.fixture-row`）を `role="button"`・`tabIndex={0}`・`aria-expanded`・`aria-controls` にした。Enter・Space で開閉。始まる前の真ん中からグループ名・ステージ名を消した |
+| `Matches.tsx` | ［Group］［Time］と［Upcoming］［All matches］のボタンを、オン・オフのスイッチ2つにした（`<input type="checkbox" role="switch">` を `label.switch` で包む）。Groups オン = `sort: "group"`（`vc.matches.sort` に保存）、All matches オン = `scope: "all"`（保存しない） |
+| `messages.ts` | `matches.details`、`matches.sort`、`matches.sort.group`、`matches.sort.time`、`matches.scope`、`matches.scope.upcoming` を削除（Groups は `nav.groups`、All matches は `matches.scope.all` を使う） |
+| `styles.css` | `.fixture-details*`・`.fixtures-sort*` を削除。`.switch`・`.switch-track`（44px、オンで黒）を追加 |
+
+- 上の 3章・6章の「Upcoming/All」「［Group］」「Details」は、このスイッチとカードの押下に置き換わった。
