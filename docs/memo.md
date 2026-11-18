@@ -199,6 +199,7 @@ npm run dev -- --host 0.0.0.0 --port 4173
 
 - 公開ページのヘッダーに Admin ボタンは無い。管理者は `/20261220/admin` を直接開く。
 - 本番（`velocity-cup`）とテスト環境（`velocity-cup-staging`）はデータとパスワードが別。テスト環境の Secret は `--env staging` を付けて登録する。
+- テストの画像（スクリーンショット）は `docs/テスト書/images/<日付>/` に入れる。
 - 翻訳は `src/i18n/messages.ts`、Home の下の大会情報・問い合わせ先は `src/content/info.ts` を直す。
 - gitで改行コードの差分が出る場合は `core.autocrlf` の設定を確認する（Windows で作業しているため）。
 
