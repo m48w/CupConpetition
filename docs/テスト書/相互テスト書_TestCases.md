@@ -1,6 +1,6 @@
 # Velocity Cup 2026 — Cross Test Cases / 相互テスト書
 
-- **Version / 版**: 1.2.0 (2026-11-18: same card everywhere, Upcoming/All, group colours, next match in admin / カードUI改善に合わせて更新)
+- **Version / 版**: 1.2.1 (2026-11-18: same card everywhere, switches for Groups / All matches, no Details text, group colours, next match in admin / カードUI改善に合わせて更新)
 - **Date / 作成日**: 2026-11-07
 - **Target / 対象**: Velocity Cup 2026 web app (public pages, team & player registration, admin console) / 大会Webアプリ（公開ページ・チーム登録・選手登録・管理画面）
 - **Related / 関連文書**: `docs/仕様書.md`, `docs/試合進行_仕様書.md`, `docs/得点者_仕様書.md`, `docs/グループ分け_仕様書.md`
@@ -219,11 +219,11 @@ Tell the other testers before starting. / 始める前にほかのテスター�
 
 | ID | Steps / 手順 | Expected / 期待結果 | Device | Result / 結果 | Note / メモ |
 |---|---|---|---|---|---|
-| J-01 | Open Matches.<br>Matches を開く。 | [Upcoming] (selected) / [All matches], [Group] [Time] (Time selected) and the team selector. Only matches that are not finished, in time order. Card: [logo][home] ｜ time / court / group (before kick-off), score / LIVE + timer (playing), score / Finished (finished) ｜ [away][logo]. [All matches] shows all 95.<br>Upcoming が選ばれていて、終わっていない試合だけが時間の順。カードの真ん中は、始まる前は時間・コート・グループ、試合中は点数・LIVE、終了後は点数・Finished。All matches で95試合。 | All | | |
-| J-02 | Press [Group]. Press a group heading, then press it again.<br>［Group］を押す。グループの見出しを押し、もう一度押す。 | Matches are grouped A–H (each in time order) and "Knockout" is last, with match counts. Each group heading has its own light colour; Knockout is black. The heading folds and opens the group.<br>A〜H ごとにまとまり、最後に Knockout。見出しはグループごとの薄い色（Knockout は黒）。見出しで折りたたみ・開く。 | All | | |
+| J-01 | Open Matches.<br>Matches を開く。 | Two switches "Groups" and "All matches" (both off) and the team selector. Only matches that are not finished, in time order. Card: [logo][home] ｜ time / court (before kick-off), score / LIVE + timer (playing), score / Finished (finished) ｜ [away][logo]. No "Details" text and no group name in the card. "All matches" on shows all 95.<br>スイッチ「Groups」「All matches」（どちらもオフ）とチーム選択。終わっていない試合だけが時間の順。カードの真ん中は、始まる前は時間・コート、試合中は点数・LIVE、終了後は点数・Finished。カードに「Details」とグループ名は無い。All matches をオンで95試合。 | All | | |
+| J-02 | Turn "Groups" on. Press a group heading, then press it again. Reload the page.<br>「Groups」をオンにする。グループの見出しを押し、もう一度押す。再読み込みする。 | Matches are grouped A–H (each in time order) and "Knockout" is last, with match counts and a light colour per group (Knockout black). The heading folds and opens the group. After reload "Groups" is still on and "All matches" is off again.<br>A〜H ごとにまとまり、最後に Knockout。見出しはグループごとの薄い色。見出しで折りたたみ・開く。再読み込み後も Groups はオン、All matches はオフに戻る。 | All | | |
 | J-03 | Choose a team in the team selector. Reload the page.<br>チーム選択でチームを選び、再読み込みする。 | Only that team's matches are shown (in [Group]: only its group and knockout). The sort and the team are kept after reload.<br>そのチームの試合だけ出る。再読み込みしても並び替えとチームはそのまま。 | All | | |
-| J-04 | Press "Details" on a card (and on a quarter-final after goals were recorded). Press "Match details".<br>カードの「Details」を押す（得点を記録した準々決勝でも）。「Match details」を押す。 | Both teams' registered players (#number name) are shown side by side; scorers have ⚽ from the quarter-finals. Teams without players show "No players registered." "Match details" opens `/20261220/matches/<ID>`.<br>両チームの登録選手が左右に並ぶ。準々決勝からは得点者に ⚽。選手がいないチームは「No players registered.」。「Match details」で詳細ページが開く。 | All | | |
-| J-05 | Open Home (live / my team), Live, a match page, a team page and a group page.<br>Home（試合中・マイチーム）・Live・試合の詳細・チームの詳細・グループの詳細を開く。 | Every match card looks the same as on Matches and has "Details" (closed at first, also on the match page).<br>どの画面も Matches と同じカードで、Details がある（試合の詳細ページでも最初は閉じている）。 | All | | |
+| J-04 | Press a card (and a quarter-final after goals were recorded). With a keyboard, move to a card and press Enter. Press "Match details".<br>カードを押す（得点を記録した準々決勝でも）。キーボードでカードに移動して Enter。「Match details」を押す。 | Both teams' registered players (#number name) open side by side; scorers have ⚽ from the quarter-finals. Teams without players show "No players registered." Enter also opens/closes. "Match details" opens `/20261220/matches/<ID>`.<br>両チームの登録選手が左右に開く。準々決勝からは得点者に ⚽。Enter でも開閉できる。「Match details」で詳細ページが開く。 | All | | |
+| J-05 | Open Home (live / my team), Live, a match page, a team page and a group page.<br>Home（試合中・マイチーム）・Live・試合の詳細・チームの詳細・グループの詳細を開く。 | Every match card looks the same as on Matches and opens the players when pressed (closed at first, also on the match page).<br>どの画面も Matches と同じカードで、押すと選手が開く（試合の詳細ページでも最初は閉じている）。 | All | | |
 
 ### K. Match control / 試合操作
 

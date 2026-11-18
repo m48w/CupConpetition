@@ -73,19 +73,15 @@ function PlayersColumn({
   );
 }
 
-/** 真ん中: 始まる前は「時間・コート・グループ」、試合中は「点数・LIVE とタイマー」、終了後は「点数・Finished」。 */
+/** 真ん中: 始まる前は「時間・コート」、試合中は「点数・LIVE とタイマー」、終了後は「点数・Finished」。 */
 function FixtureCenter({ match }: { match: Match }) {
   const { t } = useI18n();
   const clock = useMatchClock(match);
-  const stage = match.groupId
-    ? t("common.group", { id: match.groupId })
-    : t(`stage.${match.stage}`);
   if (match.status === "SCHEDULED") {
     return (
       <div className="fixture-center">
         <span className="fixture-time">{formatTime(match.scheduledStart)}</span>
         <span className="fixture-meta">{t("common.court", { court: match.court })}</span>
-        <span className="fixture-meta">{stage}</span>
       </div>
     );
   }
@@ -116,7 +112,7 @@ function FixtureCenter({ match }: { match: Match }) {
 
 /**
  * 試合カード（全部の画面で共通。Matchday XI と同じ形）。
- * [logo][ホーム] ｜ 真ん中 ｜ [アウェイ][logo]。「Details」（またはカード）で両チームの選手を開く。
+ * [logo][ホーム] ｜ 真ん中 ｜ [アウェイ][logo]。カードを押すと両チームの選手を開く。
  * `open`・`onToggle` を渡さないときは、カードの中で開閉を覚える。
  */
 export function FixtureCard({
@@ -144,25 +140,25 @@ export function FixtureCard({
   const panelId = `fixture-${match.id}`;
   return (
     <article className={`fixture-card${open ? " is-open" : ""}${live ? " is-live" : ""}`}>
-      <div className="fixture-row" onClick={toggle}>
+      {/* カード（上の行）を押すと選手の一覧を開閉する。キーボードは Enter・Space。 */}
+      <div
+        className="fixture-row"
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={toggle}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggle();
+          }
+        }}
+      >
         <div className="fixture-teams">
           <TeamSlot teamId={match.homeTeamId} side="home" />
           <FixtureCenter match={match} />
           <TeamSlot teamId={match.awayTeamId} side="away" />
-        </div>
-        <div className="fixture-details-row">
-          <button
-            type="button"
-            className="fixture-details"
-            aria-expanded={open}
-            aria-controls={panelId}
-            onClick={(event) => {
-              event.stopPropagation();
-              toggle();
-            }}
-          >
-            {t("matches.details")}
-          </button>
         </div>
       </div>
       <div id={panelId} className="fixture-panel" hidden={!open}>
