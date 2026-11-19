@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PageTitle } from "../components/ui/PageTitle";
-import { TeamBadge, useTeams } from "../features/tournament";
+import { BackNumber, TeamBadge, useTeams } from "../features/tournament";
 import { FixtureCard } from "../features/tournament";
 import { ClubLogo } from "../features/registration/ClubLogo";
 import type { Match } from "../types";
@@ -98,7 +98,7 @@ export function Teams() {
                   <ol>
                     {selectedTeam.members.map((member) => (
                       <li key={`${member.backNumber}-${member.name}`}>
-                        <span>#{member.backNumber}</span>
+                        <BackNumber value={member.backNumber} />
                         <strong>{member.name}</strong>
                       </li>
                     ))}

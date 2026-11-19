@@ -2895,15 +2895,11 @@ footer span {
   vertical-align: -2px;
   border-radius: 2px;
 }
-.yellow-card-button::before,
-.yellow-card-mark {
+.yellow-card-button::before {
   background: #facc15;
-  color: #422006;
 }
-.red-card-button::before,
-.red-card-mark {
+.red-card-button::before {
   background: #dc2626;
-  color: #ffffff;
 }
 .card-list {
   margin: 14px 0;
@@ -2923,18 +2919,50 @@ footer span {
   border-bottom: 1px solid var(--line);
 }
 .card-list-entry {
+  display: flex;
   flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
   overflow-wrap: anywhere;
   text-align: left;
 }
-.yellow-card-mark,
-.red-card-mark {
+/* カードは文字なしの小さな形だけ（縦長の長方形）。 */
+.card-mark {
   display: inline-block;
-  padding: 2px 5px;
-  border-radius: 3px;
-  font: 600 10px "DM Mono";
-  white-space: nowrap;
+  flex: 0 0 auto;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
+  vertical-align: -2px;
+}
+.card-mark.yellow {
+  background: #facc15;
+}
+.card-mark.red {
+  background: #dc2626;
+}
+/* 背番号は丸の中に表示（0〜99 で同じ大きさ）。 */
+.back-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font:
+    500 10px/1 "DM Mono",
+    monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  background: var(--surface);
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 .fixture-card-events {
   margin: 0 0 10px;

@@ -258,7 +258,8 @@ const SCHEMA = [
      back_number INTEGER,
      color TEXT NOT NULL CHECK (color IN ('YELLOW', 'RED')),
      minute INTEGER NOT NULL,
-     created_at TEXT NOT NULL
+     created_at TEXT NOT NULL,
+     source_card_id TEXT
    )`,
   `CREATE TABLE IF NOT EXISTS announcements (
      id TEXT PRIMARY KEY,
@@ -395,6 +396,13 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
     });
   }
 
+  // 2枚目のイエローで自動に入れたレッドに、元のイエローの ID を持たせる列（2026-11-19 追加）。
+  const hasSourceCardColumn = sql
+    .exec<{ name: string }>("PRAGMA table_info(match_cards)")
+    .toArray()
+    .some((column) => column.name === "source_card_id");
+  if (!hasSourceCardColumn) sql.exec("ALTER TABLE match_cards ADD COLUMN source_card_id TEXT");
+
   const readMeta = () =>
     sql
       .exec<{ version: number; updated_at: string }>(
@@ -477,8 +485,10 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         color: CardColor;
         minute: number;
         created_at: string;
+        source_card_id: string | null;
       }>(
-        `SELECT id, match_id, team_id, member_id, player_name, back_number, color, minute, created_at
+        `SELECT id, match_id, team_id, member_id, player_name, back_number, color, minute, created_at,
+                source_card_id
          FROM match_cards ORDER BY created_at, rowid`,
       )
       .toArray()
@@ -492,6 +502,7 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         color: row.color,
         minute: row.minute,
         createdAt: row.created_at,
+        sourceCardId: row.source_card_id,
       }));
 
   /** 試合が無くなったり、チームが変わったりしたゴールを消す。トランザクションの中で使う。 */
@@ -1038,21 +1049,50 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
       if (color !== "YELLOW" && color !== "RED") {
         throw new StoreError("card color must be YELLOW or RED", "INVALID_CARD");
       }
-      storage.transactionSync(() => {
+      // カードは登録選手にだけ出せる（Unknown player には出さない）。
+      if (!player.memberId) {
+        throw new StoreError("choose a registered player for the card", "INVALID_PLAYER");
+      }
+      // 同じ試合で同じ選手の2枚目のイエローなら、同じ分にレッドも自動で記録する。
+      const yellowsBefore =
+        color === "YELLOW"
+          ? sql
+              .exec<{ count: number }>(
+                `SELECT COUNT(*) AS count FROM match_cards
+                 WHERE match_id = ? AND member_id = ? AND color = 'YELLOW'`,
+                matchId,
+                player.memberId,
+              )
+              .toArray()[0].count
+          : 0;
+      const minute = goalMinute(elapsedSeconds(match, Date.now()));
+      const now = Date.now();
+      const insert = (
+        id: string,
+        cardColor: CardColor,
+        createdAt: number,
+        sourceCardId: string | null,
+      ) =>
         sql.exec(
           `INSERT INTO match_cards
-             (id, match_id, team_id, member_id, player_name, back_number, color, minute, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          crypto.randomUUID(),
+             (id, match_id, team_id, member_id, player_name, back_number, color, minute, created_at,
+              source_card_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          id,
           matchId,
           teamId,
           player.memberId,
           player.playerName,
           player.backNumber,
-          color,
-          goalMinute(elapsedSeconds(match, Date.now())),
-          new Date().toISOString(),
+          cardColor,
+          minute,
+          new Date(createdAt).toISOString(),
+          sourceCardId,
         );
+      storage.transactionSync(() => {
+        const cardId = crypto.randomUUID();
+        insert(cardId, color, now, null);
+        if (yellowsBefore === 1) insert(crypto.randomUUID(), "RED", now, cardId);
         bumpVersion();
       });
       return snapshot();
@@ -1065,7 +1105,8 @@ export function createSqlStore(storage: DurableObjectStorage, defaultSampleData 
         .toArray()[0];
       if (!exists) throw new StoreError(`unknown card: ${cardId}`, "UNKNOWN_CARD");
       storage.transactionSync(() => {
-        sql.exec("DELETE FROM match_cards WHERE id = ?", cardId);
+        // 2枚目のイエローを消したら、自動で入れたレッドも一緒に消す。
+        sql.exec("DELETE FROM match_cards WHERE id = ? OR source_card_id = ?", cardId, cardId);
         bumpVersion();
       });
       return snapshot();

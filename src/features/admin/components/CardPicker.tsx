@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { CardColor, Match, Player } from "../../../types";
 import { ApiError, requestJson } from "../../../utils/http";
-import { useTeams } from "../../tournament";
+import { BackNumber, useTeams } from "../../tournament";
 
 export function CardPicker({
   match,
@@ -30,7 +30,7 @@ export function CardPicker({
       .catch(() => {
         if (!alive) return;
         setPlayers([]);
-        setError("Could not load the players. You can still record an unknown player.");
+        setError("Could not load the players.");
       });
     return () => {
       alive = false;
@@ -45,7 +45,7 @@ export function CardPicker({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
 
-  const choose = async (memberId: string | null) => {
+  const choose = async (memberId: string) => {
     setBusy(true);
     setError("");
     try {
@@ -84,22 +84,16 @@ export function CardPicker({
                 disabled={busy}
                 onClick={() => void choose(player.id)}
               >
-                <b>#{player.backNumber}</b>
+                <BackNumber value={player.backNumber} />
                 <span>{player.name}</span>
               </button>
             ))}
-            <button
-              type="button"
-              className="scorer-unknown"
-              disabled={busy}
-              onClick={() => void choose(null)}
-            >
-              Unknown player
-            </button>
           </div>
         )}
         {players?.length === 0 && !error && (
-          <p className="muted">This team has no registered players.</p>
+          <p className="muted">
+            This team has no registered players. Cards need a registered player.
+          </p>
         )}
         {error && <div className="login-error">{error}</div>}
         <button type="button" className="outline-button" disabled={busy} onClick={onClose}>

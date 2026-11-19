@@ -7,6 +7,7 @@ import {
   type BracketGame,
   useGoals,
   useTeams,
+  BackNumber,
 } from "../features/tournament";
 import { useI18n } from "../i18n/useI18n";
 import type { Match, Stage } from "../types";
@@ -85,8 +86,7 @@ function TopScorers({ matches }: { matches: Match[] }) {
               <tr key={`${row.teamId}:${row.memberId}`}>
                 <td>{row.rank}</td>
                 <td>
-                  {row.backNumber !== null && <span className="muted">#{row.backNumber} </span>}
-                  <strong>{row.playerName}</strong>
+                  <BackNumber value={row.backNumber} /> <strong>{row.playerName}</strong>
                 </td>
                 <td>
                   <TeamBadge id={row.teamId} />

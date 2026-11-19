@@ -9,6 +9,7 @@ import { useAnnouncements } from "../components/ui/useAnnouncements";
 import { errorKey } from "../i18n/errors";
 import type { MessageKey } from "../i18n/messages";
 import { useI18n } from "../i18n/useI18n";
+import { BackNumber } from "../features/tournament";
 import { RegistrationStatusNote } from "../features/registration/RegistrationStatusNote";
 import {
   isAcceptingTeams,
@@ -608,7 +609,7 @@ function MemberRegistration() {
       <div className="registration-members">
         {registration?.members.map((member) => (
           <div key={member.id}>
-            <span>#{member.backNumber}</span>
+            <BackNumber value={member.backNumber} />
             <strong>{member.name}</strong>
           </div>
         ))}

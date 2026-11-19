@@ -1,5 +1,5 @@
 import type { Goal, Match } from "../../../types";
-import { goalsOf, TeamBadge, useGoals } from "../../tournament";
+import { BackNumber, goalsOf, TeamBadge, useGoals } from "../../tournament";
 
 /** 管理画面の、選んだ試合のゴール一覧。「Change」で得点者を選び直す。 */
 export function GoalList({
@@ -22,7 +22,13 @@ export function GoalList({
             <TeamBadge id={goal.teamId} showName={false} />
             <span>
               {goal.minute}&apos;{" "}
-              {goal.playerName ? `#${goal.backNumber ?? ""} ${goal.playerName}` : "Unknown player"}
+              {goal.playerName ? (
+                <>
+                  <BackNumber value={goal.backNumber} /> {goal.playerName}
+                </>
+              ) : (
+                "Unknown player"
+              )}
             </span>
             <button
               type="button"

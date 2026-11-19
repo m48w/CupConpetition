@@ -8,6 +8,8 @@ import { useFixturePlayers, type FixturePlayer } from "../hooks/useFixturePlayer
 import { useMatchClock } from "../hooks/useMatchClock";
 import { TBD } from "../schedule";
 import { useCards, useGoals, useTeams } from "../teamContext";
+import { BackNumber } from "./BackNumber";
+import { CardMark } from "./CardMark";
 import { TeamBadge } from "./TeamBadge";
 
 function TeamSlot({ teamId, side }: { teamId: string; side: "home" | "away" }) {
@@ -55,7 +57,9 @@ function PlayersColumn({
             const count = scored(player);
             return (
               <li key={`${player.backNumber}-${player.name}`}>
-                <span className="fixture-player-number">#{player.backNumber}</span>
+                <span className="fixture-player-number">
+                  <BackNumber value={player.backNumber} />
+                </span>
                 <span className="fixture-player-name">{player.name}</span>
                 {count > 0 && (
                   <span className="fixture-player-goals" aria-label={t("matches.goals", { count })}>
@@ -170,17 +174,14 @@ export function FixtureCard({
               <ul className="fixture-card-events" aria-label={t("match.cards")}>
                 {cards.map((card) => (
                   <li key={card.id}>
-                    <span
-                      className={card.color === "YELLOW" ? "yellow-card-mark" : "red-card-mark"}
-                    >
-                      {t(card.color === "YELLOW" ? "match.card.yellow" : "match.card.red")}
-                    </span>
+                    <CardMark
+                      color={card.color}
+                      label={t(card.color === "YELLOW" ? "match.card.yellow" : "match.card.red")}
+                    />
                     <span>
                       {teams.find((team) => team.id === card.teamId)?.name ?? card.teamId}:{" "}
-                      {card.minute}&apos; ·{" "}
-                      {card.playerName
-                        ? `#${card.backNumber ?? ""} ${card.playerName}`
-                        : t("match.unknownPlayer")}
+                      {card.minute}&apos; · <BackNumber value={card.backNumber} />{" "}
+                      {card.playerName ?? t("match.unknownPlayer")}
                     </span>
                   </li>
                 ))}

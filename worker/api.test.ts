@@ -1388,14 +1388,26 @@ test("得点者: QF から記録でき、点数とゴールの数が合い、Res
   expect(removed.goals).toHaveLength(1);
   expect(await (await removeLast()).json()).toMatchObject({ code: "NO_GOAL" });
 
-  const booked = await call(
+  // Unknown player にはカードを出せない。
+  const unknownCard = await call(
     `/api/matches/${qf.id}/cards`,
     json("POST", { teamId: ids[0], memberId: null, color: "YELLOW" }, superadmin),
+  );
+  expect(unknownCard.status).toBe(400);
+  expect(await unknownCard.json()).toMatchObject({ code: "INVALID_PLAYER" });
+
+  const booked = await call(
+    `/api/matches/${qf.id}/cards`,
+    json("POST", { teamId: ids[0], memberId: memberIds[0], color: "YELLOW" }, superadmin),
   );
   expect(booked.status).toBe(200);
   state = (await booked.json()) as TournamentState;
   expect(state.cards).toHaveLength(1);
-  expect(state.cards![0]).toMatchObject({ matchId: qf.id, color: "YELLOW", playerName: null });
+  expect(state.cards![0]).toMatchObject({
+    matchId: qf.id,
+    color: "YELLOW",
+    playerName: "Player 1",
+  });
   const unbooked = await call(`/api/cards/${state.cards![0].id}`, json("DELETE", {}, superadmin));
   expect(((await unbooked.json()) as TournamentState).cards).toEqual([]);
 

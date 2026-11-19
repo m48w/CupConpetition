@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { tournamentScopedUrl } from "../config";
 import type { SessionInfo } from "../types";
+import { BackNumber } from "../features/tournament";
 import { ApiError, requestJson } from "../utils/http";
 import { shrinkLogo } from "../utils/image";
 
@@ -393,7 +394,7 @@ export function AdminRegistrations({ session }: { session: SessionInfo }) {
                 <ul className="registration-admin-members">
                   {team.members.map((member) => (
                     <li key={member.id}>
-                      #{member.backNumber} {member.name} ·{" "}
+                      <BackNumber value={member.backNumber} /> {member.name} ·{" "}
                       {new Date(member.createdAt).toLocaleString("ja-JP", {
                         timeZone: "Asia/Tokyo",
                       })}{" "}

@@ -95,9 +95,9 @@ test("全ステージでカードを時刻付きで記録・削除できる", as
       const match = state.matches.find((item) => item.stage === stage)!;
       store.patchMatch(match.id, { status: "LIVE" });
       state = store.addCard(match.id, match.homeTeamId, "YELLOW", {
-        memberId: null,
-        playerName: null,
-        backNumber: null,
+        memberId: `m-${stage}`,
+        playerName: "Player 1",
+        backNumber: 1,
       });
     }
     const recorded = state.cards!;
@@ -114,6 +114,54 @@ test("全ステージでカードを時刻付きで記録・削除できる", as
   expect(new Set(result.recorded.map((card) => card.matchId))).toHaveProperty("size", 5);
   expect(result.recorded.every((card) => card.minute >= 1 && card.createdAt.length > 0)).toBe(true);
   expect(result.afterRemove).toHaveLength(4);
+});
+
+test("カードは Unknown player には出せない", async () => {
+  const error = await withStore((store) => {
+    const match = store.read().matches[0];
+    store.patchMatch(match.id, { status: "LIVE" });
+    try {
+      store.addCard(match.id, match.homeTeamId, "YELLOW", {
+        memberId: null,
+        playerName: null,
+        backNumber: null,
+      });
+      return null;
+    } catch (reason) {
+      return (reason as { code?: string }).code;
+    }
+  });
+  expect(error).toBe("INVALID_PLAYER");
+});
+
+test("同じ選手の2枚目のイエローでレッドも自動で入り、2枚目を消すとレッドも消える", async () => {
+  const result = await withStore((store) => {
+    const match = store.read().matches[0];
+    store.patchMatch(match.id, { status: "LIVE" });
+    const player = { memberId: "m-1", playerName: "Player 1", backNumber: 1 };
+    const other = { memberId: "m-2", playerName: "Player 2", backNumber: 2 };
+    store.addCard(match.id, match.homeTeamId, "YELLOW", player);
+    const otherYellow = store.addCard(match.id, match.homeTeamId, "YELLOW", other).cards!;
+    const second = store.addCard(match.id, match.homeTeamId, "YELLOW", player).cards!;
+    // 退場した選手にもカードは出せる。3枚目のイエローではレッドは増えない。
+    const third = store.addCard(match.id, match.homeTeamId, "YELLOW", player).cards!;
+    const secondYellow = second.filter((card) => card.color === "YELLOW").at(-1)!;
+    const afterRemove = store.removeCard(secondYellow.id).cards!;
+    return { otherYellow, second, third, secondYellow, afterRemove };
+  });
+  expect(result.otherYellow.map((card) => card.color)).toEqual(["YELLOW", "YELLOW"]);
+  expect(result.second.map((card) => card.color)).toEqual(["YELLOW", "YELLOW", "YELLOW", "RED"]);
+  const red = result.second[3];
+  expect(red).toMatchObject({ memberId: "m-1", sourceCardId: result.secondYellow.id });
+  expect(red.minute).toBe(result.secondYellow.minute);
+  expect(result.third.map((card) => card.color)).toEqual([
+    "YELLOW",
+    "YELLOW",
+    "YELLOW",
+    "RED",
+    "YELLOW",
+  ]);
+  expect(result.afterRemove.map((card) => card.color)).toEqual(["YELLOW", "YELLOW", "YELLOW"]);
 });
 
 test("試合の並び順は保存後も変わらない", async () => {

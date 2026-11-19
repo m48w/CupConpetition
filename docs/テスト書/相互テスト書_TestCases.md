@@ -1,6 +1,6 @@
 # Velocity Cup 2026 — Cross Test Cases / 相互テスト書
 
-- **Version / 版**: 1.3.0 (2026-11-19: yellow/red cards O-13〜O-15; 2026-11-18: same card everywhere, switches for Groups / All matches, no Details text, no page heading text, group colours, next match in admin / カードUI改善に合わせて更新)
+- **Version / 版**: 1.4.0 (2026-11-19: cards only for registered players, card shape without text, 2nd yellow → red, back numbers in a circle O-13〜O-18; 2026-11-19: yellow/red cards O-13〜O-15; 2026-11-18: same card everywhere, switches for Groups / All matches, no Details text, no page heading text, group colours, next match in admin / カードUI改善に合わせて更新)
 - **Date / 作成日**: 2026-11-07
 - **Target / 対象**: Velocity Cup 2026 web app (public pages, team & player registration, admin console) / 大会Webアプリ（公開ページ・チーム登録・選手登録・管理画面）
 - **Related / 関連文書**: `docs/仕様書.md`, `docs/試合進行_仕様書.md`, `docs/得点者_仕様書.md`, `docs/グループ分け_仕様書.md`
@@ -223,7 +223,7 @@ Tell the other testers before starting. / 始める前にほかのテスター�
 | J-01 | Open Matches.<br>Matches を開く。 | Two switches "Groups" and "All matches" (both off) and the team selector. Only matches that are not finished, in time order. Card: [logo][home] ｜ time / court (before kick-off), score / LIVE + timer (playing), score / Finished (finished) ｜ [away][logo]. No "Details" text and no group name in the card. "All matches" on shows all 95.<br>スイッチ「Groups」「All matches」（どちらもオフ）とチーム選択。終わっていない試合だけが時間の順。カードの真ん中は、始まる前は時間・コート、試合中は点数・LIVE、終了後は点数・Finished。カードに「Details」とグループ名は無い。All matches をオンで95試合。 | All | | |
 | J-02 | Turn "Groups" on. Press a group heading, then press it again. Reload the page.<br>「Groups」をオンにする。グループの見出しを押し、もう一度押す。再読み込みする。 | Matches are grouped A–H (each in time order) and "Knockout" is last, with match counts and a light colour per group (Knockout black). The heading folds and opens the group. After reload "Groups" is still on and "All matches" is off again.<br>A〜H ごとにまとまり、最後に Knockout。見出しはグループごとの薄い色。見出しで折りたたみ・開く。再読み込み後も Groups はオン、All matches はオフに戻る。 | All | | |
 | J-03 | Choose a team in the team selector. Reload the page.<br>チーム選択でチームを選び、再読み込みする。 | Only that team's matches are shown (in [Group]: only its group and knockout). The sort and the team are kept after reload.<br>そのチームの試合だけ出る。再読み込みしても並び替えとチームはそのまま。 | All | | |
-| J-04 | Press a card (and a quarter-final after goals were recorded). With a keyboard, move to a card and press Enter. Press "Match details".<br>カードを押す（得点を記録した準々決勝でも）。キーボードでカードに移動して Enter。「Match details」を押す。 | Both teams' registered players (#number name) open side by side; scorers have ⚽ from the quarter-finals. Teams without players show "No players registered." Enter also opens/closes. "Match details" opens `/20261220/matches/<ID>`.<br>両チームの登録選手が左右に開く。準々決勝からは得点者に ⚽。Enter でも開閉できる。「Match details」で詳細ページが開く。 | All | | |
+| J-04 | Press a card (and a quarter-final after goals were recorded). With a keyboard, move to a card and press Enter. Press "Match details".<br>カードを押す（得点を記録した準々決勝でも）。キーボードでカードに移動して Enter。「Match details」を押す。 | Both teams' registered players (⑩ name) open side by side; scorers have ⚽ from the quarter-finals. Teams without players show "No players registered." Enter also opens/closes. "Match details" opens `/20261220/matches/<ID>`.<br>両チームの登録選手が左右に開く。準々決勝からは得点者に ⚽。Enter でも開閉できる。「Match details」で詳細ページが開く。 | All | | |
 | J-05 | Open Home (live / my team), Live, a match page, a team page and a group page.<br>Home（試合中・マイチーム）・Live・試合の詳細・チームの詳細・グループの詳細を開く。 | Every match card looks the same as on Matches and opens the players when pressed (closed at first, also on the match page).<br>どの画面も Matches と同じカードで、押すと選手が開く（試合の詳細ページでも最初は閉じている）。 | All | | |
 
 ### K. Match control / 試合操作
@@ -285,8 +285,8 @@ Assign one tester per court as Sub Admin, and one as Super Admin. / コートご
 
 | ID | Steps / 手順 | Expected / 期待結果 | Device | Result / 結果 | Note / メモ |
 |---|---|---|---|---|---|
-| O-01 | Start a QF match. Press + for a team.<br>QF を開始し、チームの ＋ を押す。 | "Who scored?" opens with that team's players (#number name), "Unknown player" and "Cancel".<br>「Who scored?」にそのチームの選手（#背番号 名前）・「Unknown player」・「Cancel」が出る。 | PC, iPad | | |
-| O-02 | Choose a player.<br>選手を選ぶ。 | +1 goal. The goal list shows "minute' #number name".<br>1点増える。ゴール一覧に「分' #背番号 名前」が出る。 | PC, iPad | | |
+| O-01 | Start a QF match. Press + for a team.<br>QF を開始し、チームの ＋ を押す。 | "Who scored?" opens with that team's players (circled number + name, e.g. ⑩ name), "Unknown player" and "Cancel".<br>「Who scored?」にそのチームの選手（⑩ 名前）・「Unknown player」・「Cancel」が出る。 | PC, iPad | | |
+| O-02 | Choose a player.<br>選手を選ぶ。 | +1 goal. The goal list shows "minute' ⑩ name".<br>1点増える。ゴール一覧に「分' ⑩ 名前」が出る。 | PC, iPad | | |
 | O-03 | Press +, then "Unknown player".<br>＋ →「Unknown player」。 | +1 goal without a scorer.<br>得点者なしで1点増える。 | PC | | |
 | O-04 | Press +, then "Cancel" (and Esc on PC).<br>＋ →「Cancel」（PC は Esc も）。 | Nothing changes.<br>何も変わらない。 | PC | | |
 | O-05 | "Change" on a goal in the list and choose another player.<br>ゴール一覧の「Change」で別の選手を選ぶ。 | The scorer changes. The score does not change.<br>得点者だけ変わる。点数は変わらない。 | PC | | |
@@ -294,12 +294,15 @@ Assign one tester per court as Sub Admin, and one as Super Admin. / コートご
 | O-07 | Double-tap a player quickly.<br>選手を素早く2回押す。 | Only one goal is added.<br>1点だけ増える。 | iPad | | |
 | O-08 | A team with no registered players.<br>選手が登録されていないチーム。 | Only "Unknown player" is offered.<br>「Unknown player」だけ出る。 | PC | | |
 | O-09 | R16 / group match: press +.<br>R16・グループの試合で ＋。 | No dialog; the score just increases (scorers are from QF only).<br>ダイアログは出ず、点数だけ増える（得点者は QF から）。 | PC | | |
-| O-10 | Open the match detail and Live for that QF.<br>その QF の試合の詳細と Live を開く。 | Scorers with minutes are shown under each team (⚽ 13' #10 name).<br>各チームの下に得点者と時間が出る。 | All | | |
+| O-10 | Open the match detail and Live for that QF.<br>その QF の試合の詳細と Live を開く。 | Scorers with minutes are shown under each team (⚽ 13' ⑩ name).<br>各チームの下に得点者と時間が出る。 | All | | |
 | O-11 | Open Knockout → "Top scorers".<br>Knockout の「Top scorers」。 | Ranking of QF/SF/Final goals. Same number of goals = same rank. Unknown player and PK goals are not counted.<br>QF・SF・決勝のゴールのランキング。同じ数は同じ順位。Unknown と PK は数えない。 | All | | |
 | O-12 | Sub Admin of another court tries to record a goal in this match.<br>別のコートの Sub Admin がこの試合で得点を入れる。 | Not possible (the match is not in their list).<br>できない（一覧に出ない）。 | PC | | |
-| O-13 | Start any match (group or knockout). Press "Yellow card" for a team and choose a player; press "Red card" for the other team and choose "Unknown player".<br>どの試合でも開始し、チームの「Yellow card」で選手を選ぶ。もう一方の「Red card」で「Unknown player」を選ぶ。 | Both cards appear in "CARDS" with the minute. Before kick-off the card buttons are disabled.<br>「CARDS」に分付きで2件出る。開始前はカードのボタンが押せない。 | PC, iPad | | |
-| O-14 | Open that match card on a public page (EN and Myanmar). Then press "Remove" for one card in admin.<br>公開ページでその試合カードを開く（英語・ミャンマー語）。管理画面で1件「Remove」。 | YELLOW CARD / RED CARD with team, minute and player (Myanmar: အဝါကတ် / အနီကတ်, Unknown player is translated). After Remove it disappears everywhere without reload.<br>色・チーム・分・選手が出る（ミャンマー語も翻訳）。Remove すると再読み込みなしで消える。 | All | | |
+| O-13 | Start any match (group or knockout). Press "Yellow card" for a team and choose a player; press "Red card" for the other team and choose a player.<br>どの試合でも開始し、チームの「Yellow card」で選手を選ぶ。もう一方の「Red card」でも選手を選ぶ。 | "Unknown player" is NOT in the list. Both cards appear in "CARDS" as a small coloured card shape (no text), minute and ⑩ name. Before kick-off the card buttons are disabled.<br>「Unknown player」は出ない。「CARDS」に小さなカードの形（文字なし）・分・⑩ 名前で2件出る。開始前はカードのボタンが押せない。 | PC, iPad | | |
+| O-14 | Open that match card on a public page (EN and Myanmar). Then press "Remove" for one card in admin.<br>公開ページでその試合カードを開く（英語・ミャンマー語）。管理画面で1件「Remove」。 A yellow / red card shape (no text) with team, minute and ⑩ player. Hovering the shape shows "Yellow card" / "Red card" (Myanmar: အဝါကတ် / အနီကတ်). After Remove it disappears everywhere without reload.<br>黄色・赤のカードの形（文字なし）・チーム・分・⑩ 選手が出る。形にマウスを乗せると名前が出る（ミャンマー語も翻訳）。Remove すると再読み込みなしで消える。 | All | | |
 | O-15 | Sub Admin of another court tries to record a card in this match.<br>別のコートの Sub Admin がこの試合にカードを入れる。 | Not possible (403).<br>できない（403）。 | PC | | |
+| O-16 | Give the same player a 2nd yellow card in the same match.<br>同じ試合で同じ選手に2枚目のイエローを出す。 | The 2nd yellow AND a red card (same minute, "(2nd yellow)") are recorded. The public match card shows both. A 3rd yellow does not add another red. A player who was sent off can still get cards.<br>2枚目のイエローと、同じ分のレッド（「(2nd yellow)」）が記録される。公開ページにも両方出る。3枚目のイエローではレッドは増えない。退場した選手にもカードを出せる。 | PC, iPad | | |
+| O-17 | Press "Remove" on that 2nd yellow.<br>その2枚目のイエローを「Remove」。 | The 2nd yellow and its red both disappear (admin and public). The 1st yellow stays.<br>2枚目のイエローとそのレッドが両方消える（管理画面・公開ページ）。1枚目のイエローは残る。 | PC | | |
+| O-18 | Look at back numbers: match card players, Teams roster, Top scorers, registration page members, Team registrations (admin).<br>背番号を見る: 試合カードの選手、Teams の選手一覧、Top scorers、登録ページの選手、Team registrations（管理）。 | Every back number is a number in a circle (e.g. ⑩). 1-digit and 2-digit numbers have the same circle size. No "#".<br>背番号はすべて丸の中の数字（例: ⑩）。1桁も2桁も同じ大きさの丸。「#」は出ない。 | PC, iPhone | | |
 
 ---
 
@@ -408,11 +411,11 @@ Copy this table for each `NG`. / `NG` ごとにこの表をコピーして書く
 | L. Real-time | 4 | | | | |
 | M. Standings / ties | 8 | | | | |
 | N. Knockout / PK | 10 | | | | |
-| O. Goal scorers / cards | 15 | | | | |
+| O. Goal scorers / cards | 18 | | | | |
 | P. Test tools | 6 | | | | |
 | Q. Announcements | 8 | | | | |
 | R. Reset | 4 | | | | |
 | S. Connection loss | 3 | | | | |
 | T. Devices | 5 | | | | |
 | U. Security | 4 | | | | |
-| **Total / 合計** | **168** | | | | |
+| **Total / 合計** | **171** | | | | |

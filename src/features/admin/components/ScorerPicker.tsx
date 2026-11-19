@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Match, Player } from "../../../types";
 import { ApiError, requestJson } from "../../../utils/http";
-import { useTeams } from "../../tournament";
+import { BackNumber, useTeams } from "../../tournament";
 
 /**
  * 「Who scored?」。選手を押すとゴールを記録して1点増える（`goalId` があれば得点者を変えるだけ）。
@@ -95,7 +95,7 @@ export function ScorerPicker({
                 disabled={busy}
                 onClick={() => void choose(player.id)}
               >
-                <b>#{player.backNumber}</b>
+                <BackNumber value={player.backNumber} />
                 <span>{player.name}</span>
               </button>
             ))}

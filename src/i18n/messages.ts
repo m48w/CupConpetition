@@ -124,11 +124,9 @@ export const messages = {
   "match.footer": { en: "Match {id} · Court {court}", my: "ပွဲစဉ် {id} · ကွင်း {court}" },
   "match.penalties": { en: "PK {home}–{away}", my: "PK {home}–{away}" },
   "match.cards": { en: "Cards", my: "ကတ်များ" },
-  "match.card.yellow": { en: "YELLOW CARD", my: "အဝါကတ်" },
-  "match.card.red": { en: "RED CARD", my: "အနီကတ်" },
+  "match.card.yellow": { en: "Yellow card", my: "အဝါကတ်" },
+  "match.card.red": { en: "Red card", my: "အနီကတ်" },
   "match.unknownPlayer": { en: "Unknown player", my: "အမည်မသိ ကစားသမား" },
-  "match.goal": { en: "{minute}' #{number} {name}", my: "{minute}' #{number} {name}" },
-  "match.goalUnknown": { en: "{minute}' Unknown player", my: "{minute}' အမည်မသိ ကစားသမား" },
   "match.scorers": { en: "Goal scorers", my: "ဂိုးသွင်းသူများ" },
   "scorers.title": { en: "Top scorers", my: "ဂိုးသွင်းသူ ထိပ်ဆုံးများ" },
   "scorers.note": {

@@ -1,6 +1,6 @@
 import type { Match, MatchCard } from "../../../types";
 import { ApiError, requestJson } from "../../../utils/http";
-import { TeamBadge, useCards } from "../../tournament";
+import { BackNumber, CardMark, TeamBadge, useCards } from "../../tournament";
 import { useState } from "react";
 
 export function CardList({ match, disabled }: { match: Match; disabled: boolean }) {
@@ -25,11 +25,13 @@ export function CardList({ match, disabled }: { match: Match; disabled: boolean 
           <li key={card.id}>
             <TeamBadge id={card.teamId} showName={false} />
             <span className="card-list-entry">
-              <b className={card.color === "YELLOW" ? "yellow-card-mark" : "red-card-mark"}>
-                {card.color === "YELLOW" ? "YELLOW" : "RED"}
-              </b>
-              {card.minute}&apos;{" "}
-              {card.playerName ? `#${card.backNumber ?? ""} ${card.playerName}` : "Unknown player"}
+              <CardMark
+                color={card.color}
+                label={card.color === "YELLOW" ? "Yellow card" : "Red card"}
+              />
+              {card.minute}&apos; <BackNumber value={card.backNumber} />
+              {card.playerName ?? "Unknown player"}
+              {card.sourceCardId && <span className="muted">(2nd yellow)</span>}
             </span>
             <button
               type="button"
