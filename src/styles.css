@@ -1506,7 +1506,7 @@ footer span {
   }
   .main-content {
     width: 100%;
-    padding: 12px 8px 64px;
+    padding: 12px 16px 64px;
   }
   .topbar {
     padding: 0 18px;
@@ -2877,7 +2877,7 @@ footer span {
 }
 .yellow-card-button,
 .red-card-button {
-  min-height: 40px;
+  min-height: 44px;
   padding: 7px 10px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;

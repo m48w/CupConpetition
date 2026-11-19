@@ -1,6 +1,6 @@
 # Velocity Cup 2026 — Cross Test Cases / 相互テスト書
 
-- **Version / 版**: 1.2.2 (2026-11-18: same card everywhere, switches for Groups / All matches, no Details text, no page heading text, group colours, next match in admin / カードUI改善に合わせて更新)
+- **Version / 版**: 1.3.0 (2026-11-19: yellow/red cards O-13〜O-15; 2026-11-18: same card everywhere, switches for Groups / All matches, no Details text, no page heading text, group colours, next match in admin / カードUI改善に合わせて更新)
 - **Date / 作成日**: 2026-11-07
 - **Target / 対象**: Velocity Cup 2026 web app (public pages, team & player registration, admin console) / 大会Webアプリ（公開ページ・チーム登録・選手登録・管理画面）
 - **Related / 関連文書**: `docs/仕様書.md`, `docs/試合進行_仕様書.md`, `docs/得点者_仕様書.md`, `docs/グループ分け_仕様書.md`
@@ -297,6 +297,9 @@ Assign one tester per court as Sub Admin, and one as Super Admin. / コートご
 | O-10 | Open the match detail and Live for that QF.<br>その QF の試合の詳細と Live を開く。 | Scorers with minutes are shown under each team (⚽ 13' #10 name).<br>各チームの下に得点者と時間が出る。 | All | | |
 | O-11 | Open Knockout → "Top scorers".<br>Knockout の「Top scorers」。 | Ranking of QF/SF/Final goals. Same number of goals = same rank. Unknown player and PK goals are not counted.<br>QF・SF・決勝のゴールのランキング。同じ数は同じ順位。Unknown と PK は数えない。 | All | | |
 | O-12 | Sub Admin of another court tries to record a goal in this match.<br>別のコートの Sub Admin がこの試合で得点を入れる。 | Not possible (the match is not in their list).<br>できない（一覧に出ない）。 | PC | | |
+| O-13 | Start any match (group or knockout). Press "Yellow card" for a team and choose a player; press "Red card" for the other team and choose "Unknown player".<br>どの試合でも開始し、チームの「Yellow card」で選手を選ぶ。もう一方の「Red card」で「Unknown player」を選ぶ。 | Both cards appear in "CARDS" with the minute. Before kick-off the card buttons are disabled.<br>「CARDS」に分付きで2件出る。開始前はカードのボタンが押せない。 | PC, iPad | | |
+| O-14 | Open that match card on a public page (EN and Myanmar). Then press "Remove" for one card in admin.<br>公開ページでその試合カードを開く（英語・ミャンマー語）。管理画面で1件「Remove」。 | YELLOW CARD / RED CARD with team, minute and player (Myanmar: အဝါကတ် / အနီကတ်, Unknown player is translated). After Remove it disappears everywhere without reload.<br>色・チーム・分・選手が出る（ミャンマー語も翻訳）。Remove すると再読み込みなしで消える。 | All | | |
+| O-15 | Sub Admin of another court tries to record a card in this match.<br>別のコートの Sub Admin がこの試合にカードを入れる。 | Not possible (403).<br>できない（403）。 | PC | | |
 
 ---
 
@@ -405,7 +408,7 @@ Copy this table for each `NG`. / `NG` ごとにこの表をコピーして書く
 | L. Real-time | 4 | | | | |
 | M. Standings / ties | 8 | | | | |
 | N. Knockout / PK | 10 | | | | |
-| O. Goal scorers | 12 | | | | |
+| O. Goal scorers / cards | 15 | | | | |
 | P. Test tools | 6 | | | | |
 | Q. Announcements | 8 | | | | |
 | R. Reset | 4 | | | | |

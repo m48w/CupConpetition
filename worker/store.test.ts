@@ -93,7 +93,7 @@ test("全ステージでカードを時刻付きで記録・削除できる", as
     let state = store.read();
     for (const stage of ["GROUP", "R16", "QF", "SF", "FINAL"] as const) {
       const match = state.matches.find((item) => item.stage === stage)!;
-      state = store.patchMatch(match.id, { status: "LIVE" });
+      store.patchMatch(match.id, { status: "LIVE" });
       state = store.addCard(match.id, match.homeTeamId, "YELLOW", {
         memberId: null,
         playerName: null,

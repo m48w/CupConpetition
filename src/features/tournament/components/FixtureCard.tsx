@@ -167,20 +167,20 @@ export function FixtureCard({
         {open && (
           <>
             {cards.length > 0 && (
-              <ul className="fixture-card-events" aria-label="Cards">
+              <ul className="fixture-card-events" aria-label={t("match.cards")}>
                 {cards.map((card) => (
                   <li key={card.id}>
                     <span
                       className={card.color === "YELLOW" ? "yellow-card-mark" : "red-card-mark"}
                     >
-                      {card.color === "YELLOW" ? "YELLOW CARD" : "RED CARD"}
+                      {t(card.color === "YELLOW" ? "match.card.yellow" : "match.card.red")}
                     </span>
                     <span>
                       {teams.find((team) => team.id === card.teamId)?.name ?? card.teamId}:{" "}
                       {card.minute}&apos; ·{" "}
                       {card.playerName
                         ? `#${card.backNumber ?? ""} ${card.playerName}`
-                        : "Unknown player"}
+                        : t("match.unknownPlayer")}
                     </span>
                   </li>
                 ))}
