@@ -34,7 +34,6 @@ export const messages = {
     my: "အက်ပ်ကို ပင်မစာမျက်နှာသို့ ထည့်ပြီးပါပြီ။",
   },
   "app.register": { en: "Register", my: "စာရင်းသွင်းရန်" },
-  "app.hub": { en: "TOURNAMENT HUB", my: "ပြိုင်ပွဲ" },
   "lang.label": { en: "Language", my: "ဘာသာစကား" },
   "common.group": { en: "Group {id}", my: "အုပ်စု {id}" },
   "common.court": { en: "Court {court}", my: "ကွင်း {court}" },
@@ -76,14 +75,12 @@ export const messages = {
   "home.countdown.hours": { en: "Hours", my: "နာရီ" },
   "home.countdown.minutes": { en: "Minutes", my: "မိနစ်" },
   "home.countdown.seconds": { en: "Seconds", my: "စက္ကန့်" },
-  "home.teams.eyebrow": { en: "THE CLUBS", my: "အသင်းများ" },
   "home.teams.title": { en: "Teams", my: "ပါဝင်သော အသင်းများ" },
   "home.teams.viewAll": { en: "View all teams", my: "အသင်းအားလုံး ကြည့်ရန်" },
   "home.teams.empty": {
     en: "Teams will appear here after the groups are decided.",
     my: "အုပ်စုများ သတ်မှတ်ပြီးနောက် အသင်းများကို ဤနေရာတွင် ပြသပါမည်။",
   },
-  "home.rules.eyebrow": { en: "PLAY FAIR", my: "တရားမျှတစွာ ကစားပါ" },
   "home.rules.title": { en: "Competition rules", my: "ပြိုင်ပွဲ စည်းမျဉ်းများ" },
   "home.rules.soon": {
     en: "The Competition rules will be announced soon.",
@@ -126,6 +123,7 @@ export const messages = {
   "match.cards": { en: "Cards", my: "ကတ်များ" },
   "match.card.yellow": { en: "Yellow card", my: "အဝါကတ်" },
   "match.card.red": { en: "Red card", my: "အနီကတ်" },
+  "match.card.secondYellow": { en: "Second yellow card", my: "ဒုတိယ အဝါကတ်" },
   "match.unknownPlayer": { en: "Unknown player", my: "အမည်မသိ ကစားသမား" },
   "match.scorers": { en: "Goal scorers", my: "ဂိုးသွင်းသူများ" },
   "scorers.title": { en: "Top scorers", my: "ဂိုးသွင်းသူ ထိပ်ဆုံးများ" },
@@ -166,10 +164,6 @@ export const messages = {
   // ===== Groups =====
   "groups.eyebrow": { en: "GROUP STAGE", my: "အုပ်စုအဆင့်" },
   "groups.title": { en: "Groups", my: "အုပ်စုများ" },
-  "groups.note": {
-    en: "Top teams go to the knockout stage",
-    my: "ထိပ်ဆုံးအသင်းများ အပိုင်းထွက်အဆင့်သို့ တက်မည်",
-  },
   "groups.empty": {
     en: "Groups will be announced after registration closes.",
     my: "စာရင်းသွင်းချိန် ပြီးဆုံးပြီးနောက် အုပ်စုများကို ကြေညာပါမည်။",
@@ -212,19 +206,6 @@ export const messages = {
   // ===== Knockout =====
   "bracket.eyebrow": { en: "KNOCKOUT STAGE", my: "အပိုင်းထွက်အဆင့်" },
   "bracket.title": { en: "Road to the final", my: "ဗိုလ်လုပွဲဆီသို့" },
-  "bracket.pending": {
-    en: "15 matches · Schedule coming soon",
-    my: "ပွဲ 15 ပွဲ · အချိန်ဇယား မကြာမီ",
-  },
-  "bracket.ready": { en: "15 matches · One champion", my: "ပွဲ 15 ပွဲ · ချန်ပီယံ တစ်သင်း" },
-  "bracket.notDecided": {
-    en: "Knockout teams are decided after the group stage.",
-    my: "အုပ်စုအဆင့် ပြီးဆုံးပြီးနောက် ရှုံးထွက်အဆင့်အသင်းများကို သတ်မှတ်ပါမည်။",
-  },
-  "bracket.tagline": {
-    en: "Every match. Every moment. One champion.",
-    my: "ပွဲတိုင်း။ အချိန်တိုင်း။ ချန်ပီယံ တစ်သင်း။",
-  },
   "bracket.round.R16": { en: "Round of 16", my: "16 သင်းအဆင့်" },
   "bracket.round.QF": { en: "Quarter-finals", my: "ကွာတားဖိုင်နယ်" },
   "bracket.round.SF": { en: "Semi-finals", my: "ဆီမီးဖိုင်နယ်" },
@@ -241,7 +222,6 @@ export const messages = {
   "info.addressJa": { en: "Address in Japanese", my: "ဂျပန်ဘာသာ လိပ်စာ" },
   "info.map": { en: "Open in Google Maps", my: "Google Maps တွင် ဖွင့်ရန်" },
   "info.contact": { en: "Contact", my: "ဆက်သွယ်ရန်" },
-  "info.tba": { en: "To be announced", my: "နောက်မှ ကြေညာပါမည်" },
 
   // ===== 登録状況 =====
   "status.count": {
@@ -271,14 +251,10 @@ export const messages = {
   "announce.label": { en: "Notice", my: "ကြေညာချက်" },
 
   // ===== マイチーム =====
-  "myTeam.eyebrow": { en: "MY TEAM", my: "ကျွန်ုပ်၏ အသင်း" },
+  "myTeam.eyebrow": { en: "Favorite Team", my: "အကြိုက်ဆုံးအသင်း" },
   "myTeam.choose": { en: "Choose my team", my: "ကျွန်ုပ်၏ အသင်းကို ရွေးရန်" },
   "myTeam.change": { en: "Change", my: "ပြောင်းရန်" },
   "myTeam.clear": { en: "Remove my team", my: "ကျွန်ုပ်၏ အသင်းကို ဖယ်ရှားရန်" },
-  "myTeam.hint": {
-    en: "Choose your team to see its next match, court and group position here.",
-    my: "သင့်အသင်းကို ရွေးပါက နောက်ပွဲ၊ ကွင်းနှင့် အုပ်စုအဆင့်ကို ဤနေရာတွင် ပြသပါမည်။",
-  },
   "myTeam.pickerTitle": { en: "Choose your team", my: "သင့်အသင်းကို ရွေးပါ" },
   "myTeam.next": { en: "Next match", my: "နောက်ပွဲ" },
   "myTeam.now": { en: "Playing now", my: "ယခု ကစားနေသည်" },

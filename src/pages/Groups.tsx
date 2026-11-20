@@ -15,9 +15,7 @@ export function Groups({ matches }: { matches: Match[] }) {
   const teams = useTeams();
   return (
     <>
-      <PageTitle eyebrow={t("groups.eyebrow")} title={t("groups.title")}>
-        <span className="muted">{t("groups.note")}</span>
-      </PageTitle>
+      <PageTitle eyebrow={t("groups.eyebrow")} title={t("groups.title")} />
       {teams.length === 0 ? (
         <Empty text={t("groups.empty")} />
       ) : (

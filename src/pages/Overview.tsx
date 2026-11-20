@@ -5,8 +5,6 @@ import { useI18n } from "../i18n/useI18n";
 import { MyTeamCard } from "../features/tournament/components/MyTeamCard";
 import { useMyTeam } from "../features/tournament/hooks/useMyTeam";
 import { TournamentInfoSection } from "../features/info/TournamentInfoSection";
-import { RegistrationStatusNote } from "../features/registration/RegistrationStatusNote";
-import { useRegistrationStatus } from "../features/registration/useRegistrationStatus";
 import type { Match } from "../types";
 
 /** 最初の試合（2026-12-20 9:00 JST）。カウントダウンはここまで。 */
@@ -34,7 +32,6 @@ export function Overview({ matches }: { matches: Match[] }) {
   const { t } = useI18n();
   const teams = useTeams();
   const live = matches.filter(isOnPitch);
-  const registrationStatus = useRegistrationStatus();
   const { myTeam, chooseMyTeam } = useMyTeam(teams);
   const [now, setNow] = useState(() => Date.now());
   const countdown = getCountdown(now);
@@ -86,14 +83,12 @@ export function Overview({ matches }: { matches: Match[] }) {
       <section className="overview-section">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">{t("home.teams.eyebrow")}</div>
             <h2>{t("home.teams.title")}</h2>
           </div>
           <Link className="outline-button" to="/teams">
             {t("home.teams.viewAll")}
           </Link>
         </div>
-        <RegistrationStatusNote status={registrationStatus} />
         {teams.length === 0 && <p className="muted">{t("home.teams.empty")}</p>}
         <div className="team-logo-strip" aria-label={t("home.teams.title")}>
           {teams.map((team) => (
@@ -108,7 +103,6 @@ export function Overview({ matches }: { matches: Match[] }) {
       <section className="overview-section rules-section">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">{t("home.rules.eyebrow")}</div>
             <h2>{t("home.rules.title")}</h2>
           </div>
         </div>

@@ -1,6 +1,6 @@
 # Velocity Cup 2026 — Agent Review & Test Plan / エージェント用レビュー・テスト書
 
-- **Version / 版**: 1.0.0
+- **Version / 版**: 1.1.0 (2026-11-20: Home/Groups/Knockout text removed, Favorite Team, Facebook button, Matches toolbar in one row, 2nd yellow as one row)
 - **Date / 作成日**: 2026-11-19
 - **Reader / 読む人**: an AI agent (or developer) who reviews and tests the whole app on a local machine / ローカルでアプリ全体をレビュー・テストする AI エージェント（または開発者）
 - **Target / 対象**: commit `e55edd3` or later on `main` / `main` の `e55edd3` 以降
@@ -230,7 +230,7 @@ For each line, check `docs/仕様書.md` (section in brackets) against the code 
 | SP-18 | Card opens players (⑩ name), ⚽ from QF, "No players registered.", link to match details | 5 | | |
 | SP-19 | Live: LIVE + PAUSED shown, FINISHED removed; next match per court | 6 | | |
 | SP-20 | Groups: full column names, phone table scrolls inside, rank/team columns fixed, green line for 1st/2nd, 2 columns ≥ 1600px | 7 | | |
-| SP-21 | Knockout: placeholders before schedule ("Schedule pending"), final highlighted, spacing in R16, Top scorers | 8, 14.2 | | |
+| SP-21 | Knockout: no top text/banner; placeholders before schedule; final highlighted; spacing in R16; Top scorers | 8, 14.2 | | |
 | SP-22 | Accounts and courts (superadmin, subadmin1〜6), lock after 5 failures for 60 s | 9.1 | | |
 | SP-23 | Permission table (401 / 403 / `WRONG_COURT`) | 9.2 | | |
 | SP-24 | Match control buttons per status, big status + timer, filters (Court/Stage/Status), next match after Finish | 9.3 | | |
@@ -350,11 +350,11 @@ Use Playwright (Chromium) on `http://localhost:5173`. Collect console errors and
 | ID | Steps / 手順 | Expected / 期待結果 | Result | Note |
 |---|---|---|---|---|
 | UI-01 | Open `/` | Redirect to `/20261220/`; yellow TEST SITE bar | | |
-| UI-02 | Home before 2026-12-20 09:00 JST | Countdown, "first match at 9:00", teams strip with logos, rules, info, contact, Google Maps button | | |
+| UI-02 | Home before 2026-12-20 09:00 JST | Countdown, "first match at 9:00", "Favorite Team", teams strip with logos (no "THE CLUBS", no registered count), rules (no "PLAY FAIR"), info, Contact "Facebook" button (new tab), Google Maps button | | |
 | UI-03 | Home: choose My team, reload | Next match and group rank shown; kept after reload | | |
 | UI-04 | Set `localStorage['vc.myTeam.20261220']='NOPE'`, reload | My team resets, no crash | | |
 | UI-05 | Switch to မြန်မာ, go to every page, reload | Myanmar text, `<html lang="my">`, kept after reload; names not translated | | |
-| UI-06 | Matches: default | Switch Groups off (time order), All matches off (unfinished only), team select | | |
+| UI-06 | Matches: default | Small switches Groups off (time order), All matches off (unfinished only) and team select in one row on PC and iPhone; no "Team" label | | |
 | UI-07 | Matches: Groups on, reload | Group A〜H + Knockout headers with colours; setting kept; headers collapse | | |
 | UI-08 | Matches: All matches on, reload | All matches; after reload back to off (not saved) | | |
 | UI-09 | Matches: choose a team | Only that team's matches | | |
@@ -362,8 +362,8 @@ Use Playwright (Chromium) on `http://localhost:5173`. Collect console errors and
 | UI-11 | Card of a match with cards (after UI-41) | Yellow/red shape (no text), team, minute, ⑩ name; hover title "Yellow card"/"Red card" | | |
 | UI-12 | Match details page `/matches/<id>` | Same card, back button; QF shows scorers `⚽ 13' ⑩ name` | | |
 | UI-13 | Live with one LIVE and one PAUSED match | Both shown with timer / PAUSED; Next matches per court; Live menu icon green | | |
-| UI-14 | Groups page, then a group | 8 tables; full column names; green line for 1st/2nd; group page has table + matches | | |
-| UI-15 | Knockout before schedule (after Initialize) | Placeholder bracket "Schedule pending" | | |
+| UI-14 | Groups page, then a group | No "Top teams go to the knockout stage"; 8 tables; full column names; green line for 1st/2nd; group page has table + matches | | |
+| UI-15 | Knockout before schedule (after Initialize) | Placeholder bracket only (no "Schedule pending", no banner) | | |
 | UI-16 | Knockout after QF goals | Bracket filled; final highlighted; Top scorers ranking (same goals = same rank, no Unknown, no PK) | | |
 | UI-17 | Teams: click a team, press Esc; click again, press × | Dialog with logo, players ⑩ name; closes both ways; no Back button | | |
 | UI-18 | Unknown URL `/20261220/xyz` | Tournament 404 page | | |
@@ -400,7 +400,7 @@ Use Playwright (Chromium) on `http://localhost:5173`. Collect console errors and
 | UI-39 | Tie decisions: make a tie with 🎲 or manual scores | "Tie decisions" appears; save order; standings use it | | |
 | UI-40 | Yellow/Red card buttons before start / after start | Disabled / enabled, height ≥ 44px | | |
 | UI-41 | Yellow card → picker | Only registered players (⑩ name); no "Unknown player"; Esc and Cancel close | | |
-| UI-42 | 2nd yellow for the same player | CARDS list: Y, Y, R "(2nd yellow)"; public card shows both | | |
+| UI-42 | 2nd yellow for the same player | CARDS list: Y, then ONE row with yellow+red overlapped (label "Second yellow card"); public card the same | | |
 | UI-43 | Remove that 2nd yellow | Y and its R disappear in admin and on public pages without reload | | |
 | UI-44 | Team with no registered players → Yellow card | Message "Cards need a registered player." | | |
 | UI-45 | 🎲 Group stage → 🎲 Round of 16 (solve ties first if shown) | Results filled; teams move to R16 / QF automatically | | |

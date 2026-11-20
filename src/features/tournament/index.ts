@@ -5,6 +5,7 @@ export { ConnectionBanner } from "./components/ConnectionBanner";
 export { FixtureCard } from "./components/FixtureCard";
 export { TeamBadge } from "./components/TeamBadge";
 export { TeamsProvider } from "./components/TeamsProvider";
+export { cardRows, type CardRow } from "./cards";
 export { useCards, useGoals, useGroupOrders, useTeams } from "./teamContext";
 export { goalsOf, topScorers, tracksScorers, type TopScorer } from "./goals";
 export { findTeam, initialMatches, teams } from "./data";

@@ -1,4 +1,3 @@
-import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
 import {
   bracketRounds,
@@ -106,22 +105,9 @@ function TopScorers({ matches }: { matches: Match[] }) {
 export function Bracket({ matches }: { matches: Match[] }) {
   const { t } = useI18n();
   const teams = useTeams();
-  const groupMatches = matches.filter((match) => match.stage === "GROUP");
-  const groupStageFinished =
-    groupMatches.length > 0 && groupMatches.every((match) => match.status === "FINISHED");
   return (
     <>
-      <PageTitle eyebrow={t("bracket.eyebrow")} title={t("bracket.title")}>
-        <span className="bracket-note">
-          {matches.length === 0 ? t("bracket.pending") : t("bracket.ready")}
-        </span>
-      </PageTitle>
-      {!groupStageFinished && <Empty text={t("bracket.notDecided")} />}
-      <div className="tournament-banner">
-        <span>VELOCITY CUP 2026</span>
-        <b>{t("bracket.title")}</b>
-        <small>{t("bracket.tagline")}</small>
-      </div>
+      <PageTitle eyebrow={t("bracket.eyebrow")} title={t("bracket.title")} />
       <div className="bracket-scroll">
         <div className="bracket">
           {bracketRounds(matches, teams).map((round) => (

@@ -157,7 +157,6 @@ function App() {
       </div>
       <div className="layout">
         <aside className="sidebar">
-          <div className="side-caption">{t("app.hub")}</div>
           {navItems.map((item) => (
             <NavLink
               key={item.to}

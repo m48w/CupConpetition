@@ -1,8 +1,11 @@
 import type { Match, MatchCard } from "../../../types";
 import { ApiError, requestJson } from "../../../utils/http";
-import { BackNumber, CardMark, TeamBadge, useCards } from "../../tournament";
+import { BackNumber, CardMark, cardRows, TeamBadge, useCards } from "../../tournament";
 import { useState } from "react";
 
+const LABELS = { YELLOW: "Yellow card", RED: "Red card", SECOND_YELLOW: "Second yellow card" };
+
+/** Remove は行の ID を消す。2枚目のイエローの行なら、サーバーが自動のレッドも一緒に消す。 */
 export function CardList({ match, disabled }: { match: Match; disabled: boolean }) {
   const cards = useCards().filter((card) => card.matchId === match.id);
   const [error, setError] = useState("");
@@ -21,17 +24,13 @@ export function CardList({ match, disabled }: { match: Match; disabled: boolean 
     <div className="card-list">
       <label>CARDS</label>
       <ol>
-        {cards.map((card) => (
+        {cardRows(cards).map(({ card, mark }) => (
           <li key={card.id}>
             <TeamBadge id={card.teamId} showName={false} />
             <span className="card-list-entry">
-              <CardMark
-                color={card.color}
-                label={card.color === "YELLOW" ? "Yellow card" : "Red card"}
-              />
+              <CardMark color={mark} label={LABELS[mark]} />
               {card.minute}&apos; <BackNumber value={card.backNumber} />
               {card.playerName ?? "Unknown player"}
-              {card.sourceCardId && <span className="muted">(2nd yellow)</span>}
             </span>
             <button
               type="button"

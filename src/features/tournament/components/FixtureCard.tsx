@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useI18n } from "../../../i18n/useI18n";
 import type { Goal, Match } from "../../../types";
 import { formatTime } from "../../../utils/format";
+import { cardRows } from "../cards";
 import { goalsOf, tracksScorers } from "../goals";
 import { useFixturePlayers, type FixturePlayer } from "../hooks/useFixturePlayers";
 import { useMatchClock } from "../hooks/useMatchClock";
@@ -11,6 +12,12 @@ import { useCards, useGoals, useTeams } from "../teamContext";
 import { BackNumber } from "./BackNumber";
 import { CardMark } from "./CardMark";
 import { TeamBadge } from "./TeamBadge";
+
+const CARD_LABELS = {
+  YELLOW: "match.card.yellow",
+  RED: "match.card.red",
+  SECOND_YELLOW: "match.card.secondYellow",
+} as const;
 
 function TeamSlot({ teamId, side }: { teamId: string; side: "home" | "away" }) {
   const { t } = useI18n();
@@ -172,12 +179,9 @@ export function FixtureCard({
           <>
             {cards.length > 0 && (
               <ul className="fixture-card-events" aria-label={t("match.cards")}>
-                {cards.map((card) => (
+                {cardRows(cards).map(({ card, mark }) => (
                   <li key={card.id}>
-                    <CardMark
-                      color={card.color}
-                      label={t(card.color === "YELLOW" ? "match.card.yellow" : "match.card.red")}
-                    />
+                    <CardMark color={mark} label={t(CARD_LABELS[mark])} />
                     <span>
                       {teams.find((team) => team.id === card.teamId)?.name ?? card.teamId}:{" "}
                       {card.minute}&apos; · <BackNumber value={card.backNumber} />{" "}

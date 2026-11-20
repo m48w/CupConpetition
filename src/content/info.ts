@@ -4,7 +4,7 @@ import type { Lang } from "../i18n/translate";
  * Home の下の「大会情報」の中身。プログラムを読まなくても、このファイルだけ直せばよい。
  *
  * - 英語（en）とミャンマー語（my）を同じ形で書く。
- * - 問い合わせ先がまだ決まっていなければ contact を空の配列 [] にする。画面には「To be announced」と出る。
+ * - 問い合わせ先（メールなど）が無ければ contact を空の配列 [] にする。Contact には Facebook のリンクだけ出る。
  * - 住所は日本語のまま `addressJa` に書く（タクシーなどで見せられるように）。
  */
 export interface InfoContent {
@@ -19,6 +19,11 @@ export interface InfoContent {
 export const venue = {
   addressJa: "〒553-0001 大阪府大阪市福島区海老江８丁目１６",
   mapUrl: "https://maps.app.goo.gl/k6uMpg4X18z44hNT9",
+};
+
+/** Contact に出す SNS のリンク（言語に関係なく同じ）。 */
+export const social = {
+  facebook: "https://www.facebook.com/profile.php?id=61590473070977",
 };
 
 export const info: Record<Lang, InfoContent> = {

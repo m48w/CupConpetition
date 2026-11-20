@@ -1,4 +1,4 @@
-import { info, venue } from "../../content/info";
+import { info, social, venue } from "../../content/info";
 import { useI18n } from "../../i18n/useI18n";
 
 /** Home の下の「大会情報」と「問い合わせ先」。中身は src/content/info.ts。 */
@@ -27,9 +27,7 @@ export function TournamentInfoSection() {
       </a>
 
       <h3 className="info-subtitle">{t("info.contact")}</h3>
-      {content.contact.length === 0 ? (
-        <p className="muted">{t("info.tba")}</p>
-      ) : (
+      {content.contact.length > 0 && (
         <dl className="info-facts">
           {content.contact.map((item) => (
             <div key={item.label}>
@@ -39,6 +37,16 @@ export function TournamentInfoSection() {
           ))}
         </dl>
       )}
+      <div className="social-links">
+        <a
+          className="outline-button social-link"
+          href={social.facebook}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Facebook
+        </a>
+      </div>
     </section>
   );
 }

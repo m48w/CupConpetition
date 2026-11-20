@@ -62,7 +62,6 @@ export function MyTeamCard({
     return (
       <section className="overview-section my-team">
         <div className="eyebrow">{t("myTeam.eyebrow")}</div>
-        <p className="muted">{t("myTeam.hint")}</p>
         <TeamSelect teams={teams} value="" onChange={onChoose} />
       </section>
     );

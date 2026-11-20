@@ -114,8 +114,11 @@ export function Matches({ matches }: { matches: Match[] }) {
             </label>
           </div>
           <label className="fixtures-team">
-            <span>{t("matches.team")}</span>
-            <select value={teamId} onChange={(event) => setTeam(event.target.value)}>
+            <select
+              aria-label={t("matches.team")}
+              value={teamId}
+              onChange={(event) => setTeam(event.target.value)}
+            >
               <option value="ALL">{t("matches.allTeams")}</option>
               {sortedTeams.map((team) => (
                 <option key={team.id} value={team.id}>

@@ -1260,10 +1260,6 @@ label {
 .rank.qualified {
   color: var(--green);
 }
-.bracket-note {
-  color: var(--muted);
-  font-size: 12px;
-}
 .admin-pill {
   font: 10px "DM Mono";
   color: var(--orange);
@@ -1801,50 +1797,6 @@ footer span {
   outline: 2px solid #d4d4d8;
   outline-offset: 1px;
 }
-.tournament-banner {
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 28px;
-  padding: 30px 34px;
-  border: 1px solid #d4d4d8;
-  border-radius: 14px;
-  background: linear-gradient(110deg, #f4f4f5, #f4f4f5 52%, var(--surface));
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.06);
-}
-.tournament-banner:after {
-  content: "";
-  position: absolute;
-  right: -80px;
-  top: -120px;
-  width: 300px;
-  height: 300px;
-  border: 1px solid #d4d4d8;
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 22px transparent,
-    0 0 0 52px transparent;
-}
-.tournament-banner span,
-.tournament-banner b,
-.tournament-banner small {
-  display: block;
-  position: relative;
-  z-index: 1;
-}
-.tournament-banner span {
-  color: var(--text-2);
-  font: 11px "DM Mono";
-  letter-spacing: 3px;
-}
-.tournament-banner b {
-  margin-top: 10px;
-  font-size: 28px;
-  letter-spacing: 1px;
-}
-.tournament-banner small {
-  margin-top: 8px;
-  color: var(--text-2);
-}
 /* Knockout bracket, left to right. Every column is split into equal slots (8, 4, 2, 1), so
    each match sits exactly halfway between the two matches that feed it. The connectors are
    drawn on the slots: the upper match of a pair turns down, the lower one turns up, and they
@@ -2201,9 +2153,6 @@ footer span {
   font-size: 10px;
   line-height: 1.3;
   text-align: center;
-}
-:lang(my) .tournament-banner b {
-  letter-spacing: 0;
 }
 
 /* ヘッダー: 狭い画面では言語切り替えと登録ボタンを優先し、大会名はロゴで代わりにする */
@@ -2928,21 +2877,47 @@ footer span {
   overflow-wrap: anywhere;
   text-align: left;
 }
-/* カードは文字なしの小さな形だけ（縦長の長方形）。 */
+/* カードは文字なしの小さな形だけ（縦:横 = 3:2）。2枚目のイエローは黄の上に赤を少しずらして重ねる。 */
 .card-mark {
+  position: relative;
   display: inline-block;
   flex: 0 0 auto;
-  width: 10px;
-  height: 14px;
+  width: 12px;
+  height: 18px;
   border-radius: 2px;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
-  vertical-align: -2px;
+  vertical-align: -4px;
 }
-.card-mark.yellow {
+.card-mark.yellow,
+.card-mark.second-yellow::before {
   background: #facc15;
 }
-.card-mark.red {
+.card-mark.red,
+.card-mark.second-yellow::after {
   background: #dc2626;
+}
+.card-mark.yellow,
+.card-mark.red,
+.card-mark.second-yellow::before,
+.card-mark.second-yellow::after {
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
+}
+.card-mark.second-yellow {
+  width: 18px;
+}
+.card-mark.second-yellow::before,
+.card-mark.second-yellow::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 12px;
+  height: 18px;
+  border-radius: 2px;
+}
+.card-mark.second-yellow::before {
+  left: 0;
+}
+.card-mark.second-yellow::after {
+  left: 6px;
 }
 /* 背番号は丸の中に表示（0〜99 で同じ大きさ）。 */
 .back-number {
@@ -3119,26 +3094,24 @@ footer {
 }
 
 /* Matches: 並び替え・チーム選択 */
+/* Matches の上: スイッチ2つとチーム選択を1行に（入らなければ折り返す）。 */
 .fixtures-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
-  justify-content: space-between;
-  gap: 12px 16px;
-  margin-bottom: 18px;
+  align-items: center;
+  gap: 4px 16px;
+  margin-bottom: 14px;
 }
 .fixtures-team {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 260px;
-  font: 11px "DM Mono";
-  color: var(--muted);
-  letter-spacing: 1px;
+  flex: 1 1 110px;
+  min-width: 0;
+  max-width: 220px;
 }
 .fixtures-team select {
+  width: 100%;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 10px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: var(--surface);
@@ -3343,9 +3316,6 @@ footer {
   }
 }
 @media (max-width: 767px) {
-  .fixtures-team {
-    width: 100%;
-  }
   .fixture-row {
     padding: 8px 8px 0;
   }
@@ -3510,17 +3480,6 @@ footer {
   }
 }
 
-/* スマホ: スイッチを1行、チーム選択を次の行に */
-@media (max-width: 767px) {
-  .fixtures-toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .fixtures-toolbar .fixtures-team {
-    grid-column: 1 / -1;
-  }
-}
-
 /* 試合カード: カード全体がボタン（Details の文字は無し） */
 .fixture-row {
   padding-bottom: 8px;
@@ -3538,17 +3497,17 @@ footer {
 .fixtures-switches {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 20px;
+  gap: 4px 12px;
 }
 .switch {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 44px;
   cursor: pointer;
   font:
-    600 14px "Space Grotesk",
+    600 13px "Space Grotesk",
     sans-serif;
   color: var(--text);
   letter-spacing: 0;
@@ -3562,19 +3521,19 @@ footer {
 .switch-track {
   position: relative;
   flex: none;
-  width: 44px;
-  height: 26px;
-  border-radius: 13px;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
   background: var(--line-strong);
   transition: background 150ms ease;
 }
 .switch-track::after {
   content: "";
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 20px;
-  height: 20px;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -3584,16 +3543,11 @@ footer {
   background: var(--ink);
 }
 .switch input:checked + .switch-track::after {
-  transform: translateX(18px);
+  transform: translateX(16px);
 }
 .switch input:focus-visible + .switch-track {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
-}
-@media (max-width: 767px) {
-  .fixtures-toolbar .fixtures-switches {
-    grid-column: 1 / -1;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .switch-track,
@@ -3621,4 +3575,14 @@ footer {
 }
 .page-title.is-empty {
   margin: 0;
+}
+
+/* Contact の SNS リンク */
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.social-link {
+  min-height: 44px;
 }
