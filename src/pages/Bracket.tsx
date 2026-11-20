@@ -1,13 +1,5 @@
 import { PageTitle } from "../components/ui/PageTitle";
-import {
-  bracketRounds,
-  TeamBadge,
-  topScorers,
-  type BracketGame,
-  useGoals,
-  useTeams,
-  BackNumber,
-} from "../features/tournament";
+import { bracketRounds, TeamBadge, type BracketGame, useTeams } from "../features/tournament";
 import { useI18n } from "../i18n/useI18n";
 import type { Match, Stage } from "../types";
 import { formatTime } from "../utils/format";
@@ -59,49 +51,6 @@ function BracketCard({ game }: { game: BracketGame }) {
   );
 }
 
-function TopScorers({ matches }: { matches: Match[] }) {
-  const { t } = useI18n();
-  const rows = topScorers(useGoals(), matches);
-  return (
-    <section className="section-block top-scorers">
-      <div className="section-heading">
-        <h2>{t("scorers.title")}</h2>
-      </div>
-      <p className="muted">{t("scorers.note")}</p>
-      {rows.length === 0 ? (
-        <p className="empty-state">{t("scorers.empty")}</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>{t("scorers.player")}</th>
-              <th>{t("scorers.team")}</th>
-              <th>{t("scorers.goals")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={`${row.teamId}:${row.memberId}`}>
-                <td>{row.rank}</td>
-                <td>
-                  <BackNumber value={row.backNumber} /> <strong>{row.playerName}</strong>
-                </td>
-                <td>
-                  <TeamBadge id={row.teamId} />
-                </td>
-                <td>
-                  <b>{row.goals}</b>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
-  );
-}
-
 export function Bracket({ matches }: { matches: Match[] }) {
   const { t } = useI18n();
   const teams = useTeams();
@@ -124,7 +73,6 @@ export function Bracket({ matches }: { matches: Match[] }) {
           ))}
         </div>
       </div>
-      {matches.length > 0 && <TopScorers matches={matches} />}
     </>
   );
 }

@@ -1,6 +1,6 @@
 # Velocity Cup 2026 — Agent Review & Test Plan / エージェント用レビュー・テスト書
 
-- **Version / 版**: 1.1.0 (2026-11-20: Home/Groups/Knockout text removed, Favorite Team, Facebook button, Matches toolbar in one row, 2nd yellow as one row)
+- **Version / 版**: 1.2.0 (2026-11-20: Top Scorers tab on Groups; 2026-11-20: Home/Groups/Knockout text removed, Favorite Team, Facebook button, Matches toolbar in one row, 2nd yellow as one row)
 - **Date / 作成日**: 2026-11-19
 - **Reader / 読む人**: an AI agent (or developer) who reviews and tests the whole app on a local machine / ローカルでアプリ全体をレビュー・テストする AI エージェント（または開発者）
 - **Target / 対象**: commit `e55edd3` or later on `main` / `main` の `e55edd3` 以降
@@ -230,7 +230,7 @@ For each line, check `docs/仕様書.md` (section in brackets) against the code 
 | SP-18 | Card opens players (⑩ name), ⚽ from QF, "No players registered.", link to match details | 5 | | |
 | SP-19 | Live: LIVE + PAUSED shown, FINISHED removed; next match per court | 6 | | |
 | SP-20 | Groups: full column names, phone table scrolls inside, rank/team columns fixed, green line for 1st/2nd, 2 columns ≥ 1600px | 7 | | |
-| SP-21 | Knockout: no top text/banner; placeholders before schedule; final highlighted; spacing in R16; Top scorers | 8, 14.2 | | |
+| SP-21 | Knockout: no top text/banner; placeholders before schedule; final highlighted; spacing in R16; no Top scorers (moved to Groups) | 8, 14.2 | | |
 | SP-22 | Accounts and courts (superadmin, subadmin1〜6), lock after 5 failures for 60 s | 9.1 | | |
 | SP-23 | Permission table (401 / 403 / `WRONG_COURT`) | 9.2 | | |
 | SP-24 | Match control buttons per status, big status + timer, filters (Court/Stage/Status), next match after Finish | 9.3 | | |
@@ -364,7 +364,7 @@ Use Playwright (Chromium) on `http://localhost:5173`. Collect console errors and
 | UI-13 | Live with one LIVE and one PAUSED match | Both shown with timer / PAUSED; Next matches per court; Live menu icon green | | |
 | UI-14 | Groups page, then a group | No "Top teams go to the knockout stage"; 8 tables; full column names; green line for 1st/2nd; group page has table + matches | | |
 | UI-15 | Knockout before schedule (after Initialize) | Placeholder bracket only (no "Schedule pending", no banner) | | |
-| UI-16 | Knockout after QF goals | Bracket filled; final highlighted; Top scorers ranking (same goals = same rank, no Unknown, no PK) | | |
+| UI-16 | Knockout after QF goals, then Groups → "Top Scorers" tab (`/groups/scorers`, also reload and Group A tabs) | Bracket filled; final highlighted; no Top scorers on Knockout. Top Scorers tab: ranking (same goals = same rank, no Unknown, no PK) | | |
 | UI-17 | Teams: click a team, press Esc; click again, press × | Dialog with logo, players ⑩ name; closes both ways; no Back button | | |
 | UI-18 | Unknown URL `/20261220/xyz` | Tournament 404 page | | |
 | UI-19 | Old URLs `/20261220/standings`, `/bracket`, `/info` | Go to Groups / Knockout / Home | | |

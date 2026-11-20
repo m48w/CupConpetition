@@ -164,6 +164,7 @@ Velocity Cup 2026 の大会運営画面を、ブラウザーから確認・操�
 
 - カードの記録（2026-11-19）: 全試合でイエロー・レッドカードを記録（管理画面で選手か Unknown player、Remove で削除）。開いた試合カードに表示（英語・ミャンマー語）。テーブル `match_cards`。スマホのページ左右の余白は 16px。詳細は `docs/カード記録_仕様書.md`・`docs/カード記録_設計書.md`。 変更（同日、v1.1.0）: Unknown player にはカードを出さない。カードは文字なしの形だけ（`CardMark`）。同じ選手の2枚目のイエローで同じ分にレッドも自動記録（`source_card_id`、2枚目を消すとレッドも消える）。退場した選手にもカードは出せる。背番号は全画面で丸数字（`BackNumber`、CSS の丸）。
 - 表示の整理（2026-11-20）: Home・Groups・Knockout の要らない文字を削除、Favorite Team、Contact に Facebook ボタン、Matches の上を1行に、2枚目のイエローは黄＋赤を重ねて1行（`cardRows`）。詳細は `docs/表示整理_仕様書.md`・`docs/表示整理_設計書.md`。
+- Top Scorers の移動（2026-11-20）: Knockout の下から Groups ページのタブ「Top Scorers」（`/groups/scorers`）へ。詳細は `docs/得点ランキング移動_仕様書.md`。
 - エージェント用テスト書（2026-11-19）: `docs/テスト書/エージェント用テスト書_AgentTestPlan.md`。ローカルでのレビュー・テスト手順（AT・CR・SP・API・UI・RS）。結果は `docs/テスト書/エージェントテスト結果_<日付>.md`。
 
 ## 主な確認内容

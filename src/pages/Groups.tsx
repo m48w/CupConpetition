@@ -1,13 +1,45 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, NavLink, useParams } from "react-router-dom";
 import { Empty } from "../components/ui/Empty";
 import { PageTitle } from "../components/ui/PageTitle";
-import { FixtureCard, useTeams } from "../features/tournament";
+import { FixtureCard, TopScorers, useTeams } from "../features/tournament";
 import { StandingsTable } from "../features/tournament/components/StandingsTable";
 import { byTime } from "../features/tournament/fixtures";
 import { GROUP_IDS } from "../features/tournament/schedule";
 import type { Match } from "../types";
 import { useI18n } from "../i18n/useI18n";
 import { NotFound } from "./NotFound";
+
+/** ページの中のメニュー「Groups」「Top Scorers」。グループの詳細では「Groups」を選ばれた状態にする。 */
+function GroupsTabs({ groupsActive = false }: { groupsActive?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <nav className="inner-nav" aria-label={t("groups.tab.label")}>
+      <NavLink
+        to="/groups"
+        end
+        className={({ isActive }) => (isActive || groupsActive ? "active" : undefined)}
+        aria-current={groupsActive ? "page" : undefined}
+      >
+        {t("groups.tab.groups")}
+      </NavLink>
+      <NavLink to="/groups/scorers" className={({ isActive }) => (isActive ? "active" : undefined)}>
+        {t("groups.tab.scorers")}
+      </NavLink>
+    </nav>
+  );
+}
+
+/** 得点ランキング（`/groups/scorers`）。以前は Knockout の下にあった。 */
+export function TopScorersPage({ matches }: { matches: Match[] }) {
+  const { t } = useI18n();
+  return (
+    <>
+      <PageTitle eyebrow={t("groups.eyebrow")} title={t("scorers.title")} />
+      <GroupsTabs />
+      <TopScorers matches={matches} />
+    </>
+  );
+}
 
 /** 全グループの順位表（以前の Standings ページもここにまとめた）。 */
 export function Groups({ matches }: { matches: Match[] }) {
@@ -16,6 +48,7 @@ export function Groups({ matches }: { matches: Match[] }) {
   return (
     <>
       <PageTitle eyebrow={t("groups.eyebrow")} title={t("groups.title")} />
+      <GroupsTabs />
       {teams.length === 0 ? (
         <Empty text={t("groups.empty")} />
       ) : (
@@ -50,6 +83,7 @@ export function GroupDetail({ matches }: { matches: Match[] }) {
           {t("groups.all")}
         </Link>
       </PageTitle>
+      <GroupsTabs groupsActive />
       {teams.length === 0 ? (
         <Empty text={t("groups.empty")} />
       ) : (

@@ -10,7 +10,7 @@ import {
 import { Bracket } from "./pages/Bracket";
 import { AdminDashboard, AdminEntry, ProtectedAdminNotFound } from "./pages/AdminRoutes";
 import { AdminRegistrations } from "./pages/AdminRegistrations";
-import { Groups, GroupDetail } from "./pages/Groups";
+import { Groups, GroupDetail, TopScorersPage } from "./pages/Groups";
 import { Live } from "./pages/Live";
 import { MatchDetail } from "./pages/MatchDetail";
 import { Matches } from "./pages/Matches";
@@ -199,6 +199,7 @@ function App() {
               <Route path="/matches" element={<Matches matches={matches} />} />
               <Route path="/matches/:matchId" element={<MatchDetail matches={matches} />} />
               <Route path="/groups" element={<Groups matches={matches} />} />
+              <Route path="/groups/scorers" element={<TopScorersPage matches={matches} />} />
               <Route path="/groups/:groupId" element={<GroupDetail matches={matches} />} />
               <Route path="/live" element={<Live matches={matches} />} />
               <Route path="/standings" element={<Navigate to="/groups" replace />} />

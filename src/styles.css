@@ -3586,3 +3586,37 @@ footer {
 .social-link {
   min-height: 44px;
 }
+
+/* Groups ページの中のメニュー（Groups / Top Scorers） */
+.inner-nav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.inner-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-weight: 500;
+  text-decoration: none;
+}
+.inner-nav a:hover {
+  color: var(--text);
+}
+.inner-nav a.active {
+  border-bottom-color: var(--ink);
+  color: var(--text);
+  font-weight: 700;
+}
+.inner-nav a:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+.inner-nav + .section-block {
+  margin-top: 0;
+}

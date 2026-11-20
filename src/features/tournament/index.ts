@@ -4,6 +4,7 @@ export { CardMark } from "./components/CardMark";
 export { ConnectionBanner } from "./components/ConnectionBanner";
 export { FixtureCard } from "./components/FixtureCard";
 export { TeamBadge } from "./components/TeamBadge";
+export { TopScorers } from "./components/TopScorers";
 export { TeamsProvider } from "./components/TeamsProvider";
 export { cardRows, type CardRow } from "./cards";
 export { useCards, useGoals, useGroupOrders, useTeams } from "./teamContext";

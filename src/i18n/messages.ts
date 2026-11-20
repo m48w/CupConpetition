@@ -164,6 +164,9 @@ export const messages = {
   // ===== Groups =====
   "groups.eyebrow": { en: "GROUP STAGE", my: "အုပ်စုအဆင့်" },
   "groups.title": { en: "Groups", my: "အုပ်စုများ" },
+  "groups.tab.label": { en: "Groups and top scorers", my: "အုပ်စုများနှင့် ဂိုးသွင်းသူများ" },
+  "groups.tab.groups": { en: "Groups", my: "အုပ်စုများ" },
+  "groups.tab.scorers": { en: "Top Scorers", my: "ဂိုးသွင်းသူ ထိပ်ဆုံးများ" },
   "groups.empty": {
     en: "Groups will be announced after registration closes.",
     my: "စာရင်းသွင်းချိန် ပြီးဆုံးပြီးနောက် အုပ်စုများကို ကြေညာပါမည်။",
